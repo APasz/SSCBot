@@ -1,0 +1,134 @@
+print ("Config")
+import nextcord
+import json
+
+#Discord
+logLevel = "INFO"
+taskLength = 30
+BOT_PREFIX = "~"
+botName = "SSCBot"
+botID = 764270771350142976
+
+ownerID = 375547210760454145
+ownerName = "APasz"
+delTime= 3.5 #time for self-destruct messages
+
+emoHeart=   '❤️' #:heart:
+emoStar=    '⭐' #:star:
+emoNotifi=  '😃'	#'<:notified:427470234463502336>' TpF Global server
+emoTmbUp=   '👍' #:thumbsup:
+emoTmbDown= '👎' #:thumbsdown:
+emo1=		'1️⃣' #:one:
+emo2=		'2️⃣' #:two:
+emo3=		'3️⃣' #:three:
+emoCheck=   '☑️' #:ballot_box_with_check:
+
+Wiki0 = "https://train-fever.fandom.com/wiki/Train_Fever_Wiki"
+Wiki1 = "https://www.transportfever.com/wiki/doku.php"
+Wiki2 = "https://www.transportfever2.com/wiki/doku.php?id=start"
+
+Wiki2modInstall = "https://www.transportfever2.com/wiki/doku.php?id=gamemanual:modinstallation"
+Wiki2gameFiles = "https://www.transportfever2.com/wiki/doku.php?id=gamemanual:gamefilelocations"
+
+#colours
+col_positive    = nextcord.Colour.from_rgb(25, 120, 215)
+col_positive2    = nextcord.Colour.from_rgb(5,165,30)
+col_negative    = nextcord.Colour.from_rgb(200,10,10)
+col_error       = nextcord.Colour.from_rgb(200,75,10)
+col_warning     = nextcord.Colour.from_rgb(200,120,10)
+col_neutLight   = nextcord.Colour.from_rgb(220,220,220)
+col_neutMid     = nextcord.Colour.from_rgb(125,125,125)
+col_neutDark    = nextcord.Colour.from_rgb(30,30,30)
+col_fact        = nextcord.Colour.from_rgb(85,20,155)
+col_misc        = nextcord.Colour.from_rgb(240, 20, 215)
+
+
+#TpFserver
+TpFguild        =246190532949180417
+
+chan_TpFaw      =705946607543255091
+chan_TpFssc     =[699849958102138970]
+chan_TpFwel     =634725723751448576
+chan_TpFrul     =634007370770415616
+chan_TpFss      =763468981452800002
+chan_SSCmind    =699849958102138970
+chan_TpFbot     =335767575973593099
+chan_TpFaudit   =382371100690219028
+
+roles_TpFvri    ="Verified"
+roles_SSCman    ="SSC Manager"
+roles_SSCwin    ="SSC Winner"
+roles_SSCpri    ="SSC Prize Winner"
+roles_SSCrun    ="SSC Runner Up"
+roles_newModder	=426550263130882048
+roles_tpfPlayer	=426450029054525451
+roles_cslPlayer	=426450131865305128
+roles_ttdPlayer	=463857804344819712
+roles_fctPlayer	=426450295170793483
+
+
+txt_TpFwelcome  =f"\nPlease keep <#{chan_TpFrul}> in mind" #note that 'memberName', Welcome to 'guildName' preceeds this
+txt_CompStart   ="The Screenshot Competition is starting"
+txt_CompGift    ="This is a special week. There is prize up for grabs. "
+txt_CompRules   ="Please read the Pins/Rules/Guidelines."
+txt_CompEnd     ="End date is:"
+txt_CompTheme   ="This week's theme is:"
+txt_CompNote    ="Note:"
+txt_CompDMresub ="\nPlease do resubmit in future."
+txt_CompDMtss   =f"\nPlease feel free to post it in <#{chan_TpFss}>"
+txt_CompDMr1    ="it does not fit this weeks theme of,"
+txt_CompDMr2    ="it has been edited."
+txt_CompDMr3    ="it has been posted before, "
+txt_notSSC      ="You're not an SSC Manager"
+
+
+#VKserver
+VKguild         =676425250640101395
+
+chan_VKok       =676425251122577414
+
+#NIXserver
+NIXguild        =811250905335857172
+
+chan_NIXaudit   =940321966911541299
+chan_NIXbot		=811325689198411826
+
+roles_NIXlinux		=811260032519110696
+roles_NIXmacos		=811260213155069972
+roles_NIXwindows	=812091462052347924
+roles_NIXaus		=811317704962080778
+roles_NIXnz			=883631833072414740
+roles_NIXblack		=811319107860693002
+roles_NIXblue		=812078416446619658
+roles_NIXblueDark	=945628729495932928
+roles_NIXgreen		=812078439209238578
+roles_NIXgreenDark	=945628947977220096
+roles_NIXredDark	=945629089375604746
+roles_NIXbrown		=812078442370957322
+roles_NIXyellow		=812078445654835220
+roles_NIXlilac		=812078448360161330
+roles_NIXwhite		=814003429080825858
+roles_NIXorange		=814004395313987605
+roles_NIXpink		=945629248444596285
+
+#MISC
+userDiction = {
+	'type': "UNK",
+    'exta': "UNK",
+	'auth': "UNK",
+	'authID': "UNK",
+	'guild': "UNK",
+	'guildID': "UNK",
+	'guildExta': "UNK",
+	'mess': "UNK",
+	'messID': "UNK",
+    'chan': "UNK",
+	'chanID': "UNK",
+    'chanAudit': "UNK",
+
+ }
+
+secret = json.load(open('./secrets/nolooky.json'))
+TOKEN = secret['DISCORD_TOKEN']
+
+

@@ -1,0 +1,75 @@
+Abandoned
+Airplane
+Airport
+Alpine
+Americas
+Asia
+Boat
+Bridge
+Bus
+Canyon
+CargoTram
+City
+Cityscape
+Cliffside
+Construction
+Cursed
+Depot
+Desert
+Diesel
+Double Deck Bridge
+Electric
+Elevated
+Elevated Station
+Era A
+Era B
+Era C
+Europe
+Farm
+Forest
+Freestyle
+Grade Separation
+Highway
+Freight
+High-Speed
+Industry
+Industry Base Product
+Industry Mid Product
+Industry End Product
+Interchange
+Junction
+Long Train
+Mesa
+Middle East & Africa
+Mixed Freight
+Mixed Gauge
+Mountain
+Mountain Pass
+Multiple Unit
+Oceania
+Passenger
+Port
+Rail Corridor
+Rail Crossing
+Rail Yard
+Railroad
+River/Lake
+River Delta
+Road
+Ship
+Signal Box
+Snow
+Station
+Steam
+Suburban
+Tropical
+Tram
+Truck
+Third Rail
+Tunnel
+Valley
+Viaduct
+Video
+Waiting
+*WildCard* Theme
+*WildCard* Rulez

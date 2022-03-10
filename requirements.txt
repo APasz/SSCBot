@@ -1,0 +1,4 @@
+nextcord
+emoji
+python-dateutil
+netifaces
