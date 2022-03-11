@@ -112,18 +112,18 @@ class tpfssc(commands.Cog, name="TpFSSC"):
 			log.debug(f"oldTheme: {oldTheme}")
 			if len(ctx.message.attachments):
 				oldTheme = oldTheme.replace(" ","-")
-				print("Attach")
-				if os.path.exists(f"{oldTheme}.jpg"):
-					os.remove(f"{oldTheme}.jpg")
-				elif os.path.exists(f"{oldTheme}.png"):
-					os.remove(f"{oldTheme}.png")
+				print("comp: Attach")
+				if not os.path.exists("./sscContent"): os.makedirs("./sscContent")
+				if os.path.exists(f"./sscContent/{oldTheme}.jpg"):
+					os.remove(f"./sscContent/{oldTheme}.jpg")
 				else:
 					log.error("Theme File Not Found")
 					pass
-				image_types = ["jpg", "png"]
+				image_types = ["jpg"]
 				for attachment in ctx.message.attachments:
 					if any(attachment.filename.lower().endswith(image) for image in image_types):
-						await attachment.save(attachment.filename)
+						filename = f"./sscContent/{attachment.filename}"
+						await attachment.save(filename)
 				attachment = ctx.message.attachments[0]
 				themeFile = attachment.filename[:-4]
 				log.debug(f"themeFile: {themeFile}")
@@ -158,18 +158,9 @@ class tpfssc(commands.Cog, name="TpFSSC"):
 			colour=config.col_neutDark,)
 			file=nextcord.File("missing.png")
 			e.set_image(url=f"attachment://missing.png")
-			ff = 0
-			if os.path.exists(f"{themeFile}.jpg"):
-				file=nextcord.File(f"{themeFile}.jpg")
+			if os.path.exists(f"./sscContent/{themeFile}.jpg"):
+				file=nextcord.File(f"./sscContent/{themeFile}.jpg")
 				e.set_image(url=f"attachment://{themeFile}.jpg")
-				ff = 1
-			if ff == 0:
-				if os.path.exists(f"{themeFile}.png"):
-					file=nextcord.File(f"{themeFile}.png")
-					e.set_image(url=f"attachment://{themeFile}.png")
-					pass
-			else:
-				pass
 			e.set_footer(text=config.txt_CompRules)
 			await ctx.send(file=file, embed=e)
 			await asyncio.sleep(0.1)
