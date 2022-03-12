@@ -103,21 +103,25 @@ class general(commands.Cog, name="General"):
 		pV = data['pointVer']
 		Vn = data['verName']
 		if ver is None:
+			if config.botName == "SSCBot":
+				txt1 = "Hi, I'm **SSCBot**"
+			else:
+				txt1 = f"Hi, I'm **{config.botName}**, formally known as **SSCBot**."
+			txt2 = f"""
+			Created by **APasz**
+			I'm written in Python and my code is freely avaliable on **[GitHub](https://github.com/APasz/SSCBot)**
+			My functions include: Reacting to things, Welcoming new users, Giving users the roles they seek, Giving out random facts, and more.
+			You can use **{config.BOT_PREFIX}help** to see a list of commands.
+			"""
 			text=nextcord.Embed(
-				description=f"""
-				Hi, I'm **{config.botName}**, formally known as **SSCBot**.
-				Created by **APasz**
-				I'm written in Python and my code is freely avaliable on **[GitHub](https://github.com/APasz/SSCBot)**
-				My functions include: Reacting to things, Welcoming new users, Giving users the roles they seek, Giving out random facts, and more.
-				You can use **{config.BOT_PREFIX}help** to see a list of commands.
-				""",
+				description=txt1+txt2,
 				colour=config.col_neutDark
 			)
 			text.set_footer(text=f"Version: {mV}.{sV}")
 		else:
 			text=nextcord.Embed(
 				title="Current version",
-				description=f"{mV}.{sV}-{pV}:{Vn}",
+				description=f"{mV}.{sV}.{pV}\n{Vn}",
 				colour=config.col_neutDark
 			)
 		await ctx.send(embed=text)

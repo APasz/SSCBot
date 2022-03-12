@@ -101,7 +101,7 @@ def main():
 		sV = data['minorVer']
 		pV = data['pointVer']
 		Vn = data['verName']
-		txt = f"**v{mV}.{sV}-{pV}	{Vn}**\nReady"
+		txt = f"**v{mV}.{sV}.{pV}	{Vn}**\nReady"
 		chanTpF = await bot.fetch_channel(config.chan_TpFbot)
 		chanNIX = await bot.fetch_channel(config.chan_NIXbot)
 		await chanTpF.send(txt)

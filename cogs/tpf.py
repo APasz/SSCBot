@@ -1,9 +1,13 @@
 print ("CogTpF")
 import logging
+from pydoc import describe
+from venv import create
 
 import nextcord
 import nextcord.ext
+from nextcord import Embed, Interaction, slash_command, SlashOption#, create_option, create_choice
 from nextcord.ext import commands
+from nextcord.ext.commands.cooldowns import BucketType
 
 log = logging.getLogger("discordGeneral")
 logMess = logging.getLogger('discordMessages')
@@ -14,6 +18,7 @@ import config
 from config import userDiction as usrDic
 
 from cogs.auditlog import *
+from util.fileUtil import blacklistCheck
 
 localcf_chan_audit = config.chan_TpFaudit
 localcf_guild_id = config.TpFguild
@@ -144,7 +149,6 @@ class tpf(commands.Cog, name="TpF server"):
 				return
 			else:
 				log.debug("AW")
-
 
 def setup(bot: commands.Bot):
 	bot.add_cog(tpf(bot))
