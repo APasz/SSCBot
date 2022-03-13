@@ -5,7 +5,7 @@ from venv import create
 
 import nextcord
 import nextcord.ext
-from nextcord import Embed, Interaction, slash_command, SlashOption#, create_option, create_choice
+from nextcord import Embed, Interaction, slash_command, SlashOption
 from nextcord.ext import commands
 from nextcord.ext.commands.cooldowns import BucketType
 

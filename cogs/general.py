@@ -8,12 +8,11 @@ import nextcord
 from nextcord import Embed, Interaction, slash_command
 from nextcord.ext import commands
 from nextcord.ext.commands.cooldowns import BucketType
+import pint
 
 log = logging.getLogger("discordGeneral")
 import config
 from util.fileUtil import blacklistCheck, readJSON, writeJSON
-
-SlashServers = [config.TpFguild, config.NIXguild, config.VKguild]
 
 class general(commands.Cog, name="General"):
 	def __init__(self, bot: commands.Bot):
@@ -58,7 +57,7 @@ class general(commands.Cog, name="General"):
 			else: await ctx.send(fact)
 			log.info(f"Fact: {ctx.author.id},{ctx.author.display_name}")
 	
-	@slash_command(name="fact", guild_ids=SlashServers)
+	@slash_command(name="fact", guild_ids=config.SlashServers)
 	@commands.cooldown(1, 1, commands.BucketType.user)
 	async def factSlash(self, interaction: Interaction):
 		usr = str(interaction.user.id)
@@ -182,6 +181,21 @@ class general(commands.Cog, name="General"):
 		await ctx.message.delete()
 		log.info(f"emojiCommand: {messids}: {cont}: {ctx.author.id},{ctx.author.display_name}")
 
+	@slash_command(guild_ids=config.SlashServers)
+	async def convert(self, interaction: Interaction, value:int, fromunit:str, tounit:str):
+		if "/s" in fromunit:
+			fromunit = fromunit.replace("/s", "/seconds")
+		if "/s" in tounit:
+			tounit = tounit.replace("/s", "/seconds")
+		if "/h" in fromunit:
+			fromunit = fromunit.replace("/h", "/hour")
+		if "/h" in tounit:
+			tounit = tounit.replace("/h", "/hour")
+		u = pint.UnitRegistry()
+		Q = u.Quantity
+		val = Q(value, fromunit)
+		txt = round(val.to(tounit), 3)
+		await interaction.response.send_message(f"{val} is {txt}")	
 
 def setup(bot: commands.Bot):
 	bot.add_cog(general(bot))

@@ -112,6 +112,7 @@ roles_NIXorange		=814004395313987605
 roles_NIXpink		=945629248444596285
 
 #MISC
+SlashServers = [TpFguild, NIXguild, VKguild]
 userDiction = {
 	'type': "UNK",
     'exta': "UNK",
