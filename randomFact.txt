@@ -77,6 +77,6 @@ Fact#114; Urban Games is based in Schaffhausen, Switzerland.; https://urbangames
 Fact#115; Urban Games was founded in 2013 by Basil and Urban Weber.; http://www.transportfever.com/about/urban-games/
 Fact#116; The largest map size possible in Train Fever is ~256km²/99mi².; https://en.wikipedia.org/wiki/Train_Fever#Development
 Fact#117; The largest map size possible in Transport Fever 1/2 is ~576km²/222mi².; https://www.transportfever2.com/wiki/doku.php?id=gamemanual:mapsizes
-Fact#118; As of May 2021, Urban Games has 5 programmers.; NotPublic
+Fact#118; As of May 2021, Urban Games 16 employees, 8 of which are programmers and 3 are artists.; NotPublic
 Fact#150; OpenTTD was released 2004-03-06.; https://en.wikipedia.org/wiki/OpenTTD
 Fact#200; The Transport Fever global EN server a.k.a the Reddit server was created on 2016-10-11 by .Patchi.; NotPublic
