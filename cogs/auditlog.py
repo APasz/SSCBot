@@ -46,7 +46,7 @@ class auditlog(commands.Cog, name="AuditLogging"):
 		crtd = auditLog.created_at
 		auditStamp = int(round(crtd.timestamp()))
 		if auditStamp > checkStamp:
-			if "kick" in auditLog.action and usr.name == auditLog.guild.name:
+			if "kick" in auditLog.action:
 				if hasattr(auditLog, "reason"): reason = auditLog.reason
 				else: reason = None
 				log.info(f"MemberKick: {usr.id}: {usr.name}: R;\n{reason}")
