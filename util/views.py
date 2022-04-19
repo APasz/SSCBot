@@ -100,14 +100,14 @@ class nixroles(nextcord.ui.View):
 	style = nextcord.ButtonStyle.blurple,
 	custom_id="NIX|ROLE|AUSSIE")
 	async def NIXAUSSIE(self, button:nextcord.ui.Button, interaction):
-		role = nextcord.utils.get(interaction.guild.roles, id=config.roles_NIXaussie)
+		role = nextcord.utils.get(interaction.guild.roles, id=config.roles_NIXaus)
 		await self.clicky(role, button, interaction)
 	
 	@nextcord.ui.button(label = "Kiwi",
 	style = nextcord.ButtonStyle.blurple,
 	custom_id="NIX|ROLE|KIWI")
 	async def NIXKIWI(self, button:nextcord.ui.Button, interaction):
-		role = nextcord.utils.get(interaction.guild.roles, id=config.roles_NIXkiwi)
+		role = nextcord.utils.get(interaction.guild.roles, id=config.roles_NIXnz)
 		await self.clicky(role, button, interaction)
 
 

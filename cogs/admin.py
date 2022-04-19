@@ -22,6 +22,12 @@ class admin(commands.Cog, name="Admin"):
 	def __init__(self, bot: commands.Bot):
 		self.bot = bot
 
+	def auditChanGet(self, guildID):
+		log.debug("auditGet")
+		audit = config.auditChan
+		if str(guildID) in audit.keys(): return audit[f'{guildID}']
+		else: return config.ownerAuditChan
+
 	@commands.Cog.listener()
 	async def on_ready(self):
 		self.bot.add_view(tpfroles())
@@ -34,14 +40,21 @@ class admin(commands.Cog, name="Admin"):
 	@commands.has_permissions(manage_messages=True)
 	async def purge(self, ctx, limit: int):
 		log.info(f"Purge command:{limit}: {ctx.author.id},{ctx.author.display_name}")
-		if limit <= 45:
+		max = 100
+		if limit <= max:
 			async with ctx.typing():
 				await ctx.message.delete()
 				await asyncio.sleep(0.5)
+				audit = self.auditChanGet(ctx.guild.id)
+				usrDic = {'type': "P_C",
+							'auth': ctx.author,
+							'exta': limit,
+							'chanAudit': audit}
+				await auditlog.embed(self, usrDic)
 				await ctx.channel.purge(limit=limit)
 		else:
 			await ctx.message.delete()
-			await ctx.send(f"{limit} is more than 45.\n{config.delTime}sec *self-destruct*", delete_after=config.delTime)
+			await ctx.send(f"{limit} is more than {max}.\n{config.delTime}sec *self-destruct*", delete_after=config.delTime)
 
 
 
@@ -54,8 +67,12 @@ class admin(commands.Cog, name="Admin"):
 		
 		if str(ctx.author.id) in usr:
 			await ctx.send("You can't blacklist yourself.", delete_after=config.delTime)
-		if "sscblacklist" in ctx.invoked_with: blklstType = "SSCBlacklist"
-		else: blklstType = "GeneralBlacklist"
+		if "sscblacklist" in ctx.invoked_with:
+			blklstType = "SSCBlacklist"
+			cat = "SSC"
+		else:
+			blklstType = "GeneralBlacklist"
+			cat = "General"
 		log.info(f"{blklstType} command: usr {usr}: reason {reason}\nAuthor: {ctx.author.id},{ctx.author.display_name}")
 		data = readJSON(f"secrets/{blklstType}")
 		if "readall" in usr:
@@ -86,7 +103,16 @@ class admin(commands.Cog, name="Admin"):
 			data[f'{id}'] = reason
 			check = writeJSON(data, f"secrets/{blklstType}")
 			if check == 1:
-				await ctx.send("Added")
+				usr = await self.bot.fetch_user(id)
+				audit = self.auditChanGet(ctx.guild.id)
+				usrDic = {'type': "Bl_A",
+							'auth': ctx.author,
+							'usr': usr,
+							'reason': reason,
+							'cat': cat,
+							'chanAudit': audit}
+				await auditlog.embed(self, usrDic)
+				await ctx.send(f"{usr.id} has been added")
 			else:
 				await ctx.send("Error occured during write", delete_after=config.delTime)
 
@@ -95,15 +121,27 @@ class admin(commands.Cog, name="Admin"):
 	@commands.has_permissions(ban_members=True)
 	async def blacklistRemove(self, ctx, usr):
 		await self.bot.wait_until_ready()
-		if "sscblacklistremove" in ctx.invoked_with: blklstType = "SSCBlacklist"
-		else: blklstType = "GeneralBlacklist"
+		if "sscblacklistremove" in ctx.invoked_with:
+			blklstType = "SSCBlacklist"
+			cat = "SSC"
+		else:
+			blklstType = "GeneralBlacklist"
+			cat = "General"
 		log.info(f"{blklstType} command: usr {usr}. Author: {ctx.author.id},{ctx.author.display_name}")
 		data = readJSON(f"secrets/{blklstType}")
 		if usr in data:
 			del data[f'{usr}']
 			check = writeJSON(data, f"secrets/{blklstType}")
 			if check == 1:
-				await ctx.send(f"{usr}: User removed from blacklist.")
+				usr = await self.bot.fetch_user(usr)
+				audit = self.auditChanGet(ctx.guild.id)
+				usrDic = {'type': "Bl_R",
+							'auth': ctx.author,
+							'usr': usr,
+							'cat': cat,
+							'chanAudit': audit}
+				await auditlog.embed(self, usrDic)
+				await ctx.send(f"{usr.id}: User removed from blacklist.")
 			else:
 				await ctx.send("Error occured during write", delete_after=config.delTime)
 		else: await ctx.send("User not in blacklist.")

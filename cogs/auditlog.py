@@ -39,6 +39,7 @@ class auditlog(commands.Cog, name="AuditLogging"):
 
 	async def checkKickBan(self, usr, auditID, guildData, uR=0):
 		await self.bot.wait_until_ready()
+		log.debug("CheckKickBan")
 		async for entry in guildData.audit_logs(limit=1):
 				auditLog = entry
 		curStamp = int(time.time())
@@ -72,13 +73,15 @@ class auditlog(commands.Cog, name="AuditLogging"):
 
 	async def embed(self, data):
 		await self.bot.wait_until_ready()
+		log.debug("embed")
 		stdName = "Author ID | Account | Nick | Live Nick"
 		shtName = "Author ID | Account | Live Nick"
-		type = (data['type'])
+		type = data['type']
 		#There has to be a better way to assign None to multiple variables.
 		fValue0 = fValue1 = fValue2 = fValue3 = fValue4 = fValue5 = fValue6 = fValue7 = fValue8 = fValue9 = None
 		fName0 = fName1 = fName2 = fName3 = fName4 = fName5 = fName6 = fName7 = fName8 = fName9 = None
 		if "R_M_D" == type:
+			log.debug(type)
 			title = "Uncached Message Deleted"
 			fName1 = "Channel"
 			fValue1 = f"<#{(data['chan'])}>"
@@ -87,6 +90,7 @@ class auditlog(commands.Cog, name="AuditLogging"):
 			e = nextcord.Embed(title=title, colour=config.col_warning)
 		
 		elif "M_D" == type:
+			log.debug(type)
 			title = "Message Deleted"
 			mess = (data['mess'])
 			a = len(mess.attachments)
@@ -110,6 +114,7 @@ class auditlog(commands.Cog, name="AuditLogging"):
 			e = nextcord.Embed(title=title, colour=config.col_warning)
 		
 		elif "U_B" == type:
+			log.debug(type)
 			title = "User Banned"
 			usr = (data['auth'])
 			mess = (data['mess'])
@@ -124,6 +129,7 @@ class auditlog(commands.Cog, name="AuditLogging"):
 			e = nextcord.Embed(title=title, colour=config.col_negative)
 		
 		elif "U_uB" == type:
+			log.debug(type)
 			title = "User Unbanned"
 			usr = (data['auth'])
 			fName4 = shtName
@@ -133,6 +139,7 @@ class auditlog(commands.Cog, name="AuditLogging"):
 			e = nextcord.Embed(title=title, colour=config.col_neutDark)
 		
 		elif "U_K" == type:
+			log.debug(type)
 			title = "User Kicked"
 			usr = (data['auth'])
 			mess = (data['mess'])
@@ -146,6 +153,7 @@ class auditlog(commands.Cog, name="AuditLogging"):
 			e = nextcord.Embed(title=title, colour=config.col_warning)
 		
 		elif "U_R" == type:
+			log.debug(type)
 			title = "User Left"
 			usr = (data['auth'])
 			guildCount = (data['guildExta'])
@@ -182,8 +190,10 @@ class auditlog(commands.Cog, name="AuditLogging"):
 			e = nextcord.Embed(title=title, colour=config.col_neutMid)
 	
 		elif "U_J" == type:
+			log.debug(type)
 			title = "User Joined"
 			usr = (data['auth'])
+			guildCount = (data['guildExta'])
 			fName1 = shtName
 			auth = usr.name
 			authID = usr.id
@@ -191,10 +201,11 @@ class auditlog(commands.Cog, name="AuditLogging"):
 			fName2 = "Account Created"
 			crtd = usr.created_at
 			crtdStamp = int(round(crtd.timestamp()))
-			fValue2 = f"<t:{crtdStamp}:f>\n<t:{crtdStamp}:R>\n**Unix**: {crtdStamp}"
+			fValue2 = f"<t:{crtdStamp}:f>\n<t:{crtdStamp}:R>\n**Unix**: {crtdStamp}\n**Member Count**: {guildCount}"
 			e = nextcord.Embed(title=title, colour=config.col_positive2)
 		
 		elif "U_A" == type:
+			log.debug(type)
 			title = "User Accepted"
 			usr = (data['auth'])
 			guildCount = (data['guildExta'])
@@ -207,6 +218,7 @@ class auditlog(commands.Cog, name="AuditLogging"):
 			e = nextcord.Embed(title=title, colour=config.col_positive)
 		
 		elif "U_N_C" == type:
+			log.debug(type)
 			title = "User Name Change"
 			before = (data['auth'])
 			after = (data['exta'])
@@ -223,6 +235,7 @@ class auditlog(commands.Cog, name="AuditLogging"):
 			e = nextcord.Embed(title=title, colour=config.col_neutDark)
 		
 		elif "A_G" == type:
+			log.debug(type)
 			title = "User requested file"
 			usr = (data['auth'])
 			file = (data['exta'])
@@ -231,9 +244,50 @@ class auditlog(commands.Cog, name="AuditLogging"):
 			fName2 = "File"
 			fValue2 = file
 			e = nextcord.Embed(title=title, colour=config.col_neutLight)
+
+		elif "P_C" == type:
+			log.debug(type)
+			title = "Message Purge"
+			usr = (data['auth'])
+			messCount = (data['exta'])
+			fName1 = "Invoked by;"
+			fValue1 = f"{usr.id}\n{usr.name}\n<@{usr.id}>"
+			fName2 = "Number Purged"
+			fValue2 = messCount
+			e = nextcord.Embed(title=title, colour=config.col_error)
+
+		elif "Bl_A" == type:
+			log.debug(type)
+			cat = (data['cat'])
+			if cat != "General": title = f"User Blacklisted [{cat}]"
+			else: title = f"User Blacklisted"
+			auth = (data['auth'])
+			usr = (data['usr'])
+			reason = (data['reason'])
+			fName1 = shtName
+			fValue1 = f"{usr.id}\n{usr.name}\n<@{usr.id}>"
+			fName2 = "Invoked by;"
+			fValue2 = f"{auth.id}\n{auth.name}\n<@{auth.id}>"
+			fName4 = "Reason"
+			fValue4 = f"```\n{reason}\n```"
+			e = nextcord.Embed(title=title, colour=config.col_error)
+
+		elif "Bl_R" == type:
+			log.debug(type)
+			cat = (data['cat'])
+			if cat != "General": title = f"User Unblacklisted [{cat}]"
+			else: title = f"User Unblacklisted"
+			auth = (data['auth'])
+			usr = (data['usr'])
+			fName1 = shtName
+			fValue1 = f"{usr.id}\n{usr.name}\n<@{usr.id}>"
+			fName2 = "Invoked by;"
+			fValue2 = f"{auth.id}\n{auth.name}\n<@{auth.id}>"
+			e = nextcord.Embed(title=title, colour=config.col_error)
 		
 		else:
-			title = "Unknown Event"
+			log.debug(type)
+			title = f"Unknown Event {data['type']}"
 			e = nextcord.Embed(title=title, colour=config.col_error)
 		
 		if fValue0 is not None: e.add_field(name=fName0, value=f"{fValue0}", inline=False)
@@ -249,14 +303,9 @@ class auditlog(commands.Cog, name="AuditLogging"):
 		unix = int(time.time())
 		e.set_footer(text=f"UNIX: {unix}")
 		audit = (data['chanAudit'])
-		if audit is not None:
-			chan = self.bot.get_channel(audit)
-			await chan.send(embed = e)
-
-
-
-		#e = nextcord.Embed(title=messStat, colour=config.col_warning)
-		#e.add_field(name="MessageID", value=f"{messID}", inline=True)
+		if audit is ("UNK" or None): audit = 935677246482546748 #personal server. Just in case something goes wrong, the audit entry isn't lost.
+		chan = self.bot.get_channel(audit)
+		await chan.send(embed = e)
 
 def setup(bot: commands.Bot):
 	bot.add_cog(auditlog(bot))

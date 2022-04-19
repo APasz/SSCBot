@@ -143,6 +143,7 @@ class general(commands.Cog, name="General"):
 	async def emoji(self, ctx, messid1, messid2=None, messid3=None):
 		"""When given up to 3 message IDs, will add first 10 reactions, if no emoji passed, will add star.
 		Locked to those who have 'Manage Messages' permssions"""
+		log.debug("emojiCommand")
 		mess1 = await ctx.fetch_message(messid1)
 		mess2 = None
 		mess3 = None
@@ -183,6 +184,7 @@ class general(commands.Cog, name="General"):
 
 	@slash_command(guild_ids=config.SlashServers)
 	async def convert(self, interaction: Interaction, value:int, fromunit:str, tounit:str):
+		log.debug(f"convert: {value} {fromunit} {tounit}")
 		if "/s" in fromunit:
 			fromunit = fromunit.replace("/s", "/seconds")
 		if "/s" in tounit:
@@ -195,7 +197,8 @@ class general(commands.Cog, name="General"):
 		Q = u.Quantity
 		val = Q(value, fromunit)
 		txt = round(val.to(tounit), 3)
-		await interaction.response.send_message(f"{val} is {txt}")	
+		await interaction.response.send_message(f"{val} is {txt}")
+		log.info(f"convertSlash")
 
 def setup(bot: commands.Bot):
 	bot.add_cog(general(bot))

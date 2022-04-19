@@ -96,20 +96,22 @@ def main():
 	async def on_ready( ):
 		log.critical("\n***Started*** 'Hello World, or whatever'")
 		print("***Started*** 'Hello World or whatever'")
-		data = readJSON(f"data")
-		mV = data['majorVer']
-		sV = data['minorVer']
-		pV = data['pointVer']
-		Vn = data['verName']
-		txt = f"**v{mV}.{sV}.{pV}	{Vn}**\nReady"
-		chanTpF = await bot.fetch_channel(config.chan_TpFbot)
-		chanNIX = await bot.fetch_channel(config.chan_NIXbot)
-		await chanTpF.send(txt)
-		await chanNIX.send(txt)
+		if config.readyMessage == 1:
+			data = readJSON(f"data")
+			mV = data['majorVer']
+			sV = data['minorVer']
+			pV = data['pointVer']
+			Vn = data['verName']
+			txt = f"**v{mV}.{sV}.{pV}	{Vn}**\nReady"
+			chanTpF = await bot.fetch_channel(config.chan_TpFbot)
+			chanNIX = await bot.fetch_channel(config.chan_NIXbot)
+			await chanTpF.send(txt)
+			await chanNIX.send(txt)
 
 	@bot.check
 	async def blacklistedUser(ctx):		
 		if (ctx.command is not None):
+			log.debug("blacklistedUserCheck")
 			if (ctx.author.id == config.ownerID): return True
 			if (ctx.guild is not None) and (ctx.author == ctx.guild.owner): return True
 			genBL = blacklistCheck(str(ctx.author.id), "gen")
@@ -229,7 +231,7 @@ def main():
 		else:
 			await ctx.send("All cogs successfully reloaded.")
 
-	bot.run(config.TOKEN)
+	bot.run(config.DISTOKEN)
 
 if __name__ == "__main__":
 	main()

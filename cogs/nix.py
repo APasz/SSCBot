@@ -32,8 +32,10 @@ class nix(commands.Cog, name="AUS|NIX"):
 		log.debug("on_member_join")
 		log.info(f"MemberJoin: {member.id}: {member.display_name}")
 		audit = localcf_chan_audit
+		guildCount = member.guild.member_count
 		usrDic = {'type': "U_J",
 					'auth': member,
+					'guildExta': guildCount,
 					'chanAudit': audit}
 		await auditlog.embed(self, usrDic)
 
