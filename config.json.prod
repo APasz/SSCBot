@@ -1,0 +1,209 @@
+{
+    "General": {
+        "delTime": 20,
+        "logLevel": "INFO",
+        "readyMessage": true,
+        "readyMessageTimer": 120,
+        "verMajor": "2",
+        "VerMinor": "0",
+        "verPoint": "0",
+        "verName": "Dawnbreak",
+        "purgeLimit":100,
+        "TaskLengths": {
+            "SSC_Remind": 30
+        },
+        "EmbedColours": {
+            "positive": [
+                25,
+                120,
+                215
+            ],
+            "positive2": [
+                5,
+                165,
+                30
+            ],
+            "negative": [
+                200,
+                10,
+                10
+            ],
+            "negative2": [
+                180,
+                30,
+                30
+            ],
+            "error": [
+                210,
+                75,
+                10
+            ],
+            "warning": [
+                230,
+                190,
+                10
+            ],
+            "neutral_Bright": [
+                255,
+                255,
+                255
+            ],
+            "neutral_Light": [
+                220,
+                220,
+                220
+            ],
+            "neutral_Mid": [
+                125,
+                125,
+                125
+            ],
+            "neutral_Dim": [
+                75,
+                75,
+                75
+            ],
+            "neutral_Dark": [
+                30,
+                30,
+                30
+            ],
+            "neutral_Black": [
+                0,
+                0,
+                0
+            ],
+            "fact": [
+                85,
+                20,
+                155
+            ],
+            "steam": [
+                102,
+                192,
+                244
+            ],
+            "nexusmods": [
+                218,
+                142,
+                53
+            ],
+            "tpfnet": [
+                180,
+                29,
+                117
+            ],
+            "ssc": [
+                255,
+                0,
+                0
+            ]
+        },
+        "SSC_Data": {
+            "theme": "Placeholder",
+            "isPrize": false,
+            "remindSent": false,
+            "currStamp": 0,
+            "nextStamp": 0,
+            "remindStamp": 0
+        }
+    },
+    "TPFGuild": {
+        "ID": 246190532949180417,
+        "readyMessage": true,
+        "Channels": {
+            "Artwork": 705946607543255091,
+            "Botstuff": 335767575973593099,
+            "General": 272094615434166272,
+            "GeneralGames": 484036747840192523,
+            "GeneralTPF1": 246190532949180417,
+            "GeneralTPF2": 570616070403260427,
+            "GeneralTTD": 671906078392451075,
+            "NewModPreview": 642719565951795240,
+            "NewModRelease": 330528874612129793,
+            "Rules": 634007370770415616,
+            "SSC_Remind": 699849958102138970,
+            "SSC_Comp": 699849958102138970,
+            "ScreenshotsGames": 777062195073777666,
+            "ScreenshotsTPF": 763468981452800002,
+            "Welcome": 634725723751448576
+        },
+        "Channels_Admin": {
+            "Admin": 395524726719643648,
+            "Audit": 382371100690219028,
+            "Moderator": 768978553202802718
+        },
+        "Roles": {
+            "Admin": 246195489681178624,
+            "ContentCreator": 457244548171694080,
+            "CommunityLeader": 768984090166034453,
+            "Booster":647939388784902154,
+            "Mapper": 761555813004214272,
+            "Moderator": 910170191252574250,
+            "Modder": 246196856596463617,
+            "ModderNew": 426550263130882048,
+            "Muted": 509204260756652046,
+            "Owner": 827568297129279500,
+            "OwnerRetired": 762697714181079090,
+            "Player_TPF": 426450029054525451,
+            "Player_CSL": 426450131865305128,
+            "Player_TTD": 463857804344819712,
+            "Player_FCT": 426450295170793483,
+            "SSC_Manager": 723602126294614157,
+            "SSC_Runnerup": 884228483000205392,
+            "SSC_Winner": 830938606896939049,
+            "SSC_WinnerPrize": 830938902432710737,
+            "Unverified": 634730253855752203,
+            "UrbanGames": 420648720825319424,
+            "Verified": 634733792518733825,
+            "Veteran": 389966360282660884
+        }
+    },
+    "NIXGuild": {
+        "ID": 811250905335857172,
+        "readyMessage": true,
+        "Channels": {
+            "Botstuff": 811325689198411826,
+            "General": 811250906494271571,
+            "GeneralGames": 811259287678484561,
+            "GeneralTPF1": false,
+            "GeneralTPF2": 811259193309921280,
+            "NewModPreview": 957848953523691620,
+            "NewModRelease": 812084783815458837,
+            "Welcome": false
+        },
+        "Channels_Admin": {
+            "Admin": 811250906494271572,
+            "Audit": 940321966911541299
+        },
+        "Roles": {
+            "Linux": 811260032519110696,
+            "MacOS": 811260213155069972,
+            "Windows": 812091462052347924,
+            "AUS": 811317704962080778,
+            "NZ": 883631833072414740,
+            "UrbanGames":811261312709296138,
+            "CommunityLeader":811332180339982396,
+            "Modder":811260604890611713,
+            "COL_black": 811319107860693002,
+            "COL_blue": 812078416446619658,
+            "COL_blueDark": 945628729495932928,
+            "COL_brown": 812078442370957322,
+            "COL_green": 812078439209238578,
+            "COL_greenDark": 945628947977220096,
+            "COL_lilac": 812078448360161330,
+            "COL_orange": 814004395313987605,
+            "COL_pink": 945629248444596285,
+            "COL_redDark": 945629089375604746,
+            "COL_white": 814003429080825858,
+            "COL_yellow": 812078445654835220
+        }
+    },
+    "VKGuild": {
+        "ID": 676425250640101395,
+        "readyMessage": false,
+        "Channels": {
+            "infoBattles": 676425251122577414
+        }
+    }
+}

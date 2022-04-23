@@ -8,11 +8,17 @@ logMess = logging.getLogger('discordMessages')
 
 import config
 from config import userDiction as usrDic
+from util.fileUtil import readJSON
+from util.modding import modPreview, modRelease
 
 from cogs.auditlog import *
 
-localcf_chan_audit = config.chan_NIXaudit
-localcf_guild_id = config.NIXguild
+configuration = readJSON(filename = "config")
+configNIX = configuration['NIXGuild']
+localcf_chan_audit = configNIX['Channels_Admin']['Audit']
+localcf_guild_id = configNIX['ID']
+localcf_chan_nmr = configNIX['Channels']['NewModRelease']
+localcf_chan_nmp = configNIX['Channels']['NewModPreview']
 
 class nix(commands.Cog, name="AUS|NIX"):
 	def __init__(self, bot: commands.Bot):
@@ -115,7 +121,12 @@ class nix(commands.Cog, name="AUS|NIX"):
 							'chan': payload.channel_id,
 							'chanAudit': audit}
 			await auditlog.embed(self, usrDic)
-
+	@commands.Cog.listener()
+	async def on_message(self, ctx):
+		if (ctx.channel.id == localcf_chan_nmr) and (ctx.author.bot is False):
+				print("NMR listener")
+				nmpChan = await self.bot.fetch_channel(localcf_chan_nmp)
+				await modRelease(ctx=ctx, chan=nmpChan)
 
 def setup(bot: commands.Bot):
 	bot.add_cog(nix(bot))

@@ -13,20 +13,24 @@ from nextcord.ext.commands.bot import Bot
 log = logging.getLogger("discordGeneral")
 
 import config
-from util.fileUtil import blacklistCheck, readJSON, writeJSON
+from util.fileUtil import readJSON, writeJSON
+from util.genUtil import getCol, blacklistCheck
 
 from cogs.ssctime import *
 
-data = readJSON("data")
-dataModTime = int(os.path.getmtime('./data.json'))
+configuration = readJSON(filename = "config")
+configSSC = configuration['General']['SSC_Data']
+configTPF = configuration['TPFGuild']
+configGen = configuration['General']
+delTime = configGen['delTime']
+
+
+
 
 class tpfssc(commands.Cog, name="TpFSSC"):
 	def __init__(self, bot: commands.Bot):
 		self.bot = bot
 		self.remindTask.start()
-
-
-	
 
 	@commands.Cog.listener()
 	async def on_ready(self):
@@ -41,43 +45,31 @@ class tpfssc(commands.Cog, name="TpFSSC"):
 			print("randomFact.txt file is missing")
 		log.debug("Ready")
 
-	@tasks.loop(minutes=config.taskLength)
+	@tasks.loop(minutes=configuration['General']['TaskLengths']['SSC_Remind'])
 	async def remindTask(self):
 		"""Get reminder timestamp from file, check if current time is in within range of remindStamp and nextStamp(-2h), if so invoke SSC minder command"""
 		log.debug("remindTask_run")
 		print("remindTask: run")
-		global data
-		global dataModTime
-		dataNewTime = int(os.path.getmtime('./data.json'))
-		if dataNewTime != dataModTime:
-			data = readJSON(f"data")
-			dataModTime = dataNewTime
-		if data is None:
-			log.error("remindTask: data is None")
-			print("remindTask: data is None")
-			return
-		sen = data['remindSent']
-		if sen == "yes":
+		if configSSC['isPrize'] == True:
 			log.debug("remindYes")
 			return
-		nex = int(data['nextStamp'])
-		rem = int(data['remindStamp'])
+		nex = int(configSSC['nextStamp'])
+		rem = int(configSSC['remindStamp'])
 		n = nex - 7200
 		t = int(time.time())
 		if rem <= t <= n:
-			pri = data['prizeState']
-			data['remindSent'] = "yes"
-			check = writeJSON(data, f"data")
-			if check == 0: log.error("remindTask: Couldn't write JSON")
-			if pri == "yes":
+			pri = configSSC['isPrize']
+			configSSC['remindSent'] = True
+			writeJSON(data=configuration, filename="config")
+			if pri == True:
 				pt = "everyone"
-			elif pri == "no":
+			elif pri == False:
 				pt = "here"
 			else: 
 				pt = pri
 				pass
 			log.debug(f"PT: {pt}")
-			chan = self.bot.get_channel(config.chan_SSCmind)
+			chan = self.bot.get_channel(configTPF['Channels']['SSC_Remind'])
 			await chan.send(f"Reminder that the competiton ends soon;\n**<t:{nex}:R>**\nGet you images and votes in. 🇻 🇴 🇹 🇪 @{pt}")
 			await asyncio.sleep(0.1)
 			lastID = chan.last_message_id
@@ -97,18 +89,17 @@ class tpfssc(commands.Cog, name="TpFSSC"):
 		log.debug("on_remindTask Cancelled")
 
 	@commands.command(name="comp")
-	@commands.has_role(config.roles_SSCman)
+	@commands.has_role(configTPF['Roles']['SSC_Manager'])
 	async def comp(self, ctx, alert="no", note="no", prize=None, prizeUser=None):
 		"""Start competition. Gets theme from filename of attached image. Changes text based on alert type. Passes note if present."""
 		log.debug("compCommand")
 		async with ctx.typing():
-			note1 = note.lower()
-			check = await ssctime.timestampset(ctx) #ctx.invoke(self.bot.get_command('timestampset'))
+			note1 = note.casefold()
+			check = await ssctime.timestampset(ctx=ctx)
 			log.info("timeStampSetCommandInvoked")
 			print("invoke")
 			if check != 1: ctx.send("timeStampSet Command Error")
-			data = readJSON(f"data")
-			oldTheme = data['theme']
+			oldTheme = configSSC['theme']
 			log.debug(f"oldTheme: {oldTheme}")
 			if len(ctx.message.attachments):
 				oldTheme = oldTheme.replace(" ","-")
@@ -128,34 +119,32 @@ class tpfssc(commands.Cog, name="TpFSSC"):
 				themeFile = attachment.filename[:-4]
 				log.debug(f"themeFile: {themeFile}")
 				theme = themeFile.replace("-"," ")
-				data['theme'] = theme
+				configSSC['theme'] = theme
 			else: 
 				theme = oldTheme
 				themeFile = oldTheme.replace(" ","-")
 				print(theme)
 				print(themeFile)
-			nextstamp = int(data['nextStamp'])
+			nextstamp = int(configSSC['nextStamp'])
 			
-			g = []
+			compTxt = []
 			if prize:
-				data['prizeState'] = "yes"
+				configSSC['isPrize'] = True
 				if prizeUser:
-					g.append(f"{config.txt_CompGift}\n**{prize}** provided by {prizeUser}")
+					compTxt.append(f"{config.txt_CompGift}\n**{prize}** provided by {prizeUser}")
 				else:
-					g.append(f"{config.txt_CompGift}\n**{prize}**")
-				print(f"G: {g}")
+					compTxt.append(f"{config.txt_CompGift}\n**{prize}**")
+				print(f"compTxt: {compTxt}")
 			elif alert == "here":
-				data['prizeState'] = "no"
-			print(g)
-			g.append(f"{config.txt_CompEnd} **<t:{nextstamp}:f>**\n{config.txt_CompTheme} **{theme}**")
+				configSSC['isPrize'] = False
+			print(compTxt)
+			compTxt.append(f"{config.txt_CompEnd} **<t:{nextstamp}:f>**\n{config.txt_CompTheme} **{theme}**")
 			if note1 != "no":
-				g.append(f"**Note**: {note}")
-			else:
-				pass
-			g = '\n'.join(g)
+				compTxt.append(f"**Note**: {note}")
+			compTxt = '\n'.join(compTxt)
 			e = nextcord.Embed(title=config.txt_CompStart,
-			description=g,
-			colour=config.col_neutDark,)
+			description=compTxt,
+			colour= getCol('ssc') )
 			file=nextcord.File("missing.png")
 			e.set_image(url=f"attachment://missing.png")
 			if os.path.exists(f"./sscContent/{themeFile}.jpg"):
@@ -175,8 +164,8 @@ class tpfssc(commands.Cog, name="TpFSSC"):
 			mess = await ctx.channel.fetch_message(int(last))
 			await mess.delete()
 			await asyncio.sleep(0.25)
-			if alert != "no":
-				await ctx.send(f"@{alert}")
+			if alert != "no": pass
+				#await ctx.send(f"@{alert}")
 				#if alert == "here":
 			try:
 				if self.remindTask.is_running:
@@ -189,8 +178,8 @@ class tpfssc(commands.Cog, name="TpFSSC"):
 				log.debug("remindTask not already running")
 				pass
 			log.debug("remindTask Triggered")
-			data['remindSent'] = "no"
-			check = writeJSON(data, f"data")
+			configSSC['remindSent'] = False
+			if writeJSON(data=configuration, filename="config"): pass
 			if check != 0:
 				await asyncio.sleep(0.1)
 				await ctx.message.delete()
@@ -204,8 +193,7 @@ class tpfssc(commands.Cog, name="TpFSSC"):
 		Depending on reason arg, informs user why their submission was delete. Theme message includes the theme.
 		Please provide a link for repost arg."""
 		log.debug("deleteCommand")
-		data = readJSON(f"data")
-		theme = data['theme']
+		theme = configSSC['theme']
 		log.debug(f"t,{theme}")
 		log.debug(f"reason,{reason}")
 		log.debug(f"reason1,{reason1}")
@@ -249,7 +237,7 @@ class tpfssc(commands.Cog, name="TpFSSC"):
 		await ctx.message.delete()
 
 	@commands.command(name="themeVote")
-	@commands.has_role(config.roles_SSCman)
+	@commands.has_role(configTPF['Roles']['SSC_Manager'])
 	async def themeVote(self, ctx: commands.Context):
 		"""Pull 3 themes for community to vote on"""
 		log.debug("themeVoteCommand")
@@ -270,7 +258,7 @@ class tpfssc(commands.Cog, name="TpFSSC"):
 		"""Check if message has attachment or link, if 1 add reaction, if not 1 delete and inform user, set/check prize round state, ignore SSCmanager, """
 		if ctx.content.startswith(f"{config.BOT_PREFIX}"):
 			return
-		if ctx.channel.id not in config.chan_TpFssc: return
+		if ctx.channel.id != configTPF['Channels']['SSC_Comp']: return
 		log.debug("SSC listener")
 		if ctx.author.bot:
 			if ctx.author.id == config.botID: return
@@ -278,20 +266,9 @@ class tpfssc(commands.Cog, name="TpFSSC"):
 				log.info("A bot did something")
 				return
 		usrID = str(ctx.author.id)
-		sscBL = blacklistCheck(usrID, "ssc")#readJSON("secrets/SSCBlacklist")
-		sscman = nextcord.utils.get(ctx.guild.roles, name=config.roles_SSCman)
-		if (sscBL is not True) and (sscman not in ctx.author.roles):
-			print("Banned User")
-			await ctx.reply(f"{sscBL}\n *self-destruct*", delete_after=config.delTime+5)
-			await asyncio.sleep(config.delTime)
-			try:
-				await ctx.delete()
-			except:	pass
-			return
-		sscwin = nextcord.utils.get(ctx.guild.roles, name=config.roles_SSCwin)
-		sscrun = nextcord.utils.get(ctx.guild.roles, name=config.roles_SSCrun)
-		sscpri = nextcord.utils.get(ctx.guild.roles, name=config.roles_SSCpri)
-		if sscman in ctx.author.roles:
+		sscMan = configTPF['Roles']['SSC_Manager']
+		if not await blacklistCheck(ctx=ctx, blklstType="ssc"): return
+		if ctx.author.get_role(sscMan):
 			if 'upload' in ctx.content:
 				await ctx.add_reaction(config.emoStar)
 				log.info("Manager Submission")
@@ -308,34 +285,36 @@ class tpfssc(commands.Cog, name="TpFSSC"):
 		log.debug(h)
 		if len(ctx.attachments) == 0 and h == 'n':
 			content=(f"""Either no image or link detected. Please submit an image.
-			\n{config.delTime}sec *self-destruct*""")
-			await ctx.reply(content, delete_after=config.delTime)
+			\n{delTime}sec *self-destruct*""")
+			await ctx.reply(content, delete_after=delTime)
 			log.info(f"Deletion_noImg: {ctx.author.id},{ctx.author.display_name}")
-			await asyncio.sleep(config.delTime)
+			await asyncio.sleep(delTime)
 			try:
 				await ctx.delete()
 			except: pass
 			return
 		if len(ctx.attachments) != 1 and h == 'n':
 			content=(f"""Multiple images detected. Please resubmit one image at a time.
-			\n{config.delTime}sec *self-destruct*""")
-			await ctx.reply(content, delete_after=config.delTime)
+			\n{delTime}sec *self-destruct*""")
+			await ctx.reply(content, delete_after=delTime)
 			log.info(f"Deletion_multiImg: {ctx.author.id},{ctx.author.display_name}")
-			await asyncio.sleep(config.delTime)
+			await asyncio.sleep(delTime)
 			try:
 				await ctx.delete()
 			except:	pass
 			return
+		sscWin = configTPF['Roles']['SSC_Winner']
+		sscRun = configTPF['Roles']['SSC_Runnerup']
+		sscPri = configTPF['Roles']['SSC_WinnerPrize']
 		if len(ctx.attachments) == 1 or h == 'y':
-			data = readJSON(f"data")
-			prize = data['prizeState']
-			if prize == "yes":
-				if sscpri in ctx.author.roles:
+			prize = configSSC['isPrize']
+			if prize is True:
+				if ctx.author.get_role(int(sscPri)):
 					content=(f"""You're a SSC Prize Winner, so can't participate in this round.
-					\n{config.delTime}sec *self-destruct*""")
-					await ctx.reply(content, delete_after=config.delTime)
+					\n{delTime}sec *self-destruct*""")
+					await ctx.reply(content, delete_after=delTime)
 					log.info(f"Deletion_PrizeWinner: {ctx.author.id},{ctx.author.display_name}")
-					await asyncio.sleep(config.delTime)
+					await asyncio.sleep(delTime)
 					try:
 						await ctx.delete()
 					except:
@@ -345,14 +324,14 @@ class tpfssc(commands.Cog, name="TpFSSC"):
 					await ctx.add_reaction(config.emoStar)
 					log.info(f"SubmissionPrize: {ctx.author.id},{ctx.author.display_name}")
 					return
-			elif prize == "no":
-				if sscwin in ctx.author.roles or sscrun in ctx.author.roles:
+			elif prize is False:
+				if ctx.author.get_role(int(sscWin)) or ctx.author.get_role(int(sscRun)):
 					log.debug("w")
 					content=(f"""You're a SSC Winner/Runner Up, so can't participate in this round.
-					\n{config.delTime}sec *self-destruct*""")
-					await ctx.reply(content, delete_after=config.delTime)
+					\n{delTime}sec *self-destruct*""")
+					await ctx.reply(content, delete_after=delTime)
 					log.info(f"Deletion_WinnerRunnerUp: {ctx.author.id},{ctx.author.display_name}")
-					await asyncio.sleep(config.delTime)
+					await asyncio.sleep(delTime)
 					try:
 						await ctx.delete()
 					except:

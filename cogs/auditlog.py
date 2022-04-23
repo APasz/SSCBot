@@ -2,6 +2,7 @@ print ("CogAuditLog")
 import asyncio
 import datetime
 import logging
+import textwrap
 import time
 from datetime import datetime, timezone
 
@@ -13,6 +14,12 @@ log = logging.getLogger("discordGeneral")
 
 import config
 from config import userDiction as usrDic
+from util.fileUtil import readJSON
+from util.genUtil import getCol
+
+configuration = readJSON(filename = "config")
+configGen = configuration['General']
+
 
 
 class auditlog(commands.Cog, name="AuditLogging"):
@@ -40,35 +47,37 @@ class auditlog(commands.Cog, name="AuditLogging"):
 	async def checkKickBan(self, usr, auditID, guildData, uR=0):
 		await self.bot.wait_until_ready()
 		log.debug("CheckKickBan")
-		async for entry in guildData.audit_logs(limit=1):
-				auditLog = entry
-		curStamp = int(time.time())
-		checkStamp = curStamp - 5
-		crtd = auditLog.created_at
-		auditStamp = int(round(crtd.timestamp()))
-		if auditStamp > checkStamp:
-			if "kick" in auditLog.action:
-				if hasattr(auditLog, "reason"): reason = auditLog.reason
-				else: reason = None
-				log.info(f"MemberKick: {usr.id}: {usr.name}: R;\n{reason}")
-				usrDict = usrDic
-				usrDict = {'type': "U_K",
-							'auth': usr,
-							'mess': reason,
-							'chanAudit': auditID}
-				await auditlog.embed(self, usrDict)
-			if uR == 1: return
-			elif "ban" in auditLog.action and usr.name == auditLog.guild.name:
-				if hasattr(auditLog, "reason"): reason = auditLog.reason
-				else: reason = None
-				log.info(f"MemberBan: {usr.id}: {usr.display_name}: R;\n{reason}")
-				usrDict = usrDic
-				usrDict = {'type': "U_B",
-							'auth': usr,
-							'mess': reason,
-							'chanAudit': auditID}
-				await auditlog.embed(self, usrDict)
-				uR = 0
+		async for entry in guildData.audit_logs(limit=3):
+			print(entry.action)
+			#if ("kick" or "ban") not in entry.action: continue
+			auditLog = entry
+			curStamp = int(time.time())
+			checkStamp = curStamp - 15
+			crtd = auditLog.created_at
+			auditStamp = int(round(crtd.timestamp()))
+			if auditStamp > checkStamp:
+				if "kick" in auditLog.action:
+					if hasattr(auditLog, "reason"): reason = auditLog.reason
+					else: reason = None
+					log.info(f"MemberKick: {usr.id}: {usr.name}: R;\n{reason}")
+					usrDict = usrDic
+					usrDict = {'type': "U_K",
+								'auth': usr,
+								'mess': reason,
+								'chanAudit': auditID}
+					await auditlog.embed(self, usrDict)
+				if uR == 1: return
+				elif "ban" in auditLog.action:
+					if hasattr(auditLog, "reason"): reason = auditLog.reason
+					else: reason = None
+					log.info(f"MemberBan: {usr.id}: {usr.display_name}: R;\n{reason}")
+					usrDict = usrDic
+					usrDict = {'type': "U_B",
+								'auth': usr,
+								'mess': reason,
+								'chanAudit': auditID}
+					await auditlog.embed(self, usrDict)
+					uR = 0
 
 
 	async def embed(self, data):
@@ -80,6 +89,8 @@ class auditlog(commands.Cog, name="AuditLogging"):
 		#There has to be a better way to assign None to multiple variables.
 		fValue0 = fValue1 = fValue2 = fValue3 = fValue4 = fValue5 = fValue6 = fValue7 = fValue8 = fValue9 = None
 		fName0 = fName1 = fName2 = fName3 = fName4 = fName5 = fName6 = fName7 = fName8 = fName9 = None
+		unix = int(time.time())
+		footer = f"UNIX: {unix}"
 		if "R_M_D" == type:
 			log.debug(type)
 			title = "Uncached Message Deleted"
@@ -87,13 +98,13 @@ class auditlog(commands.Cog, name="AuditLogging"):
 			fValue1 = f"<#{(data['chan'])}>"
 			fName2 = "Message ID"
 			fValue2 = (data['mess'])
-			e = nextcord.Embed(title=title, colour=config.col_warning)
+			e = nextcord.Embed(title=title, colour=getCol('warning'))
 		
 		elif "M_D" == type:
 			log.debug(type)
 			title = "Message Deleted"
 			mess = (data['mess'])
-			a = len(mess.attachments)
+			attach = len(mess.attachments)
 			fName1 = "Channel"
 			fValue1 = f"<#{mess.channel.id}>"
 			fName2 = "Message Created"
@@ -107,11 +118,17 @@ class auditlog(commands.Cog, name="AuditLogging"):
 			fValue4 = f"{authID}\n{auth}\n{authDN}\n<@{authID}>"
 			if mess.content is not None:
 				fName5 = "Message"
-				fValue5 = f"```\n{mess.content}\n```"
-			if a != 0:
+				cont = mess.content
+				if len(cont) > 1000:
+					txt = textwrap.shorten(cont, width=1000, placeholder=' ...')
+					footer = footer + " | Full message content in bot log."
+				else:
+					txt = cont.replace('`', '')
+				fValue5 = f"```\n{txt}\n```"
+			if attach != 0:
 				fName6 = "Attachments"
-				fValue6 = a
-			e = nextcord.Embed(title=title, colour=config.col_warning)
+				fValue6 = attach
+			e = nextcord.Embed(title=title, colour=getCol('warning'))
 		
 		elif "U_B" == type:
 			log.debug(type)
@@ -126,7 +143,7 @@ class auditlog(commands.Cog, name="AuditLogging"):
 			if mess is not None:
 				fName5 = "Reason"
 				fValue5 = f"```\n{mess}\n```"
-			e = nextcord.Embed(title=title, colour=config.col_negative)
+			e = nextcord.Embed(title=title, colour=getCol('negative'))
 		
 		elif "U_uB" == type:
 			log.debug(type)
@@ -136,7 +153,7 @@ class auditlog(commands.Cog, name="AuditLogging"):
 			auth = usr.name
 			authID = usr.id
 			fValue4 = f"{authID}\n{auth}\n<@{authID}>"
-			e = nextcord.Embed(title=title, colour=config.col_neutDark)
+			e = nextcord.Embed(title=title, colour=getCol('neutral_Dark'))
 		
 		elif "U_K" == type:
 			log.debug(type)
@@ -150,7 +167,7 @@ class auditlog(commands.Cog, name="AuditLogging"):
 			if mess is not None:
 				fName5 = "Reason"
 				fValue5 = f"```\n{mess}\n```"
-			e = nextcord.Embed(title=title, colour=config.col_warning)
+			e = nextcord.Embed(title=title, colour=getCol('negative2'))
 		
 		elif "U_R" == type:
 			log.debug(type)
@@ -187,7 +204,7 @@ class auditlog(commands.Cog, name="AuditLogging"):
 			**Unix**: {joinedStamp}
 			**Duration**; Y/M/D | H:M:S\n {y:02d}/{m:02d}/{d:02d} | {h:02d}:{t:02d}:{s:02d}
 			**Member Count**: {guildCount}"""
-			e = nextcord.Embed(title=title, colour=config.col_neutMid)
+			e = nextcord.Embed(title=title, colour=getCol('neutral_Mid'))
 	
 		elif "U_J" == type:
 			log.debug(type)
@@ -202,7 +219,7 @@ class auditlog(commands.Cog, name="AuditLogging"):
 			crtd = usr.created_at
 			crtdStamp = int(round(crtd.timestamp()))
 			fValue2 = f"<t:{crtdStamp}:f>\n<t:{crtdStamp}:R>\n**Unix**: {crtdStamp}\n**Member Count**: {guildCount}"
-			e = nextcord.Embed(title=title, colour=config.col_positive2)
+			e = nextcord.Embed(title=title, colour=getCol('positive2'))
 		
 		elif "U_A" == type:
 			log.debug(type)
@@ -215,7 +232,7 @@ class auditlog(commands.Cog, name="AuditLogging"):
 			fValue1 = f"{authID}\n{auth}\n<@{authID}>"
 			fName2 = "Member Count"
 			fValue2 = guildCount
-			e = nextcord.Embed(title=title, colour=config.col_positive)
+			e = nextcord.Embed(title=title, colour=getCol('positive'))
 		
 		elif "U_N_C" == type:
 			log.debug(type)
@@ -232,7 +249,7 @@ class auditlog(commands.Cog, name="AuditLogging"):
 			fValue1 = authBe
 			fName2 = "After"
 			fValue2 = authAf
-			e = nextcord.Embed(title=title, colour=config.col_neutDark)
+			e = nextcord.Embed(title=title, colour=getCol('neutral_Dark'))
 		
 		elif "A_G" == type:
 			log.debug(type)
@@ -243,7 +260,7 @@ class auditlog(commands.Cog, name="AuditLogging"):
 			fValue1 = f"{usr.id}\n{usr.name}\n<@{usr.id}>"
 			fName2 = "File"
 			fValue2 = file
-			e = nextcord.Embed(title=title, colour=config.col_neutLight)
+			e = nextcord.Embed(title=title, colour=getCol('neutral_Light'))
 
 		elif "P_C" == type:
 			log.debug(type)
@@ -254,7 +271,7 @@ class auditlog(commands.Cog, name="AuditLogging"):
 			fValue1 = f"{usr.id}\n{usr.name}\n<@{usr.id}>"
 			fName2 = "Number Purged"
 			fValue2 = messCount
-			e = nextcord.Embed(title=title, colour=config.col_error)
+			e = nextcord.Embed(title=title, colour=getCol('error'))
 
 		elif "Bl_A" == type:
 			log.debug(type)
@@ -270,7 +287,7 @@ class auditlog(commands.Cog, name="AuditLogging"):
 			fValue2 = f"{auth.id}\n{auth.name}\n<@{auth.id}>"
 			fName4 = "Reason"
 			fValue4 = f"```\n{reason}\n```"
-			e = nextcord.Embed(title=title, colour=config.col_error)
+			e = nextcord.Embed(title=title, colour=getCol('error'))
 
 		elif "Bl_R" == type:
 			log.debug(type)
@@ -283,12 +300,12 @@ class auditlog(commands.Cog, name="AuditLogging"):
 			fValue1 = f"{usr.id}\n{usr.name}\n<@{usr.id}>"
 			fName2 = "Invoked by;"
 			fValue2 = f"{auth.id}\n{auth.name}\n<@{auth.id}>"
-			e = nextcord.Embed(title=title, colour=config.col_error)
+			e = nextcord.Embed(title=title, colour=getCol('neutral_Bright'))
 		
 		else:
 			log.debug(type)
 			title = f"Unknown Event {data['type']}"
-			e = nextcord.Embed(title=title, colour=config.col_error)
+			e = nextcord.Embed(title=title, colour=getCol('neutral_Black'))
 		
 		if fValue0 is not None: e.add_field(name=fName0, value=f"{fValue0}", inline=False)
 		if fValue1 is not None: e.add_field(name=fName1, value=f"{fValue1}", inline=True)
@@ -300,8 +317,7 @@ class auditlog(commands.Cog, name="AuditLogging"):
 		if fValue7 is not None: e.add_field(name=fName7, value=f"{fValue7}", inline=True)
 		if fValue8 is not None: e.add_field(name=fName8, value=f"{fValue8}", inline=True)
 		if fValue9 is not None: e.add_field(name=fName9, value=f"{fValue9}", inline=True)
-		unix = int(time.time())
-		e.set_footer(text=f"UNIX: {unix}")
+		e.set_footer(text=footer)
 		audit = (data['chanAudit'])
 		if audit is ("UNK" or None): audit = 935677246482546748 #personal server. Just in case something goes wrong, the audit entry isn't lost.
 		chan = self.bot.get_channel(audit)

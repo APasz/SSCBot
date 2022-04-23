@@ -1,13 +1,27 @@
 #!/usr/bin/env python3
 import os
+import sys
+from nextcord import ext
+
 PID = os.getpid()
 print (f"\n***Starting*** PID'{PID}'")
-import config
+critFiles = ["config.json", "config.py"]
+configErr = False
+for element in critFiles:
+	if not os.path.exists(element):
+		print(f"{element} missing")
+		configErr = True
+
+from util.fileUtil import configUpdate, newFile, readFile, readJSON
+
+configuration = readJSON(filename = "config")
+configGen = configuration['General']
+
 import logging
 
 log = logging.getLogger('discordGeneral')
 logMess = logging.getLogger('discordMessages')
-if config.logLevel == "DEBUG":
+if configGen['logLevel'] == "DEBUG":
 	log.setLevel(logging.DEBUG)
 	logMess.setLevel(logging.DEBUG)
 else:
@@ -24,45 +38,20 @@ logMess.addHandler(messHandler)
 
 log.critical(f"\n***Starting*** PID'{PID}'")
 
+if configErr:
+	log.critical(f"config missing")
+	sys.exit
+
+import asyncio
 import time
-import netifaces
-def checkNet(host=None):
-	if host is None:
-		gw = netifaces.gateways()
-		if bool(gw['default']) is False: return False
-		gate = (gw['default'][netifaces.AF_INET][0])
-	else: gate = host
-	res = os.system("ping -c 1 " + gate)
-	if res == 0: return True
-	else: return False
-		
-
-while True:
-	net = checkNet()
-	if net is False:
-		print("No Connection")
-		log.critical("No Connection")
-		time.sleep(2.5)
-		pass
-	elif net is True:
-		print("Connection Found")
-		time.sleep(2.5)
-		disNet = checkNet("www.discord.com")
-		if disNet is False:
-			print("No Discord Connection")
-			log.critical("No Discord Connection")
-			time.sleep(2.5)
-			pass
-		elif disNet is True:
-			print("Discord Connection Found")
-			break
-
 
 import nextcord
 from nextcord.ext import commands
 from nextcord.ext.commands import CommandNotFound
 
-from util.fileUtil import blacklistCheck, readJSON
+import config
+from util.genUtil import blacklistCheck
+
 
 def main():
 	intents = nextcord.Intents.default()
@@ -71,64 +60,72 @@ def main():
 
 	
 	activity = nextcord.Activity(
-		type=nextcord.ActivityType.listening, name=f"{config.BOT_PREFIX}help"
-	)
+		type=nextcord.ActivityType.listening, name=f"{config.BOT_PREFIX}help")
 
 	bot = commands.Bot(
 		commands.when_mentioned_or(config.BOT_PREFIX),
 		intents=intents,
 		activity=activity,
-		case_insensitive=True
-		)
-
-	for filename in os.listdir("./cogs"):
+		case_insensitive=True)
+	curDir = os.path.dirname(os.path.realpath(__file__))
+	cogsDir = os.path.join(curDir, "cogs")
+	for filename in os.listdir(cogsDir):
 		if filename.endswith(".py") and filename != "__init__.py":
 			bot.load_extension(f'cogs.{filename[:-3]}')
 
-
-	if not os.path.exists("data.json"):
-		log.critical("data.xml missing")
-		print("data.xml is missing")
-		
-	
 
 	@bot.event
 	async def on_ready( ):
 		log.critical("\n***Started*** 'Hello World, or whatever'")
 		print("***Started*** 'Hello World or whatever'")
-		if config.readyMessage == 1:
-			data = readJSON(f"data")
-			mV = data['majorVer']
-			sV = data['minorVer']
-			pV = data['pointVer']
-			Vn = data['verName']
-			txt = f"**v{mV}.{sV}.{pV}	{Vn}**\nReady"
-			chanTpF = await bot.fetch_channel(config.chan_TpFbot)
-			chanNIX = await bot.fetch_channel(config.chan_NIXbot)
-			await chanTpF.send(txt)
-			await chanNIX.send(txt)
+		if configGen['readyMessage'] is True:			
+			mV = configGen['verMajor']
+			sV = configGen['VerMinor']
+			pV = configGen['verPoint'] 
+			Vn = configGen['verName']
+			txt = f"**v{mV}.{sV}.{pV}	{Vn}**\n**Ready**\nUse /changelog to see changes"
+			sendReady = {
+				configuration['TPFGuild']['Channels']['Botstuff']:configuration['TPFGuild']['readyMessage'],
+				configuration['NIXGuild']['Channels']['Botstuff']:configuration['NIXGuild']['readyMessage']
+			}
+			for element in sendReady:
+				if sendReady[element]:
+					chan = await bot.fetch_channel(element)
+					await chan.send(txt)
+			messFile = os.path.join(curDir, "messID.txt")
+			if os.path.exists(messFile):
+				messIDs = readFile(directory=curDir, filename="messID")
+				os.remove(os.path.join(curDir, "messID.txt"))
+				print(messIDs)
+				if len(messIDs) <= 2: return
+				log.debug(messIDs)
+				messID, chanID = messIDs.split('|')
+				chan = await bot.fetch_channel(int(chanID))
+				mess = await chan.fetch_message(int(messID))
+				await mess.edit(content="Reboot Successful!")
+
 
 	@bot.check
 	async def blacklistedUser(ctx):		
 		if (ctx.command is not None):
 			log.debug("blacklistedUserCheck")
-			if (ctx.author.id == config.ownerID): return True
-			if (ctx.guild is not None) and (ctx.author == ctx.guild.owner): return True
-			genBL = blacklistCheck(str(ctx.author.id), "gen")
-			if genBL is not True: return False
-			else: return True
+			if await blacklistCheck(ctx=ctx, blklstType="gen") is True: return True
+			else:
+				raise ext.commands.MissingPermissions([''])
 
 	@bot.event
 	async def on_command_error(ctx, error):
 		auth = f"{ctx.author.id}, {ctx.author.display_name}"
 		if isinstance(error, (commands.MissingPermissions)):
 			await ctx.message.delete()
-			await ctx.send("You don't have the correct permission.", delete_after=config.delTime)
+			await ctx.send("You don't have the correct permissions.",
+			delete_after=configuration['General']['delTime'])
 			log.error(f"MissingPermission. {auth}")
 			print("error:MissingPermission")
 		if isinstance(error, (commands.MissingRole)):
 			await ctx.message.delete()
-			await ctx.send("You don't have the correct role.", delete_after=config.delTime)
+			await ctx.send("You don't have the correct role.",
+			delete_after=configuration['General']['delTime'])
 			log.error(f"MissingRole. {auth}")
 			print("error:MissingRole")
 		if isinstance(error, (commands.MissingRequiredArgument)): 
@@ -152,6 +149,10 @@ def main():
 			await ctx.send(f"Cog not found.")
 			log.error(f"ExtensionNotFound. {auth}")
 			print("error:ExtensionNotFound")
+		if isinstance(error, asyncio.TimeoutError):
+			await ctx.send(f"asyncio 408. Response not received in time.")
+			log.error(f"asyncio 408 {auth}")
+			print("error:asyncio 408")
 
 	@bot.command(name="toggle")
 	@commands.has_permissions(administrator=True)
@@ -170,7 +171,7 @@ def main():
 			log.info(f"C: {command.enabled}")
 			await ctx.send("command toggled")
 		else:
-			await ctx.send("Command not found")
+			await ctx.send("Command not found") #this should probably check the list of commands...
 
 	@bot.command(name="reload", aliases=['rl'], hidden=True)
 	@commands.is_owner()
@@ -220,7 +221,7 @@ def main():
 		"""Reloads all cogs"""
 		log.debug("reloadAllCogsCommand")
 		try:
-			for filename in os.listdir("./cogs"):
+			for filename in os.listdir(cogsDir):
 				if filename.endswith(".py") and filename != "__init__.py":
 					bot.reload_extension(f'cogs.{filename[:-3]}')
 			log.info("All cogs reloaded")
@@ -230,6 +231,72 @@ def main():
 			print("Cogs can't be reloaded")
 		else:
 			await ctx.send("All cogs successfully reloaded.")
+
+	@bot.command(name="memory", hidden=True)
+	@commands.is_owner()
+	async def memory(ctx):
+		"""Fetches the current amount of memory used by the bot process"""
+		import platform
+		import resource
+		memKB = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+		memMB = int(memKB) / 10**3
+		totalMemoryMB, usedMemoryMB, freeMemoryMB = map(
+			int, os.popen('free -t -m').readlines()[-1].split()[1:])
+		percent = round((usedMemoryMB/totalMemoryMB) * 100, 2)
+		if usedMemoryMB > 4096:
+			usedMemory = f"{int(usedMemoryMB) / 10**3}GB"
+		else: usedMemory = f"{usedMemoryMB}MB"
+		await ctx.send(f"{platform.node()}\nProcess: {memMB}MB\nSystem: {usedMemory} {percent}%")
+
+	async def botRestartCheck(ctx, curDir:str):
+		mess = await ctx.send("Commencing restart squence...")
+		def check(m):
+			if (m.author == ctx.author and m.channel == ctx.channel): return True
+		try:
+			reply = await bot.wait_for('message', check=check, timeout=10.0)
+		except asyncio.TimeoutError as e:
+			await mess.edit(content="Timeout. Restart Aborted")
+			print("timeout", e)
+			return False
+		await reply.delete()
+		await mess.edit(content="Confirmed. Restartig momentarily")
+		IDs = f"{mess.id}|{mess.channel.id}"
+		file = os.path.join(curDir, "messID.txt")
+		if os.path.exists(file):
+			print("File found")
+			os.remove(file)
+		if not newFile(IDs, directory=curDir, filename="messID"):
+			ctx.send("Restart Halted: Error noting message ID\nContinue anyway?")
+			if not await bot.wait_for('message', check=check, timeout=5.0):
+				return False
+		return True
+
+	@bot.command(name="configUpdateCOMM", hidden=True)
+	@commands.is_owner()
+	async def configUpdateCOMM(ctx):
+		"""Merge new config.json into existing one."""
+		tmpDir = os.path.join(os.sep, "tmp")
+		attachCF = ctx.attachments[0]
+		if configUpdate(tmpDir, curDir, attachCF):
+			await ctx.send("Config merged!")
+		else:
+			await ctx.send("Error during config merge.")
+
+
+	def systemRestart(system:bool):
+		log.critical(f"Rebooting | System: {system}")
+		print(f"Rebooting | System: {system}")
+		if system is True:
+			sys.exit(194)
+		else:
+			sys.exit(0)
+
+	@bot.command(name="botRestart", hidden=True)
+	@commands.is_owner()
+	async def botRestart(ctx, system=True):
+		"""Exits the Discord Bot script. By default server automatically restarts"""
+		if await botRestartCheck(ctx, curDir) is False: return
+		systemRestart(system)
 
 	bot.run(config.DISTOKEN)
 

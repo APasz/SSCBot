@@ -2,3 +2,5 @@ nextcord
 emoji
 python-dateutil
 netifaces
+pint
+gitpython

@@ -5,7 +5,7 @@ import textwrap
 
 import nextcord
 import nextcord.ext
-from nextcord import Embed, Interaction, slash_command, SlashOption
+from nextcord import Embed, Interaction, SlashOption, slash_command
 from nextcord.ext import commands
 from nextcord.ext.commands.cooldowns import BucketType
 
@@ -14,16 +14,19 @@ logMess = logging.getLogger('discordMessages')
 
 import config
 from config import userDiction as usrDic
+from util.apiUtil import *
+from util.fileUtil import readJSON
+from util.modding import modPreview, modRelease
 
 from cogs.auditlog import *
-from util.fileUtil import blacklistCheck
-from util.apiUtil import *
 
-
-localcf_chan_audit = config.chan_TpFaudit
-localcf_guild_id = config.TpFguild
-localcf_chan_nmr = config.chan_TpFnmr
-localcf_chan_nmp = config.chan_TpFnmp
+configuration = readJSON(filename = "config")
+configTPF = configuration['TPFGuild']
+localcf_chan_audit = configTPF['Channels_Admin']['Audit']
+localcf_guild_id = configTPF['ID']
+localcf_chan_nmr = configTPF['Channels']['NewModRelease']
+localcf_chan_nmp = configTPF['Channels']['NewModPreview']
+localcf_chan_wel = configTPF['Channels']['Welcome']
 
 class tpf(commands.Cog, name="TpF server"):
 	def __init__(self, bot: commands.Bot):
@@ -68,7 +71,7 @@ class tpf(commands.Cog, name="TpF server"):
 						'auth': after,
 						'guildExta': guildCount,
 						'chanAudit': audit}
-			role = nextcord.utils.get(before.guild.roles, name=config.roles_TpFvri)
+			role = nextcord.utils.get(before.guild.roles, id=configTPF['Roles']['Verified'])
 			await after.add_roles(role,atomic=True)
 			log.info(f"UserAccept: {after.id}: {after.display_name}")
 			await auditlog.embed(self, usrDic)
@@ -80,7 +83,7 @@ class tpf(commands.Cog, name="TpF server"):
 				await guild.system_channel.send(toSend)
 			else:
 				log.error("Unable to find system channel")
-				chan = self.bot.get_channel(config.chan_TpFwel)
+				chan = self.bot.get_channel(localcf_chan_wel)
 				await chan.send(toSend)
 		
 		if before.display_name != after.display_name:
@@ -232,7 +235,7 @@ class tpf(commands.Cog, name="TpF server"):
 	@commands.Cog.listener()
 	async def on_message(self, ctx):
 		"""Check for Author in message and adds heart reaction. Restricted to artwork channel in TpF server."""
-		if ctx.channel.id == config.chan_TpFaw:
+		if ctx.channel.id == configTPF['Channels']['Artwork']:
 			log.debug("AW listener")
 			if 'author' in ctx.content.lower():
 				await ctx.add_reaction(config.emoHeart)
@@ -241,94 +244,8 @@ class tpf(commands.Cog, name="TpF server"):
 			else: log.debug("AW")
 		if (ctx.channel.id == localcf_chan_nmr) and (ctx.author.bot is False):
 			print("NMR listener")
-			cont = ctx.content
-			mess = cont.split("\n")
-			chan = await self.bot.fetch_channel(localcf_chan_nmp)
-			for l in mess:
-				#print(f"L: {l}")
-				if re.search(r'https:', l):
-					#l = l.replace(' ','')
-					urlDic = parseURL(l)
-					ID = urlDic['ID']
-					game = urlDic['game']
-					plat = urlDic['platform']
-					err = "There was an error. "
-					if plat == "steam":
-						dets = steamWSGet(ID)
-						if isinstance(dets, int):
-							err = err+str(dets)
-							log.error(f"steamWS | {dets}")
-							await ctx.channel.send(err)
-							return
-						usrID = int(dets['creator'])
-						author = steamUsrGet(usrID)
-						if isinstance(author, int):
-							err = err+str(author)
-							log.error(f"steamUsr | {dets}")
-							await ctx.channel.send(err)
-							return
-						dets = dets | author
-						await self.modPreview(dets, chan, plat)
-					if plat == "nexus":
-						dets = nexusModGet(game, ID)
-						if isinstance(dets, int):
-							err = err+str(dets)
-							log.error(f"nexus | {dets}")
-							await ctx.channel.send(err)
-							return
-						await self.modPreview(dets, chan, plat)
-					if plat == "tpfnet": #not supported at present.
-						if not re.search(r'filebase', cont): continue
-						dets = tpfnetModGet(ID)
-						# if isinstance(dets, int):
-						# 	err = err+str(dets)
-						# 	log.error(f"tpfnet | {dets}")
-						# 	await ctx.channel.send(err)
-						# 	return
-						dets = {
-							'ID':ID,
-							'name':game
-						}
-						await self.modPreview(dets, chan, plat)
-					await asyncio.sleep(0.1)
-			print("NMR Done")
-
-			
-			
-			
-			
-			
-			
-			
-			# if "transportfever" in mess:
-			# 	num = re.findall(r'\d+', mess)
-			# 	print(num)
-			# 	dets = tpfnetModGet()
-			# if "steamcommunity" in mess:
-			# 	chan = await self.bot.fetch_channel(localcf_chan_nmp)
-			# 	num = re.findall(r'\d+', mess)
-			# 	IDs = []
-			# 	for n in num:
-			# 		if int(n) > 763167186: #First TpF1 ws item is 763167187
-			# 			IDs.append(n)
-			# 	for s in IDs:
-			# 		dets = steamWSGet(s)
-			# 		usrID = int(dets['creator'])
-			# 		author = steamUsrGet(usrID)
-			# 		await self.modPreview(dets, author, chan, "steam")
-			# 		await asyncio.sleep(0.5)
-			# if "nexusmods" in mess:
-			# 	chan = await self.bot.fetch_channel(localcf_chan_nmp)
-			# 	num = re.findall(r'\d+', mess)
-			# 	dets = nexusModGet("transportfever2", int(num[0]))
-			# 	await self.modPreview(dets, author, chan, "nexus")
-
-				#print(len(num))
-			#wsID = int(ctx.content)
-			#data = steamGet(IDs)
-			#print(data)
-			#chan = await self.bot.fetch_channel(localcf_chan_nmp)
-			#await chan.send(data)
+			nmpChan = await self.bot.fetch_channel(localcf_chan_nmp)
+			await modRelease(ctx=ctx, chan=nmpChan)
 
 def setup(bot: commands.Bot):
 	bot.add_cog(tpf(bot))
