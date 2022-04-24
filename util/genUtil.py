@@ -37,7 +37,7 @@ async def blacklistCheck(ctx, blklstType:str="gen"):
 		return readJSON(filename=filename, directory=['secrets'])
 	userID = None
 	userID = getUserID(obj=ctx)
-	print(userID)	
+	#print(userID)	
 	if (userID == config.ownerID): return True
 	if (userID == ctx.guild.owner.id): return True
 	BL = check()

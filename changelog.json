@@ -51,6 +51,7 @@
     ],
     "2.2.1":[ "Updates",
         "-Changed: Blacklist checks on all commands, including admin.",
+        "-Changed; bot: Version for ready message now pulled from changelog.json, then config is updated.",
         "-Changed; tpfssc: timestamp and timestampset functions are now in tpfssc cog.",
         "-Fixed; auditlog: Message content properly wrapped in backticks",
         "-Fixed; Configuration: Is actually read when need instead of only when the file is loaded. *facepalm*",

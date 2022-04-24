@@ -12,7 +12,7 @@ for element in critFiles:
 		print(f"{element} missing")
 		configErr = True
 
-from util.fileUtil import configUpdate, newFile, readFile, readJSON
+from util.fileUtil import configUpdate, newFile, readFile, readJSON, writeJSON
 
 configuration = readJSON(filename = "config")
 configGen = configuration['General']
@@ -79,11 +79,17 @@ def main():
 		log.critical("\n***Started*** 'Hello World, or whatever'")
 		print("***Started*** 'Hello World or whatever'")
 		if configGen['readyMessage'] is True:			
-			mV = configGen['verMajor']
-			sV = configGen['VerMinor']
-			pV = configGen['verPoint'] 
-			Vn = configGen['verName']
-			txt = f"**v{mV}.{sV}.{pV} | {Vn}**\n**Ready**\nUse /changelog to see changes"
+			data = readJSON(filename="changelog")
+			ver = list(data.keys())[-1]
+			verMajor, VerMinor, verPoint = ver.split('.')			
+			verName = list(data[f'{ver}'])[0]
+			txt = f"**v{verMajor}.{VerMinor}.{verPoint} | {verName}**\n**Ready**\nUse /changelog to see changes"
+			config = readJSON(filename="config")
+			config['General']['verMajor'] = verMajor
+			config['General']['VerMinor'] = VerMinor
+			config['General']['verPoint'] = verPoint
+			config['General']['verName'] = verName
+			writeJSON(data=config, filename="config")
 			sendReady = {
 				configuration['TPFGuild']['Channels']['Botstuff']:configuration['TPFGuild']['readyMessage'],
 				configuration['NIXGuild']['Channels']['Botstuff']:configuration['NIXGuild']['readyMessage']
