@@ -1,5 +1,6 @@
 print ("CogTpFssc")
 import asyncio
+import datetime
 import logging
 import os
 import random
@@ -14,24 +15,46 @@ log = logging.getLogger("discordGeneral")
 
 import config
 from util.fileUtil import readJSON, writeJSON
-from util.genUtil import getCol, blacklistCheck
-
-from cogs.ssctime import *
-
-configuration = readJSON(filename = "config")
-configSSC = configuration['General']['SSC_Data']
-configTPF = configuration['TPFGuild']
-configGen = configuration['General']
-delTime = configGen['delTime']
+from util.genUtil import blacklistCheck, getCol
 
 
-
+async def timestampset():
+		log.debug("timeStampset")
+		utc = datetime.datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+		monUTC = utc - datetime.timedelta(days=utc.weekday())
+		currStamp = int((monUTC-datetime.datetime(1970,1,1)).total_seconds())
+		nextStamp = int(currStamp) + 604800
+		stamp36 = int(currStamp) + 475200
+		stamp24 = int(currStamp) + 518400
+		remindStamp = int(random.randint(stamp36,stamp24))
+		configuration = readJSON(filename = "config")
+		configSSC = configuration['General']['SSC_Data']
+		currData = int(configSSC['currStamp'])
+		nextData = int(configSSC['nextStamp'])
+		rminData = int(configSSC['remindStamp'])
+		print(currStamp, nextStamp, stamp36, stamp24)
+		print(currData, nextData, rminData)
+		if currStamp == currData: pass
+		else:
+			configSSC['currStamp'] = currStamp
+			log.debug("Cwrite")
+		if nextStamp == nextData: pass
+		else:
+			configSSC['nextStamp'] = nextStamp
+			log.debug("Nwrite")
+		if stamp36 <= rminData <= stamp24: pass
+		else:
+			configSSC['remindStamp'] = remindStamp
+			log.debug("Rwrite")
+		if writeJSON(data=configuration, filename="config"): return True
+		else: return False
 
 class tpfssc(commands.Cog, name="TpFSSC"):
 	def __init__(self, bot: commands.Bot):
 		self.bot = bot
 		self.remindTask.start()
-
+	
+	
 	@commands.Cog.listener()
 	async def on_ready(self):
 		if not os.path.exists("missing.png"):
@@ -45,13 +68,16 @@ class tpfssc(commands.Cog, name="TpFSSC"):
 			print("randomFact.txt file is missing")
 		log.debug("Ready")
 
-	@tasks.loop(minutes=configuration['General']['TaskLengths']['SSC_Remind'])
+	@tasks.loop(minutes=readJSON(filename = "config")['General']['TaskLengths']['SSC_Remind'])
 	async def remindTask(self):
 		"""Get reminder timestamp from file, check if current time is in within range of remindStamp and nextStamp(-2h), if so invoke SSC minder command"""
 		log.debug("remindTask_run")
 		print("remindTask: run")
-		if configSSC['isPrize'] == True:
-			log.debug("remindYes")
+		configuration = readJSON(filename = "config")
+		configSSC = configuration['General']['SSC_Data']
+		print(configSSC['remindSent'])
+		if configSSC['remindSent'] == True:
+			log.debug(f"remindYes {configSSC['remindSent']}")
 			return
 		nex = int(configSSC['nextStamp'])
 		rem = int(configSSC['remindStamp'])
@@ -69,7 +95,7 @@ class tpfssc(commands.Cog, name="TpFSSC"):
 				pt = pri
 				pass
 			log.debug(f"PT: {pt}")
-			chan = self.bot.get_channel(configTPF['Channels']['SSC_Remind'])
+			chan = self.bot.get_channel(readJSON(filename = "config")['TPFGuild']['Channels']['SSC_Remind'])
 			await chan.send(f"Reminder that the competiton ends soon;\n**<t:{nex}:R>**\nGet you images and votes in. 🇻 🇴 🇹 🇪 @{pt}")
 			await asyncio.sleep(0.1)
 			lastID = chan.last_message_id
@@ -87,18 +113,38 @@ class tpfssc(commands.Cog, name="TpFSSC"):
 	async def on_remindTask_cancel(self):
 		print("on_remindTask Cancelled")
 		log.debug("on_remindTask Cancelled")
+	
+	@commands.command(name="timestamp", hidden=True)
+	async def timestamp(self, ctx, action="get"):
+		if not blacklistCheck(ctx=ctx): return
+		if action == "get":
+			log.debug("timeStampget")
+			configSSC = readJSON(filename = "config")['General']['SSC_Data']
+			curr = configSSC['currStamp']
+			next = configSSC['nextStamp']
+			rmin = configSSC['remindStamp']
+			await ctx.send(
+				f"Current week's stamp {curr} | <t:{curr}:R>\n"
+				f"Next week's stamp {next} | <t:{next}:R>\n"
+				f"Reminder stamp {rmin} | <t:{rmin}:R>"
+			)
+		elif action == "set":
+			if await timestampset():
+				await ctx.send("Stamps updated.")
+			else: await ctx.send("Error during stamp update.")
 
 	@commands.command(name="comp")
-	@commands.has_role(configTPF['Roles']['SSC_Manager'])
+	@commands.has_role(readJSON(filename = "config")['TPFGuild']['Roles']['SSC_Manager'])
 	async def comp(self, ctx, alert="no", note="no", prize=None, prizeUser=None):
 		"""Start competition. Gets theme from filename of attached image. Changes text based on alert type. Passes note if present."""
+		if not blacklistCheck(ctx=ctx): return
 		log.debug("compCommand")
 		async with ctx.typing():
 			note1 = note.casefold()
-			check = await ssctime.timestampset(ctx=ctx)
-			log.info("timeStampSetCommandInvoked")
-			print("invoke")
-			if check != 1: ctx.send("timeStampSet Command Error")
+			if not self.timestampset(ctx=ctx):
+				ctx.send("timeStampSet Command Error")
+			configuration = readJSON(filename = "config")
+			configSSC = configuration['General']['SSC_Data']
 			oldTheme = configSSC['theme']
 			log.debug(f"oldTheme: {oldTheme}")
 			if len(ctx.message.attachments):
@@ -180,9 +226,6 @@ class tpfssc(commands.Cog, name="TpFSSC"):
 			log.debug("remindTask Triggered")
 			configSSC['remindSent'] = False
 			if writeJSON(data=configuration, filename="config"): pass
-			if check != 0:
-				await asyncio.sleep(0.1)
-				await ctx.message.delete()
 			log.info("Competition Start")
 			return
 
@@ -192,7 +235,9 @@ class tpfssc(commands.Cog, name="TpFSSC"):
 		"""Deletes message and informs user. Message ID, User ID, Reason(theme/edit/repost), Reason(optional) 'passed'
 		Depending on reason arg, informs user why their submission was delete. Theme message includes the theme.
 		Please provide a link for repost arg."""
+		if not blacklistCheck(ctx=ctx): return
 		log.debug("deleteCommand")
+		configSSC = readJSON(filename = "config")['General']['SSC_Data']
 		theme = configSSC['theme']
 		log.debug(f"t,{theme}")
 		log.debug(f"reason,{reason}")
@@ -237,9 +282,10 @@ class tpfssc(commands.Cog, name="TpFSSC"):
 		await ctx.message.delete()
 
 	@commands.command(name="themeVote")
-	@commands.has_role(configTPF['Roles']['SSC_Manager'])
+	@commands.has_role(readJSON(filename = "config")['TPFGuild']['Roles']['SSC_Manager'])
 	async def themeVote(self, ctx: commands.Context):
 		"""Pull 3 themes for community to vote on"""
+		if not blacklistCheck(ctx=ctx): return
 		log.debug("themeVoteCommand")
 		ops = open('themes.txt').read().splitlines()
 		op0 = random.sample(ops, k=3)
@@ -256,6 +302,10 @@ class tpfssc(commands.Cog, name="TpFSSC"):
 	@commands.Cog.listener()
 	async def on_message(self, ctx):
 		"""Check if message has attachment or link, if 1 add reaction, if not 1 delete and inform user, set/check prize round state, ignore SSCmanager, """
+		configuration = readJSON(filename = "config")
+		configSSC = configuration['General']['SSC_Data']
+		configTPF = configuration['TPFGuild']
+		delTime = configuration['General']['delTime']
 		if ctx.content.startswith(f"{config.BOT_PREFIX}"):
 			return
 		if ctx.channel.id != configTPF['Channels']['SSC_Comp']: return

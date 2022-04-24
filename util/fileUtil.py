@@ -14,6 +14,8 @@ botID = 764270771350142976
 
 cacheJSON = {}
 
+
+
 def splitDirFile(directory:str, limit:int=1):
 	return directory.rsplit(os.sep, limit)
 
@@ -39,8 +41,12 @@ def writeJSON(data, filename:str, directory:list=None):
 		log.error(f"writeJSON: XCP {e}")
 		return False
 
+def cacheWrite():
+	print(f"writeCache")
+	writeJSON(data=cacheJSON, filename="cache")
+
 def readJSON(filename:str, directory:list=None, cache:bool=True):
-	print(f"readJSON: {filename}")
+	#print(f"readJSON: {filename}")
 	if not filename.casefold().endswith(".json"):
 		filename = filename + ".json"
 	parDir = parentDir()
@@ -65,10 +71,11 @@ def readJSON(filename:str, directory:list=None, cache:bool=True):
 	if cache is False: return read()
 	if os.path.exists(fullDir):
 		newModTime = int(os.path.getmtime(fullDir))
-	else: newModTime = None
+		#print("exists", fullDir, newModTime)
+	else: newModTime = 0
 	if fileDir in cacheJSON:
+		#print("fileInCache")
 		oldModTime = cacheJSON[fileDir]['modTime']
-		newModTime = int(os.path.getmtime(fullDir))
 		if oldModTime != newModTime:
 			data = read()		
 			meta = {
@@ -79,6 +86,7 @@ def readJSON(filename:str, directory:list=None, cache:bool=True):
 		else:
 			data = cacheJSON[fileDir]['content']
 	else:
+		#print("fileNotInCache")
 		data = read()
 		meta = {
 			'modTime':newModTime,

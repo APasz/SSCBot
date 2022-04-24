@@ -12,15 +12,8 @@ from nextcord.ext import commands
 
 log = logging.getLogger("discordGeneral")
 
-import config
 from config import userDiction as usrDic
-from util.fileUtil import readJSON
 from util.genUtil import getCol
-
-configuration = readJSON(filename = "config")
-configGen = configuration['General']
-
-
 
 class auditlog(commands.Cog, name="AuditLogging"):
 	def __init__(self, bot: commands.Bot):
@@ -118,13 +111,11 @@ class auditlog(commands.Cog, name="AuditLogging"):
 			fValue4 = f"{authID}\n{auth}\n{authDN}\n<@{authID}>"
 			if mess.content is not None:
 				fName5 = "Message"
-				cont = mess.content
+				txt = cont = mess.content.replace('`', '')
 				if len(cont) > 1000:
 					txt = textwrap.shorten(cont, width=1000, placeholder=' ...')
 					footer = footer + " | Full message content in bot log."
-				else:
-					txt = cont.replace('`', '')
-				fValue5 = f"```\n{txt}\n```"
+				fValue5 = f"\n```\n{txt}\n```"
 			if attach != 0:
 				fName6 = "Attachments"
 				fValue6 = attach

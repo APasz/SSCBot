@@ -83,7 +83,7 @@ def main():
 			sV = configGen['VerMinor']
 			pV = configGen['verPoint'] 
 			Vn = configGen['verName']
-			txt = f"**v{mV}.{sV}.{pV}	{Vn}**\n**Ready**\nUse /changelog to see changes"
+			txt = f"**v{mV}.{sV}.{pV} | {Vn}**\n**Ready**\nUse /changelog to see changes"
 			sendReady = {
 				configuration['TPFGuild']['Channels']['Botstuff']:configuration['TPFGuild']['readyMessage'],
 				configuration['NIXGuild']['Channels']['Botstuff']:configuration['NIXGuild']['readyMessage']

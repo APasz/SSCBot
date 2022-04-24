@@ -15,9 +15,6 @@ log = logging.getLogger("discordGeneral")
 from util.fileUtil import readJSON
 from util.genUtil import getCol, blacklistCheck
 
-configuration = readJSON(filename = "config")
-configGen = configuration['General']
-
 class general(commands.Cog, name="General"):
 	def __init__(self, bot: commands.Bot):
 		self.bot = bot
@@ -111,6 +108,7 @@ class general(commands.Cog, name="General"):
 	async def info(self, ctx: commands.Context, ver=None):
 		"""Gives information about the bot"""
 		log.debug("infoCommand")
+		configGen = readJSON(filename = "config")['General']
 		mV = configGen['verMajor']
 		sV = configGen['VerMinor']
 		pV = configGen['verPoint']
@@ -250,17 +248,50 @@ class general(commands.Cog, name="General"):
 				ver = "List"
 		print(ver)
 		if ver is None: ver = list(data)[-1] #default to last ver in changelog
+		async def sendMess(version:str, content:str):
+			await interaction.response.send_message(f"Version {version}```\n{content}\n```")
+		txt = "Undefinded"
 		if "list" in ver.casefold():
 			txt = ' | '.join(list(keys))
+			await sendMess(version=ver, content=txt)
+			return
 		elif ver not in keys:
 			txt = "Version not in changelog."
+			await sendMess(version=ver, content=txt)
+			return
 		else:
 			verName = str(data[f'{ver}'][0])
-			txtList = data[f'{ver}'][1:]
-			txt = '\n'.join(txtList)
-			ver = ver + ' | ' + verName
+			changeList = data[f'{ver}'][1:]	
+		version = ver + ' | ' + verName
+		
+		def chunkList(maxChars:int, txtList:list):
+			logLength = 0
+			entryList = []
+			for i, item in enumerate(txtList):
+				logLength += len(item)
+				if logLength <= maxChars:
+					entryList.append(i)
+				else:
+					yield entryList
+					entryList = [i]
+					logLength = len(item)
+			yield(entryList)
+		chunks = list(chunkList(maxChars=1900, txtList=changeList))
+		for item in chunks:
+			eles = [changeList[i] for i in item]
+			txt = '\n'.join(eles)
+			print("response", bool(interaction.response.is_done()))
+			print("followup", bool(interaction.followup))
+			toSend = "Undefined"
+			if interaction.response.is_done():
+				toSend = f"... continued ... \n```\n{txt}\n```"
+			else:
+				toSend = f"Version {version}      Entries: {len(changeList)} ```\n{txt}\n```"
+			await interaction.send(content=toSend)
+		
+			
 
-		await interaction.response.send_message(f"Version {ver}```\n{txt}\n```")
+		
 
 	@slash_command(name = "profile", guild_ids = config.SlashServers)
 	async def profile(self, interaction: Interaction,

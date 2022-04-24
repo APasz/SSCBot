@@ -18,12 +18,6 @@ from util.views import nixroles, nixrolesCOL, tpfroles
 
 from cogs.auditlog import *
 
-configuration = readJSON(filename = "config")
-configGen = configuration['General']
-configTPF = configuration['TPFGuild']
-configNIX = configuration['NIXGuild']
-delTime = configGen['delTime']
-
 class admin(commands.Cog, name="Admin"):
 	def __init__(self, bot: commands.Bot):
 		self.bot = bot
@@ -46,7 +40,8 @@ class admin(commands.Cog, name="Admin"):
 	@commands.has_permissions(manage_messages=True)
 	async def purge(self, ctx, limit: int):
 		log.info(f"Purge command:{limit}: {ctx.author.id},{ctx.author.display_name}")
-		max = configGen['purgeLimit']
+		if not blacklistCheck(ctx=ctx): return
+		max = readJSON(filename = "config")['General']['purgeLimit']
 		if limit <= max:
 			async with ctx.typing():
 				await ctx.message.delete()
@@ -60,6 +55,7 @@ class admin(commands.Cog, name="Admin"):
 				await ctx.channel.purge(limit=limit)
 		else:
 			await ctx.message.delete()
+			delTime = readJSON(filename = "config")['General']['delTime']
 			await ctx.send(f"{limit} is more than {max}.\n{delTime}sec *self-destruct*", delete_after=delTime)
 
 
@@ -70,7 +66,8 @@ class admin(commands.Cog, name="Admin"):
 	async def blacklist(self, ctx, usr, reason="No reason given"):
 		await self.bot.wait_until_ready()
 		""""Blacklist users from certain parts or all of the bot."""
-		
+		if not blacklistCheck(ctx=ctx): return
+		delTime = readJSON(filename = "config")['General']['delTime']
 		if str(ctx.author.id) in usr:
 			await ctx.send("You can't blacklist yourself.", delete_after=delTime)
 		if "sscblacklist" in ctx.invoked_with:
@@ -127,6 +124,7 @@ class admin(commands.Cog, name="Admin"):
 	@commands.has_permissions(ban_members=True)
 	async def blacklistRemove(self, ctx, usr):
 		await self.bot.wait_until_ready()
+		if not blacklistCheck(ctx=ctx): return
 		if "sscblacklistremove" in ctx.invoked_with:
 			blklstType = "SSCBlacklist"
 			cat = "SSC"
@@ -149,6 +147,7 @@ class admin(commands.Cog, name="Admin"):
 				await auditlog.embed(self, usrDic)
 				await ctx.send(f"{usr.id}: User removed from blacklist.")
 			else:
+				delTime = readJSON(filename = "config")['General']['delTime']
 				await ctx.send("Error occured during write", delete_after=delTime)
 		else: await ctx.send("User not in blacklist.")
 
@@ -156,6 +155,7 @@ class admin(commands.Cog, name="Admin"):
 	@commands.cooldown(1, 10, commands.BucketType.default)
 	async def auditList(self, ctx, foldername=None):
 		"""For auditing: Lists files and folders in root directory of bot."""
+		if not blacklistCheck(ctx=ctx): return
 		log.info(f"auditList: {foldername}")
 		fileList = set()
 		foldList = set()
@@ -182,6 +182,7 @@ class admin(commands.Cog, name="Admin"):
 	@commands.cooldown(1, 30, commands.BucketType.default)
 	async def auditGet(self, ctx, filename:str):
 		"""For auditing: Gets a file and uploads it."""
+		if not blacklistCheck(ctx=ctx): return
 		log.info(f"auditGet: {filename}")
 		fName = f"./{filename}"
 		if os.path.exists(fName) and not os.path.isdir(fName):
@@ -206,15 +207,16 @@ If in a folder please include the foldername followed by a slash. eg [ foldernam
 	@commands.command()
 	@commands.has_permissions(manage_messages=True)
 	async def rolebuttons(self, ctx):
+		if not blacklistCheck(ctx=ctx): return
 		await ctx.message.delete()
 		nix = False
-		if ctx.guild.id == configTPF['ID']:
+		if ctx.guild.id == readJSON(filename = "config")['TPFGuild']['ID']:
 			e = nextcord.Embed(title="Roles",
 			description="""Pick which roles you'd like.
 Modder intern gives access to special channels full of useful info.""",
 			colour=getCol('neutral_Light'))
 			view = tpfroles()
-		elif ctx.guild.id == configNIX['ID']:
+		elif ctx.guild.id == readJSON(filename = "config")['NIXGuild']['ID']:
 			nix = True
 			e = nextcord.Embed(title="Roles",
 			description="""Pick which roles you'd like.""",

@@ -33,7 +33,7 @@
         "-Added; ssctime: Timestamp command to either get (current, next, remind) timestamps or set them.",
         "-Added; views: Roles can now be only add or remove.",
         "-Added; views: Verified role for TpF server.",
-        "-Changed: Configuration is now from a JSON file. Almost all calls to config were changed.",
+        "-Changed; Configuration: Config is now from a JSON file. Almost all calls to config were changed.",
         "-Changed; auditlog: Message Deleted embed with remove all '`' with nothing.",
         "-Removed; bot: Net checking and other ingretity checks now don't by external script.",
         "-Changed: bot, fileUtil: Now OS independent.",
@@ -48,5 +48,13 @@
         "-Changed; views: Now only one clicky function.",
         "-Fixed; auditlog: checkKickBan will now grab the last 3 entries and will now consider entries up to 15 seconds old instead of just 5.",
         "-Fixed; auditlog: checkKickBan no longer checks banned username against guild name. (Why it was doing that ???)"
+    ],
+    "2.2.1":[ "Updates",
+        "-Changed: Blacklist checks on all commands, including admin.",
+        "-Changed; tpfssc: timestamp and timestampset functions are now in tpfssc cog.",
+        "-Fixed; auditlog: Message content properly wrapped in backticks",
+        "-Fixed; Configuration: Is actually read when need instead of only when the file is loaded. *facepalm*",
+        "-Fixed; general: changelog commmand will now split changelog entry if too long. Here I was think the limit was 4000",
+        "-Fixed; tpfssc: Reminder task checks remindSent instead of isPrize."
     ]
 }
