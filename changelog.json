@@ -59,6 +59,7 @@
         "-Fixed; tpfssc: Reminder task checks remindSent instead of isPrize."
     ],
     "2.2.2":[ "Updates",
-        "-Fixed: Blacklist checks are now awaited."
+        "-Fixed: Blacklist checks are now awaited.",
+        "-Fixed; tpfssc: comp command timestamp set changed to reflect previous changes."
     ]
 }

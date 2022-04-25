@@ -141,7 +141,7 @@ class tpfssc(commands.Cog, name="TpFSSC"):
 		log.debug("compCommand")
 		async with ctx.typing():
 			note1 = note.casefold()
-			if not self.timestampset(ctx=ctx):
+			if not await timestampset():
 				ctx.send("timeStampSet Command Error")
 			configuration = readJSON(filename = "config")
 			configSSC = configuration['General']['SSC_Data']
