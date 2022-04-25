@@ -286,7 +286,7 @@ class general(commands.Cog, name="General"):
 			if interaction.response.is_done():
 				toSend = f"... continued ... \n```\n{txt}\n```"
 			else:
-				toSend = f"Version {version}      Entries: {len(changeList)} ```\n{txt}\n```"
+				toSend = f"Version {version}      Items: {len(changeList)} ```\n{txt}\n```"
 			await interaction.send(content=toSend)
 		
 			

@@ -35,8 +35,7 @@
         "-Added; views: Verified role for TpF server.",
         "-Changed; Configuration: Config is now from a JSON file. Almost all calls to config were changed.",
         "-Changed; auditlog: Message Deleted embed with remove all '`' with nothing.",
-        "-Removed; bot: Net checking and other ingretity checks now don't by external script.",
-        "-Changed: bot, fileUtil: Now OS independent.",
+        "-Changed; bot, fileUtil: Now OS independent.",
         "-Changed; bot: Config file existence check is now a list and will exit if file isn't found.",
         "-Changed; fileUtil: readJSON and writeJSON now require list containing the folders from root to desired file. Empty for root.",
         "-Changed; genUtilp: Blacklist check is now actally called by both regular commands and slash commands. Also it was rewritten.",
@@ -46,6 +45,7 @@
         "-Changed; tpf: modPreview now in util.modding.",
         "-Changed; tpfssc: data.json merged into new config.json. Functions changed appropriately",
         "-Changed; views: Now only one clicky function.",
+        "-Removed; bot: Net checking and other integrity checks now don't by external script.",
         "-Fixed; auditlog: checkKickBan will now grab the last 3 entries and will now consider entries up to 15 seconds old instead of just 5.",
         "-Fixed; auditlog: checkKickBan no longer checks banned username against guild name. (Why it was doing that ???)"
     ],
@@ -57,5 +57,8 @@
         "-Fixed; Configuration: Is actually read when need instead of only when the file is loaded. *facepalm*",
         "-Fixed; general: changelog commmand will now split changelog entry if too long. Here I was think the limit was 4000",
         "-Fixed; tpfssc: Reminder task checks remindSent instead of isPrize."
+    ],
+    "2.2.2":[ "Updates",
+        "-Fixed: Blacklist checks are now awaited."
     ]
 }

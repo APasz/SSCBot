@@ -116,7 +116,7 @@ class tpfssc(commands.Cog, name="TpFSSC"):
 	
 	@commands.command(name="timestamp", hidden=True)
 	async def timestamp(self, ctx, action="get"):
-		if not blacklistCheck(ctx=ctx): return
+		if not await blacklistCheck(ctx=ctx): return
 		if action == "get":
 			log.debug("timeStampget")
 			configSSC = readJSON(filename = "config")['General']['SSC_Data']
@@ -137,7 +137,7 @@ class tpfssc(commands.Cog, name="TpFSSC"):
 	@commands.has_role(readJSON(filename = "config")['TPFGuild']['Roles']['SSC_Manager'])
 	async def comp(self, ctx, alert="no", note="no", prize=None, prizeUser=None):
 		"""Start competition. Gets theme from filename of attached image. Changes text based on alert type. Passes note if present."""
-		if not blacklistCheck(ctx=ctx): return
+		if not await blacklistCheck(ctx=ctx): return
 		log.debug("compCommand")
 		async with ctx.typing():
 			note1 = note.casefold()
@@ -235,7 +235,7 @@ class tpfssc(commands.Cog, name="TpFSSC"):
 		"""Deletes message and informs user. Message ID, User ID, Reason(theme/edit/repost), Reason(optional) 'passed'
 		Depending on reason arg, informs user why their submission was delete. Theme message includes the theme.
 		Please provide a link for repost arg."""
-		if not blacklistCheck(ctx=ctx): return
+		if not await blacklistCheck(ctx=ctx): return
 		log.debug("deleteCommand")
 		configSSC = readJSON(filename = "config")['General']['SSC_Data']
 		theme = configSSC['theme']
@@ -285,7 +285,7 @@ class tpfssc(commands.Cog, name="TpFSSC"):
 	@commands.has_role(readJSON(filename = "config")['TPFGuild']['Roles']['SSC_Manager'])
 	async def themeVote(self, ctx: commands.Context):
 		"""Pull 3 themes for community to vote on"""
-		if not blacklistCheck(ctx=ctx): return
+		if not await blacklistCheck(ctx=ctx): return
 		log.debug("themeVoteCommand")
 		ops = open('themes.txt').read().splitlines()
 		op0 = random.sample(ops, k=3)

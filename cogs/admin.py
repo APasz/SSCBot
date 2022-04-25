@@ -40,7 +40,7 @@ class admin(commands.Cog, name="Admin"):
 	@commands.has_permissions(manage_messages=True)
 	async def purge(self, ctx, limit: int):
 		log.info(f"Purge command:{limit}: {ctx.author.id},{ctx.author.display_name}")
-		if not blacklistCheck(ctx=ctx): return
+		if not await blacklistCheck(ctx=ctx): return
 		max = readJSON(filename = "config")['General']['purgeLimit']
 		if limit <= max:
 			async with ctx.typing():
@@ -66,7 +66,7 @@ class admin(commands.Cog, name="Admin"):
 	async def blacklist(self, ctx, usr, reason="No reason given"):
 		await self.bot.wait_until_ready()
 		""""Blacklist users from certain parts or all of the bot."""
-		if not blacklistCheck(ctx=ctx): return
+		if not await blacklistCheck(ctx=ctx): return
 		delTime = readJSON(filename = "config")['General']['delTime']
 		if str(ctx.author.id) in usr:
 			await ctx.send("You can't blacklist yourself.", delete_after=delTime)
@@ -124,7 +124,7 @@ class admin(commands.Cog, name="Admin"):
 	@commands.has_permissions(ban_members=True)
 	async def blacklistRemove(self, ctx, usr):
 		await self.bot.wait_until_ready()
-		if not blacklistCheck(ctx=ctx): return
+		if not await blacklistCheck(ctx=ctx): return
 		if "sscblacklistremove" in ctx.invoked_with:
 			blklstType = "SSCBlacklist"
 			cat = "SSC"
@@ -155,7 +155,7 @@ class admin(commands.Cog, name="Admin"):
 	@commands.cooldown(1, 10, commands.BucketType.default)
 	async def auditList(self, ctx, foldername=None):
 		"""For auditing: Lists files and folders in root directory of bot."""
-		if not blacklistCheck(ctx=ctx): return
+		if not await blacklistCheck(ctx=ctx): return
 		log.info(f"auditList: {foldername}")
 		fileList = set()
 		foldList = set()
@@ -182,7 +182,7 @@ class admin(commands.Cog, name="Admin"):
 	@commands.cooldown(1, 30, commands.BucketType.default)
 	async def auditGet(self, ctx, filename:str):
 		"""For auditing: Gets a file and uploads it."""
-		if not blacklistCheck(ctx=ctx): return
+		if not await blacklistCheck(ctx=ctx): return
 		log.info(f"auditGet: {filename}")
 		fName = f"./{filename}"
 		if os.path.exists(fName) and not os.path.isdir(fName):
@@ -207,7 +207,7 @@ If in a folder please include the foldername followed by a slash. eg [ foldernam
 	@commands.command()
 	@commands.has_permissions(manage_messages=True)
 	async def rolebuttons(self, ctx):
-		if not blacklistCheck(ctx=ctx): return
+		if not await blacklistCheck(ctx=ctx): return
 		await ctx.message.delete()
 		nix = False
 		if ctx.guild.id == readJSON(filename = "config")['TPFGuild']['ID']:

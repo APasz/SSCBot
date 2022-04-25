@@ -21,7 +21,7 @@ class gameHelp(commands.Cog, name="GameHelp"):
 	@commands.cooldown(1, 1, commands.BucketType.user) 
 	async def wiki(self, ctx, game="2"):
 		"""Provides links to Wikis *WIP*"""
-		if not blacklistCheck(ctx=ctx): return
+		if not await blacklistCheck(ctx=ctx): return
 		if "2" in game:
 			await ctx.send(f"Here's the Wiki for Transport Fever 2.\n{config.Wiki2}")
 		elif "1" in game:
@@ -35,7 +35,7 @@ class gameHelp(commands.Cog, name="GameHelp"):
 	@commands.cooldown(1, 1, commands.BucketType.user) 
 	async def modding(self, ctx, type=None):
 		"""Provides link TpF mod wiki *WIP*"""
-		if not blacklistCheck(ctx=ctx): return
+		if not await blacklistCheck(ctx=ctx): return
 		if type == None:
 			await ctx.send(config.Wiki2modInstall)
 
@@ -43,7 +43,7 @@ class gameHelp(commands.Cog, name="GameHelp"):
 	@commands.cooldown(1, 1, commands.BucketType.user) 
 	async def log(self, ctx, type="gameFiles", game="2"):
 		"""Provides link TpF wiki*WIP*"""
-		if not blacklistCheck(ctx=ctx): return
+		if not await blacklistCheck(ctx=ctx): return
 		if "2" in game and "gameFiles" in type:
 			if "stdout" in ctx.message.content:
 				await ctx.send(config.Wiki2gameFiles+"#game_log_files")
