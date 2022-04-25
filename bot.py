@@ -264,6 +264,8 @@ def main():
 			await mess.edit(content="Timeout. Restart Aborted")
 			print("timeout", e)
 			return False
+		except Exception as xcp:
+			await mess.edit(content=f"xcp: {xcp}")
 		await reply.delete()
 		await mess.edit(content="Confirmed. Restartig momentarily")
 		IDs = f"{mess.id}|{mess.channel.id}"
