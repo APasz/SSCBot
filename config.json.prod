@@ -103,9 +103,12 @@
             "theme": "Placeholder",
             "isPrize": false,
             "remindSent": false,
+            "alertType": "here",
+            "ignoreWinner": false,
             "currStamp": 0,
             "nextStamp": 0,
-            "remindStamp": 0
+            "remindStamp": 0,
+            "allThemes": {}
         }
     },
     "TPFGuild": {

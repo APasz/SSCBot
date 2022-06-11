@@ -1,21 +1,26 @@
 print ("CogTpFssc")
 import asyncio
 import datetime
+from email.message import Message
 import logging
 import os
 import random
+import string
 import time
 
 import nextcord
 import nextcord.ext
-from nextcord.ext import commands, tasks
-from nextcord.ext.commands.bot import Bot
+from discord import Mentionable, Permissions
+from nextcord import (Embed, Interaction, Member, SlashOption, slash_command,
+					  user_command, message_command)
+from nextcord.ext import application_checks, commands, tasks
 
 log = logging.getLogger("discordGeneral")
 
 import config
 from util.fileUtil import readJSON, writeJSON
-from util.genUtil import blacklistCheck, getCol
+from util.genUtil import blacklistCheck, getCol, hasRole
+from util.apiUtil import GSheetGet
 
 
 async def timestampset():
@@ -32,8 +37,8 @@ async def timestampset():
 		currData = int(configSSC['currStamp'])
 		nextData = int(configSSC['nextStamp'])
 		rminData = int(configSSC['remindStamp'])
-		print(currStamp, nextStamp, stamp36, stamp24)
-		print(currData, nextData, rminData)
+		log.debug(f"{currStamp}, {nextStamp}, {stamp36}, {stamp24}")
+		log.debug(f"{currData}, {nextData}, {rminData}")
 		if currStamp == currData: pass
 		else:
 			configSSC['currStamp'] = currStamp
@@ -59,23 +64,16 @@ class tpfssc(commands.Cog, name="TpFSSC"):
 	async def on_ready(self):
 		if not os.path.exists("missing.png"):
 			log.critical("ThemeFile; missing.png is missing")
-			print("ThemeFile; missing.png is missing")			
-		if not os.path.exists("themes.txt"): 
-			log.critical("Themes file is missing")
-			print("Themes file is missing")
 		if not os.path.exists("randomFact.txt"):
 			log.critical("randomFact.txt file is missing")
-			print("randomFact.txt file is missing")
 		log.debug("Ready")
 
 	@tasks.loop(minutes=readJSON(filename = "config")['General']['TaskLengths']['SSC_Remind'])
 	async def remindTask(self):
 		"""Get reminder timestamp from file, check if current time is in within range of remindStamp and nextStamp(-2h), if so invoke SSC minder command"""
-		log.debug("remindTask_run")
-		print("remindTask: run")
 		configuration = readJSON(filename = "config")
 		configSSC = configuration['General']['SSC_Data']
-		print(configSSC['remindSent'])
+		log.debug(f"remindTask_run: {configSSC['remindSent']}")
 		if configSSC['remindSent'] == True:
 			log.debug(f"remindYes {configSSC['remindSent']}")
 			return
@@ -84,26 +82,19 @@ class tpfssc(commands.Cog, name="TpFSSC"):
 		n = nex - 7200
 		t = int(time.time())
 		if rem <= t <= n:
-			pri = configSSC['isPrize']
+			alert = configSSC['alertType']
 			configSSC['remindSent'] = True
 			writeJSON(data=configuration, filename="config")
-			if pri == True:
-				pt = "everyone"
-			elif pri == False:
-				pt = "here"
-			else: 
-				pt = pri
-				pass
-			log.debug(f"PT: {pt}")
+			log.debug(f"PT: {alert}")
 			chan = self.bot.get_channel(readJSON(filename = "config")['TPFGuild']['Channels']['SSC_Remind'])
-			await chan.send(f"Reminder that the competiton ends soon;\n**<t:{nex}:R>**\nGet you images and votes in. 🇻 🇴 🇹 🇪 @{pt}")
+			await chan.send(f"Reminder that the competiton ends soon;\n**<t:{nex}:R>**\nGet you images and votes in. 🇻 🇴 🇹 🇪 @{alert}")
 			await asyncio.sleep(0.1)
 			lastID = chan.last_message_id
 			mess = await chan.fetch_message(int(lastID))
 			emojis=[config.emoNotifi]
 			for emoji in emojis:
 				await mess.add_reaction(emoji)
-			log.info(f"SSC Reminder: {pt}")
+			log.info(f"SSC Reminder: {alert}")
 
 	@remindTask.before_loop
 	async def before_remindTask(self):
@@ -111,14 +102,13 @@ class tpfssc(commands.Cog, name="TpFSSC"):
 
 	@remindTask.after_loop
 	async def on_remindTask_cancel(self):
-		print("on_remindTask Cancelled")
-		log.debug("on_remindTask Cancelled")
+		log.warning("on_remindTask Cancelled")
 	
 	@commands.command(name="timestamp", hidden=True)
 	async def timestamp(self, ctx, action="get"):
 		if not await blacklistCheck(ctx=ctx): return
+		log.debug(action)
 		if action == "get":
-			log.debug("timeStampget")
 			configSSC = readJSON(filename = "config")['General']['SSC_Data']
 			curr = configSSC['currStamp']
 			next = configSSC['nextStamp']
@@ -133,171 +123,234 @@ class tpfssc(commands.Cog, name="TpFSSC"):
 				await ctx.send("Stamps updated.")
 			else: await ctx.send("Error during stamp update.")
 
-	@commands.command(name="comp")
-	@commands.has_role(readJSON(filename = "config")['TPFGuild']['Roles']['SSC_Manager'])
-	async def comp(self, ctx, alert="no", note="no", prize=None, prizeUser=None):
-		"""Start competition. Gets theme from filename of attached image. Changes text based on alert type. Passes note if present."""
-		if not await blacklistCheck(ctx=ctx): return
-		log.debug("compCommand")
-		async with ctx.typing():
-			note1 = note.casefold()
-			if not await timestampset():
-				ctx.send("timeStampSet Command Error")
+	@slash_command(name="sscomp-start",
+	guild_ids= [int(readJSON(filename = "config")['TPFGuild']['ID']), config.ownerGuild])
+	@application_checks.has_role(readJSON(filename = "config")['TPFGuild']['Roles']['SSC_Manager'])
+	async def comp(self, interaction: Interaction,
+		banner: nextcord.Attachment = SlashOption(name = "banner", required = True,
+		description = "The image shown in the competition embed. Name of file is used as theme, - replaced with space."),
+		bannerFull1: nextcord.Attachment = SlashOption(name = "bannerfull1", required = False,
+		description = "The original image that makes the banner"),
+		bannerFull2: nextcord.Attachment = SlashOption(name = "bannerfull2", required = False,
+		description = "The second image that makes the banner"),
+		bannerFull4: nextcord.Attachment = SlashOption(name = "bannerfull4", required = False,
+		description = "The third image that makes the banner"),
+		bannerFull8: nextcord.Attachment = SlashOption(name = "bannerfull8", required = False,
+		description = "The fourth image that makes the banner"),
+		bannerFull1OG: nextcord.Attachment = SlashOption(name = "bannerfull1-og", required = False,
+		description = "The original image that makes the banner but for othergames channel"),
+		bannerFull2OG: nextcord.Attachment = SlashOption(name = "bannerfull2-og", required = False,
+		description = "The second image that makes the banner but for othergames channel"),
+		bannerFull4OG: nextcord.Attachment = SlashOption(name = "bannerfull4-og", required = False,
+		description = "The third image that makes the banner but for othergames channel"),
+		bannerFull8OG: nextcord.Attachment = SlashOption(name = "bannerfull8-og", required = False,
+		description = "The fourth image that makes the banner but for othergames channel"),
+		note:str = SlashOption(name = "note", required = False, 
+		description = "If the theme has any restrictions or tips. Overrides existing."),
+		prize:str = SlashOption(name = "prize", required = False,
+		description = "If the is a prize round, what is it?"),
+		prizeUser:nextcord.Member = SlashOption(name = "prize-giver", required = False, 
+		description = "Who is providing the prize. Format is 'prize' provided by 'prize giver'"),
+		ignoreWinner:bool = SlashOption(name = "ignore-winner", required = False, default=False,
+		description = "For special rounds where SSCManager would like everyone to participate.")):
+		"""To start the screenshot competition. SSCManager Only"""
+		if not await blacklistCheck(ctx=interaction): return
+		log.debug(f"{interaction.user.id}, {banner.filename}, {note}, {prize}, {prizeUser}")
+		configuration = readJSON(filename = "config")
+		configSSC = configuration['General']['SSC_Data']
+		configSSC['remindSent'] = False
+		configSSC['ignoreWinner'] = ignoreWinner
+		if not await timestampset():
+			interaction.send("timeStampSet Failed", ephemeral=True)
+			return
+		theme = banner.filename.split('.')[0].replace("-", " ")
+		configSSC['theme'] = theme
+		nextstamp = int(configSSC['nextStamp'])
+		ebed = nextcord.Embed(title=config.txt_CompStart, colour= getCol('ssc'))
+		if prize:
+			configSSC['isPrize'] = True
+			if prizeUser: giver = f" provided by {prizeUser.mention}"
+			else: giver = ""
+			ebed.add_field(name=config.txt_CompGift, value=f"{prize}{giver}", inline=False)
+		else: configSSC['isPrize'] = False
+		ebed.add_field(name=config.txt_CompTheme, value=f"{theme}", inline=True)
+		ebed.add_field(name=config.txt_CompEnd, value=f"<t:{nextstamp}:f>", inline=True)
+		if note is not None: ebed.add_field(name="**Note**", value=f"\n```\n{note}\n```", inline=False)
+		elif configSSC['allThemes'][theme] is not None:
+			ebed.add_field(name="**Note**", value=f"\n```\n{configSSC['allThemes'][theme]}\n```", inline=False)
+		if not writeJSON(data=configuration, filename="config"):
+			await interaction.send("Failed to write to config", ephemeral=True)
+			return
+		ebed.set_footer(text=config.txt_CompRules)
+		if banner.content_type.startswith("image"):
+			ebed.set_image(url=banner.url)
+			last = await interaction.send(embed=ebed)
+		else:
+			file=nextcord.File("missing.png")
+			ebed.set_image(url="attachment://missing.png")
+			last = await interaction.send(file= file, embed=ebed)
+		last = await last.fetch()
+		emoListA = [config.emoTmbUp, config.emoTmbDown]
+		for element in emoListA:
+			await last.add_reaction(element)
+		try:
+			if self.remindTask.is_running: log.debug("Try remindTask Running")
+			else:
+				self.remindTask.start()
+				log.debug("Try remindTask Started")
+		except: log.debug("remindTask not already running")
+		log.debug("remindTask Triggered")
+		def check(m):
+			if (m.author == interaction.user and m.channel == interaction.channel): return True
+		alert = await self.bot.wait_for('message', check=check, timeout=30.0)
+		if alert:
 			configuration = readJSON(filename = "config")
 			configSSC = configuration['General']['SSC_Data']
-			oldTheme = configSSC['theme']
-			log.debug(f"oldTheme: {oldTheme}")
-			if len(ctx.message.attachments):
-				oldTheme = oldTheme.replace(" ","-")
-				print("comp: Attach")
-				if not os.path.exists("./sscContent"): os.makedirs("./sscContent")
-				if os.path.exists(f"./sscContent/{oldTheme}.jpg"):
-					os.remove(f"./sscContent/{oldTheme}.jpg")
-				else:
-					log.error("Theme File Not Found")
-					pass
-				image_types = ["jpg"]
-				for attachment in ctx.message.attachments:
-					if any(attachment.filename.lower().endswith(image) for image in image_types):
-						filename = f"./sscContent/{attachment.filename}"
-						await attachment.save(filename)
-				attachment = ctx.message.attachments[0]
-				themeFile = attachment.filename[:-4]
-				log.debug(f"themeFile: {themeFile}")
-				theme = themeFile.replace("-"," ")
-				configSSC['theme'] = theme
-			else: 
-				theme = oldTheme
-				themeFile = oldTheme.replace(" ","-")
-				print(theme)
-				print(themeFile)
-			nextstamp = int(configSSC['nextStamp'])
-			
-			compTxt = []
-			if prize:
-				configSSC['isPrize'] = True
-				if prizeUser:
-					compTxt.append(f"{config.txt_CompGift}\n**{prize}** provided by {prizeUser}")
-				else:
-					compTxt.append(f"{config.txt_CompGift}\n**{prize}**")
-				print(f"compTxt: {compTxt}")
-			elif alert == "here":
-				configSSC['isPrize'] = False
-			print(compTxt)
-			compTxt.append(f"{config.txt_CompEnd} **<t:{nextstamp}:f>**\n{config.txt_CompTheme} **{theme}**")
-			if note1 != "no":
-				compTxt.append(f"**Note**: {note}")
-			compTxt = '\n'.join(compTxt)
-			e = nextcord.Embed(title=config.txt_CompStart,
-			description=compTxt,
-			colour= getCol('ssc') )
-			file=nextcord.File("missing.png")
-			e.set_image(url=f"attachment://missing.png")
-			if os.path.exists(f"./sscContent/{themeFile}.jpg"):
-				file=nextcord.File(f"./sscContent/{themeFile}.jpg")
-				e.set_image(url=f"attachment://{themeFile}.jpg")
-			e.set_footer(text=config.txt_CompRules)
-			await ctx.send(file=file, embed=e)
-			await asyncio.sleep(0.1)
-			last = ctx.channel.last_message_id
-			mess = await ctx.channel.fetch_message(int(last))
-			emojis=[config.emoNotifi,config.emoTmbUp,config.emoTmbDown]
-			for emoji in emojis:
-				await mess.add_reaction(emoji)
-			await mess.pin()
-			await asyncio.sleep(0.1)
-			last = ctx.channel.last_message_id
-			mess = await ctx.channel.fetch_message(int(last))
-			await mess.delete()
-			await asyncio.sleep(0.25)
-			if alert != "no": pass
-				#await ctx.send(f"@{alert}")
-				#if alert == "here":
-			try:
-				if self.remindTask.is_running:
-					log.debug("Try remindTask Running")
-					pass
-				else:
-					self.remindTask.start()
-					log.debug("Try remindTask Start")
-			except:
-				log.debug("remindTask not already running")
-				pass
-			log.debug("remindTask Triggered")
-			configSSC['remindSent'] = False
-			if writeJSON(data=configuration, filename="config"): pass
-			log.info("Competition Start")
-			return
+			cont = alert.content.split(' ')
+			for item in cont:
+				if '@' in item:
+					configSSC['alertType'] = item.removeprefix('@')
+					break
+			if not writeJSON(data=configuration, filename="config"):
+				await interaction.send("Failed to write to config", ephemeral=True)
+				return
+			emoListB = [config.emoNotifi]
+			for element in emoListB:
+				await alert.add_reaction(element)
+		log.info("Competition Start")
+		bannerFullAll = [bannerFull1, bannerFull2, bannerFull4, bannerFull8]
+		ssChan = self.bot.get_channel(configuration['TPFGuild']['Channels']['ScreenshotsTPF'])
+		async def sendSS(chan, ss):
+			ebed = nextcord.Embed(title=f"{theme} theme", colour= getCol('ssc'))
+			ebed.set_image(url=ss.url)
+			await chan.send(embed=ebed)
+		for item in bannerFullAll:
+			if item is not None:
+				await sendSS(ssChan, item)
+		bannerFullAllOG = [bannerFull1OG, bannerFull2OG, bannerFull4OG, bannerFull8OG]
+		ogChan = self.bot.get_channel(configuration['TPFGuild']['Channels']['ScreenshotsGames'])
+		for item in bannerFullAllOG:
+			if item is not None:
+				await sendSS(ogChan, item)
+		log.debug("Competition banner images posted")
 
-	@commands.command(name="delete")
-	@commands.has_permissions(manage_messages=True)
-	async def delete(self, ctx: commands.Context, messID, reason, reason1=None):
-		"""Deletes message and informs user. Message ID, User ID, Reason(theme/edit/repost), Reason(optional) 'passed'
-		Depending on reason arg, informs user why their submission was delete. Theme message includes the theme.
-		Please provide a link for repost arg."""
-		if not await blacklistCheck(ctx=ctx): return
-		log.debug("deleteCommand")
-		configSSC = readJSON(filename = "config")['General']['SSC_Data']
-		theme = configSSC['theme']
-		log.debug(f"t,{theme}")
-		log.debug(f"reason,{reason}")
-		log.debug(f"reason1,{reason1}")
-		res0 = "Your image was deleted "
-		res1 = res0+f"as it does not fit this weeks theme of;\n**`{theme}`**{config.txt_CompDMresub}"#config.txt_CompDMr1+(f"\n**`{t}`**")+config.txt_CompDMresub #Does not match theme
-		res2 = res0+f"due to it being edited.{config.txt_CompDMtss}"
-		res3 = res0+f"because it's been posted before,\n{reason1}"
-		if "theme" in reason:
-			r = res1
-		elif "edit" in reason:
-			r = res2
-		elif "repost" in reason:
-			if reason1:
-				r = res3
-				pass
-			else:
-				await ctx.send('"Text in double quotes" or a link must be provided as 3rd argument')
-				return
-		else:
-			if reason:
-				r = reason
-				pass
-			else:
-				await ctx.send('"Text in double quotes" must be provided as 2nd argument')
-				return
-		mess = await ctx.fetch_message(messID)
-		usrID = mess.author.id
-		usr = await self.bot.fetch_user(usrID)
-		log.debug(f"m,{messID}: u,{usrID}: reason,{r}")
-		log.debug(f"r1,{reason1}")
+	@slash_command(name="delete", default_member_permissions=Permissions(manage_messages=True),
+	guild_ids=[int(readJSON(filename = "config")['TPFGuild']['ID']), config.ownerGuild])
+	async def sscDelete(self, interaction: Interaction,
+		messID:str= SlashOption(
+		name="message-id", required=True, description="The ID of the message to delete."
+		),
+		reason:str= SlashOption(
+		name="reason-preset", required=False, description="Preset reason for deletion",
+		choices={
+			"Incorrect Theme":"1",
+			"Reposted":"1",
+			"Edited":"It has been edited."
+		}),
+		customReason:str= SlashOption(
+		name="reason-custom", required=False, description="Custom reason for deletion? Note that your nick will be appended.",
+		)):
+		"""Deletes message informs author of reason. For custom reason, {} will be replaced with the relavent info."""
+		print("sscDelete")
+		log.debug(f"{interaction.user.id}, {messID}, {reason}|{customReason}")
+		if reason is None and customReason is None: interaction.send("A reason must be given.", ephemeral=True)
+		theme = readJSON(filename = "config")['General']['SSC_Data']['theme']
+		try:
+			themeNote = readJSON(filename = "config")['General']['SSC_Data']['allThemes'][theme]
+		except: themeNote = None
+		txt = ["Your image was deleted;"]
+		if reason == "1":
+			txt.append(f"It does not fit this week's theme of; **{theme}**")
+			if themeNote is not None: txt.append(f"```\n{themeNote}\n```")
+		elif reason == "2":
+			txt.append("It's been posted before,")
+		
+		if reason and customReason:
+			txt.append('\n')
+		if customReason:
+			txt.append(f"```\n{customReason}\n```\n-{interaction.user.display_name}")
+		text = '\n'.join(filter(None, txt))
+		log.info(f"{interaction.user.id}, {messID}, {text}")
+		mess = await interaction.channel.fetch_message(messID)
+		usr = await self.bot.fetch_user(mess.author.id)
 		if usr.bot:
-			await ctx.send("Author is bot, unable to send DM")
+			await interaction.send("Author is bot, unable to send DM", ephemeral=True)
 		elif usr:
-			await usr.send(r)
-			log.info(f"DMsent: {usr}, {reason}: {ctx.author.id},{ctx.author.display_name}")
+			await usr.send(text)
 		else:
-			await ctx.send('user not found')
-			log.info(f"DM-userNotFound: {usr}, {reason}")
-		await asyncio.sleep(1)
-		await ctx.channel.delete_messages([nextcord.Object(id=messID)])
-		await ctx.message.delete()
+			await interaction.send("User not found", ephemeral=True)
+		await mess.delete()
+		await interaction.send("Message deleted and DM sent.", ephemeral=True)
 
-	@commands.command(name="themeVote")
-	@commands.has_role(readJSON(filename = "config")['TPFGuild']['Roles']['SSC_Manager'])
-	async def themeVote(self, ctx: commands.Context):
-		"""Pull 3 themes for community to vote on"""
-		if not await blacklistCheck(ctx=ctx): return
-		log.debug("themeVoteCommand")
-		ops = open('themes.txt').read().splitlines()
-		op0 = random.sample(ops, k=3)
-		op1, op2, op3 = op0
-		await ctx.send(f"Vote for next week's theme.\n{config.emo1} {op1}\n{config.emo2} {op2}\n{config.emo3} {op3}")
-		last = ctx.channel.last_message_id
-		message = await ctx.channel.fetch_message(int(last))
-		emojis=[config.emo1,config.emo2,config.emo3]
-		for emoji in emojis:
-			await message.add_reaction(emoji)
-		await ctx.message.delete()
-		log.info("themeVote")
+	def updateThemesList(configuration):
+		try:
+			data = GSheetGet()
+		except: return "GSheetFailed"
+		themesList = data.get('A5:B')
+		themesDic = {}
+		for element in themesList:
+			if len(element) == 1:
+				themesDic[element[0]] = None
+			else:
+				themesDic[element[0]] = element[1]
+		if configuration['General']['SSC_Data']['allThemes'] != themesDic:
+			configuration['General']['SSC_Data']['allThemes'] = themesDic
+			return writeJSON(data = configuration, filename="config")
+		return True
+	
+	@slash_command(name="themevote", guild_ids=config.SlashServers)
+	async def themeVote(self, interaction:Interaction,
+		update:bool= SlashOption(name= "update", description= "Whether to pull from GSheet or not. SSCManager Only.",
+		required= False, default= False),
+		ops:int= SlashOption( name= "options", description= "Number of options to be picked",
+		min_value= 2, max_value= 9, required= False, default= 3),
+		themes:str= SlashOption(name= "themes", required= False,
+		description= "Manually set theme options. Separate with : First item being completion of 'Vote for '")):
+		"""Pull a number of themes for community to vote on"""
+		if not await blacklistCheck(ctx = interaction): return
+		log.debug(f"{Interaction.user}")
+		configuration = readJSON(filename = "config")
+		if update is True:
+			role = interaction.guild.get_role(readJSON(filename = "config")['TPFGuild']['Roles']['SSC_Manager'])
+			if not hasRole(role=role, roles=interaction.user.roles):
+				await interaction.send("You're not SSC Manager.", ephemeral=True)
+				return
+			try:
+				self.updateThemesList(configuration)
+			except: interaction.send("Error updating themes", ephemeral=True)
+			configuration = readJSON(filename = "config")
+		themesDic = configuration['General']['SSC_Data']['allThemes']
+		if not themes:
+			while True:
+				options = random.sample((themesDic.keys()), k=ops)
+				if configuration['General']['SSC_Data']['theme'] in options:
+					print("theme in options")
+					pass
+				else: break
+			txt = ["Vote for next week's theme."]
+		else:
+			opSplit= themes.split(':')
+			txt = [f"Vote for {opSplit[0]}"]
+			options = opSplit[1:]
+		numb = {
+			1:config.emo1,
+			2:config.emo2,
+			3:config.emo3,
+			4:config.emo4,
+			5:config.emo5,
+			6:config.emo6,
+			7:config.emo7,
+			8:config.emo8,
+			9:config.emo9
+		}
+		emo = []
+		for idx, element in enumerate(options):
+			emo.append(numb[idx+1])
+			txt.append(f"{numb[idx+1]} {element}")
+		last = await interaction.send('\n'.join(txt))
+		last = await last.fetch()
+		for element in emo:
+			await last.add_reaction(element)
 
 	@commands.Cog.listener()
 	async def on_message(self, ctx):
@@ -357,6 +410,9 @@ class tpfssc(commands.Cog, name="TpFSSC"):
 		sscRun = configTPF['Roles']['SSC_Runnerup']
 		sscPri = configTPF['Roles']['SSC_WinnerPrize']
 		if len(ctx.attachments) == 1 or h == 'y':
+			if configSSC['ignoreWinner']:
+				await ctx.add_reaction(config.emoStar)
+				return
 			prize = configSSC['isPrize']
 			if prize is True:
 				if ctx.author.get_role(int(sscPri)):
@@ -393,7 +449,6 @@ class tpfssc(commands.Cog, name="TpFSSC"):
 			else:
 				log.warning(f"Star: Mhmm: {ctx.author.id},{ctx.author.display_name}")
 		else:
-			print("HUH")
 			log.debug("HUH")
 
 def setup(bot: commands.Bot):

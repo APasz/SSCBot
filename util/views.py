@@ -216,4 +216,15 @@ class nixrolesCOL(nextcord.ui.View):
 		role = nextcord.utils.get(interaction.guild.roles, id=configNIX['COL_yellow'])
 		await clicky(role, button, interaction)
 
+class sscVote(nextcord.ui.View):
+	def __init__(self):
+		super().__init__(timeout=None)
+		self.value = None
+	
+	@nextcord.ui.button(label = "Vote",
+	style = nextcord.ButtonStyle.grey,
+	custom_id="SSC|VOTE|1")
+	async def SSCVOTE(self, button:nextcord.ui.Button, interaction):
+		print(f"Button Pressed: {str(interaction.message.id)}")
+
 #MIT APasz

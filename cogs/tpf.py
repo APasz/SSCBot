@@ -148,13 +148,7 @@ class tpf(commands.Cog, name="TpF server"):
 	async def modPreview(self, dets, chan, platform):
 		log.debug("modPreview")
 		NSFW = False
-		auth = None
-		authURL = None
-		authIcon = None
-		desc = None
-		createdAt = None
-		updatedAt = None
-		modThumb = None
+		auth = authURL = authIcon = desc = createdAt = updatedAt = modThumb = None
 		tags = []
 		if platform == "steam":
 			createdAt = dets['time_created']
@@ -243,7 +237,7 @@ class tpf(commands.Cog, name="TpF server"):
 				return
 			else: log.debug("AW")
 		if (ctx.channel.id == localcf_chan_nmr) and (ctx.author.bot is False):
-			print("NMR listener")
+			log.debug("NMR listener")
 			nmpChan = await self.bot.fetch_channel(localcf_chan_nmp)
 			await modRelease(ctx=ctx, chan=nmpChan)
 

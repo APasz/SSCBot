@@ -124,7 +124,7 @@ class nix(commands.Cog, name="AUS|NIX"):
 	@commands.Cog.listener()
 	async def on_message(self, ctx):
 		if (ctx.channel.id == localcf_chan_nmr) and (ctx.author.bot is False):
-				print("NMR listener")
+				log.debug("NMR listener")
 				nmpChan = await self.bot.fetch_channel(localcf_chan_nmp)
 				await modRelease(ctx=ctx, chan=nmpChan)
 

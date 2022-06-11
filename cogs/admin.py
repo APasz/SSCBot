@@ -2,31 +2,58 @@ print ("CogAdmin")
 import asyncio
 import logging
 import os
+from discord import Permissions
 
 import nextcord
 from nextcord.ext import commands
 from nextcord.ext.commands.bot import Bot
 from nextcord.ext.commands.cooldowns import BucketType
+from nextcord import Embed, Interaction, SlashOption, slash_command
+from nextcord.ext import application_checks, commands
 
 log = logging.getLogger("discordGeneral")
 
 import config
 from config import userDiction as usrDic
-from util.fileUtil import readJSON, writeJSON
+from util.fileUtil import readJSON, writeJSON, parentDir
 from util.genUtil import getCol, blacklistCheck
 from util.views import nixroles, nixrolesCOL, tpfroles
 
 from cogs.auditlog import *
+from util.fileUtil import configUpdate, parentDir
+
+def auditChanGet(guildID):
+		log.debug("auditGet")
+		audit = config.auditChan
+		if str(guildID) in audit.keys(): return audit[f'{guildID}']
+		else: return config.ownerAuditChan
 
 class admin(commands.Cog, name="Admin"):
 	def __init__(self, bot: commands.Bot):
 		self.bot = bot
 
-	def auditChanGet(self, guildID):
-		log.debug("auditGet")
-		audit = config.auditChan
-		if str(guildID) in audit.keys(): return audit[f'{guildID}']
-		else: return config.ownerAuditChan
+
+	async def purge(self, ctx, limit:int):
+		if not await blacklistCheck(ctx=ctx): return
+		if hasattr(ctx, "author"):
+			usr = ctx.author
+			limit2 = limit + 1
+		else:
+			usr = ctx.user
+			limit2 = limit
+		log.info(f"{limit}: {usr.id},{usr.display_name}")
+		max = readJSON(filename = "config")['General']['purgeLimit']
+		if limit <= max:
+			await asyncio.sleep(0.5)
+			audit = auditChanGet(guildID=ctx.guild.id)
+			usrDic = {'type': "P_C",
+						'auth': usr,
+						'exta': limit,
+						'chanAudit': audit}
+			await auditlog.embed(self, usrDic)
+			await ctx.channel.purge(limit=limit2)
+			return True
+		return False
 
 	@commands.Cog.listener()
 	async def on_ready(self):
@@ -34,31 +61,27 @@ class admin(commands.Cog, name="Admin"):
 		self.bot.add_view(nixroles())
 		self.bot.add_view(nixrolesCOL())
 		log.debug("Ready")
-
+	
 	@commands.command(name="purge")
-	@commands.cooldown(1, 1, commands.BucketType.user)
+	@commands.cooldown(2, 7.5, commands.BucketType.user)
 	@commands.has_permissions(manage_messages=True)
-	async def purge(self, ctx, limit: int):
-		log.info(f"Purge command:{limit}: {ctx.author.id},{ctx.author.display_name}")
-		if not await blacklistCheck(ctx=ctx): return
-		max = readJSON(filename = "config")['General']['purgeLimit']
-		if limit <= max:
-			async with ctx.typing():
-				await ctx.message.delete()
-				await asyncio.sleep(0.5)
-				audit = self.auditChanGet(ctx.guild.id)
-				usrDic = {'type': "P_C",
-							'auth': ctx.author,
-							'exta': limit,
-							'chanAudit': audit}
-				await auditlog.embed(self, usrDic)
-				await ctx.channel.purge(limit=limit)
-		else:
+	async def purgeComm(self, ctx, limit:int):
+		"""Purges a number of messages. Manage Messages Only."""
+		if not await self.purge(ctx=ctx, limit=limit):
 			await ctx.message.delete()
 			delTime = readJSON(filename = "config")['General']['delTime']
 			await ctx.send(f"{limit} is more than {max}.\n{delTime}sec *self-destruct*", delete_after=delTime)
 
-
+	@slash_command(name="purge", guild_ids=config.SlashServers,
+	default_member_permissions=Permissions(manage_messages=True))
+	async def purgeSlash(self, interaction:Interaction, limit:int = SlashOption(
+		name="limit", description="How many messages to delete", required=True,
+		max_value= readJSON(filename = "config")['General']['purgeLimit'])):
+		"""Purges a number of messages. Manage Messages Only."""
+		if await self.purge(ctx=interaction, limit=limit):
+			await interaction.send(f"Messages purged.", ephemeral=True)
+		else:
+			await interaction.send(f"{limit} is more than {max}.", ephemeral=True)
 
 	@commands.command(name="blacklist", aliases=["SSCblacklist"])
 	@commands.cooldown(1, 1, commands.BucketType.user)
@@ -107,7 +130,7 @@ class admin(commands.Cog, name="Admin"):
 			check = writeJSON(data, filename = blklstType, directory = ["secrets"])
 			if check == 1:
 				usr = await self.bot.fetch_user(id)
-				audit = self.auditChanGet(ctx.guild.id)
+				audit = auditChanGet(guildID=ctx.guild.id)
 				usrDic = {'type': "Bl_A",
 							'auth': ctx.author,
 							'usr': usr,
@@ -138,7 +161,7 @@ class admin(commands.Cog, name="Admin"):
 			check = writeJSON(data, filename = blklstType, directory = ["secrets"])
 			if check == True:
 				usr = await self.bot.fetch_user(usr)
-				audit = self.auditChanGet(ctx.guild.id)
+				audit = auditChanGet(guildID=ctx.guild.id)
 				usrDic = {'type': "Bl_R",
 							'auth': ctx.author,
 							'usr': usr,
@@ -170,12 +193,12 @@ class admin(commands.Cog, name="Admin"):
 			else: continue
 		fileList = '\n'.join(fileList)
 		foldList = '\n'.join(foldList)
-		# print(f"Foldername: {folder}")
-		# print(f"Files: {fileList}")
-		# print(f"Folders: {foldList}")
+		print(len(foldList))
 		e = nextcord.Embed(title=f"All py/json/txt files in **{folder}**", colour=getCol('neutral_Mid'))
-		e.add_field(name="Files", value=f"{fileList}", inline=True)
-		if foldList: e.add_field(name="Folders", value=f"{foldList}", inline=True)
+		if len(fileList) > 0:
+			e.add_field(name="Files", value=f"{fileList}", inline=True)
+		if len(foldList) > 0:
+			e.add_field(name="Folders", value=f"{foldList}", inline=True)
 		await ctx.send(embed=e)
 
 	@commands.command(name="getFile", aliases=["auditGet", "fileGet"])
@@ -187,9 +210,8 @@ class admin(commands.Cog, name="Admin"):
 		fName = f"./{filename}"
 		if os.path.exists(fName) and not os.path.isdir(fName):
 			if ("secrets" not in filename) or (ctx.author.id == config.ownerID):
-				guild = ctx.guild.id
 				audit = None #this section will be redone
-				audit = await self.auditChanGet(self, guild)
+				audit = auditChanGet(guildID=ctx.guild.id)
 				usrDic = {'type': "A_G",
 							'auth': ctx.author,
 							'exta': filename,
@@ -203,6 +225,53 @@ class admin(commands.Cog, name="Admin"):
 		else:
 			await ctx.send("""File not found. Please include the extension.
 If in a folder please include the foldername followed by a slash. eg [ foldername/filename ]""")
+
+	## Roll into a more modular file management thing.
+	# @commands.command(name="getLog", aliases=["logGet"])
+	# @commands.has_permissions(administrator=True)
+	# async def getLog(self, ctx, log:str="list"):
+	# 	"""Gets the bot logs. Administrator Only."""
+	# 	log = log.casefold()
+	# 	botDir = parentDir()
+	# 	botLogFold = os.path.join(botDir, "logs")
+	# 	print(botLogFold)
+	# 	if not os.path.exists(botLogFold):
+	# 		print("not")
+	# 		return
+	# 	else: print("yes")
+	# 	triggerFold = os.path.abspath(os.path.join(botDir, os.pardir))
+	# 	logList = {}
+	# 	print("getLog")
+	# 	for directory in [botLogFold, triggerFold]:
+	# 		if os.path.exists(directory): print("yes", directory)
+	# 		else: continue
+	# 		for filename in os.listdir(directory):
+	# 			if os.path.exists(filename): print("yes2", filename)
+	# 			else: continue
+	# 			if filename.endswith('log'):
+	# 				print("yes3", "Log")
+	# 				logList[filename] = directory
+	# 	files = logList.keys()
+	# 	print(files)
+	# 	if "list" in log:			
+	# 		await ctx.send(', '.join(files))
+	# 		return
+	# 	if len(files) > 0:
+	# 		for item in files:
+	# 			print(log, item.casefold())
+	# 			if log in item.casefold():
+	# 				filePath = os.path.join(logList[item], item)
+	# 				print(filePath)
+	# 				fileDir=nextcord.File("./logs/discordGeneral.log")
+	# 				if fileDir is not None:
+	# 					print(fileDir, type(fileDir))
+	# 					await ctx.send(file=fileDir)
+	# 				else:
+	# 					log.error("File Empty")
+	# 				return
+	# 	await ctx.send("Can't find the log.")
+		
+	
 
 	@commands.command()
 	@commands.has_permissions(manage_messages=True)
@@ -229,6 +298,21 @@ Modder intern gives access to special channels full of useful info.""",
 		await ctx.send(embed=e, view=view)
 		if nix == True: await ctx.send(view=view2)
 		await view.wait()
+
+	# @slash_command(name="updateconfig", guild_ids=config.SlashServers)
+	# @commands.is_owner()
+	# async def updateconfig(self, interaction: Interaction,
+	# 	newconfig: nextcord.Attachment = SlashOption(name = "newconfig", required = True,
+	# 	description = "A JSON file containing new or overriding elements.")):
+	# 	"""Merge new config.json into existing one."""
+	# 	from util.fileUtil import configUpdate, parentDir
+	# 	log.info(interaction.user.id)
+	# 	tmpDir = os.path.join(os.sep, "tmp")
+	# 	curDir = parentDir()
+	# 	if await configUpdate(tmpDir, curDir, newconfig):
+	# 		await interaction.send("Config merged!", ephemeral=True)
+	# 	else:
+	# 		await interaction.send("Error during config merge.", ephemeral=True)
 
 def setup(bot: commands.Bot):
 	bot.add_cog(admin(bot))

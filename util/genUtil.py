@@ -12,16 +12,18 @@ import logging
 log = logging.getLogger("discordGeneral")
 
 def getCol(col:str):
+	log.debug(col)
 	red, green, blue = configGen['EmbedColours'][col]	
 	colour = nextcord.Colour.from_rgb(red, green, blue)	
 	return colour
 
 def hasRole(role:Role, roles):
+	log.debug(role)
 	if role in roles: return True
 	else: return False
-from pprint import pprint
 
 def getUserID(obj):
+	log.debug(obj)
 	if hasattr(obj, "author"):
 		return str(obj.author.id)
 	if hasattr(obj, "user"):
@@ -29,6 +31,7 @@ def getUserID(obj):
 
 async def blacklistCheck(ctx, blklstType:str="gen"):
 	"""Checks if user in the blacklist"""
+	log.debug(ctx)
 	def check():
 		if blklstType == "gen":
 			filename = "GeneralBlacklist"
@@ -37,12 +40,12 @@ async def blacklistCheck(ctx, blklstType:str="gen"):
 		return readJSON(filename=filename, directory=['secrets'])
 	userID = None
 	userID = getUserID(obj=ctx)
-	#print(userID)	
+	log.debug(userID)	
 	if (userID == config.ownerID): return True
 	if (userID == ctx.guild.owner.id): return True
 	BL = check()
 	if not bool(BL.get(userID)): return True
-	txt = f"""You're blacklisted from using this **{config.botName}**.
+	txt = f"""You're blacklisted from using **{config.botName}**.
 If you believe this to be error, please contact a server Admin/Moderator."""
 	if "inter" in str(type(ctx)):
 		await ctx.response.send_message(txt, ephemeral=True)

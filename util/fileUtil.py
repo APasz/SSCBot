@@ -25,7 +25,7 @@ def parentDir():
 	return parDir
 
 def writeJSON(data, filename:str, directory:list=None):
-	print(f"writeJSON: {filename}")
+	log.debug(f"writeJSON: {filename}")
 	if not filename.casefold().endswith(".json"):
 		filename = filename + ".json"
 	parDir = parentDir()
@@ -42,11 +42,11 @@ def writeJSON(data, filename:str, directory:list=None):
 		return False
 
 def cacheWrite():
-	print(f"writeCache")
+	log.debug(f"writeCache")
 	writeJSON(data=cacheJSON, filename="cache")
 
 def readJSON(filename:str, directory:list=None, cache:bool=True):
-	#print(f"readJSON: {filename}")
+	log.debug(f"readJSON: {filename}")
 	if not filename.casefold().endswith(".json"):
 		filename = filename + ".json"
 	parDir = parentDir()
@@ -71,10 +71,10 @@ def readJSON(filename:str, directory:list=None, cache:bool=True):
 	if cache is False: return read()
 	if os.path.exists(fullDir):
 		newModTime = int(os.path.getmtime(fullDir))
-		#print("exists", fullDir, newModTime)
+		log.debug(f"exists:, {fullDir}, {newModTime}")
 	else: newModTime = 0
 	if fileDir in cacheJSON:
-		#print("fileInCache")
+		log.debug("fileInCache")
 		oldModTime = cacheJSON[fileDir]['modTime']
 		if oldModTime != newModTime:
 			data = read()		
@@ -86,7 +86,7 @@ def readJSON(filename:str, directory:list=None, cache:bool=True):
 		else:
 			data = cacheJSON[fileDir]['content']
 	else:
-		#print("fileNotInCache")
+		log.debug("fileNotInCache")
 		data = read()
 		meta = {
 			'modTime':newModTime,
@@ -96,6 +96,7 @@ def readJSON(filename:str, directory:list=None, cache:bool=True):
 	return data
 
 def combineJSON(current:str, new:str):
+	log.debug(f"{current} -> {new}")
 	try:
 		if not os.path.exists(current): return False
 		if not os.path.exists(new): return False
@@ -107,9 +108,10 @@ def combineJSON(current:str, new:str):
 		if writeJSON(data=mergeJSON, directory=curSplit[0], filename=curSplit[1]):
 			return True
 		else: return False
-	except Exception as e: return e
+	except Exception as xcp: return xcp
 
 def copyFile(src:str, dst:str, file:str):
+	log.debug(f"{src} -> {dst}")
 	if not os.path.exists(dst):
 		try:
 			os.makedirs(dst)
@@ -119,29 +121,29 @@ def copyFile(src:str, dst:str, file:str):
 	try:
 		shutil.copy(os.path.join(src, file), os.path.join(dst, file))
 		return True
-	except Exception as e:
-		log.error(e)
+	except Exception as xcp:
+		log.error(xcp)
 		return False
 
 def newFile(data, directory:str, filename:str, extenstion:str="txt"):
+	log.debug(f"{type(data)} | {directory}, {filename} {extenstion}")
 	file = os.path.join(directory, f"{filename}.{extenstion}")
 	f = open(file, 'w')
-	print(data)
 	f.write(str(data))
 	f.close()
 	return True
 
 def readFile(directory:str, filename:str, extenstion:str="txt"):
+	log.debug(f"{directory}, {filename} {extenstion}")
 	file = os.path.join(directory, f"{filename}.{extenstion}")
 	f = open(file, 'r')
 	data = f.read()
 	f.close()
 	return data
 
-def configUpdate(tmpDir:str, curDir:str, attachCF):
+async def configUpdate(tmpDir:str, curDir:str, attachCF):
 	"""Takes a discord json file object, saves it and merges it with the existing config json file"""
-	print("configUpdate")
-	log.critical("configUpdate")
+	log.debug(f"{tmpDir} | {curDir}")
 	curCF = os.path.join(curDir, 'config.json')
 	if os.path.exists(curCF):
 		with open(curCF, 'r') as file:
@@ -150,8 +152,8 @@ def configUpdate(tmpDir:str, curDir:str, attachCF):
 	else: return False
 
 	newCF = os.path.join(tmpDir, 'config.json')	
-	attachCF.save(newCF)
-	asyncio.sleep(0.5)
+	await attachCF.save(newCF)
+	await asyncio.sleep(0.5)
 	if os.path.exists(newCF):
 		with open(newCF, 'r') as file:
 			newCFData = json.load(file)
@@ -159,7 +161,7 @@ def configUpdate(tmpDir:str, curDir:str, attachCF):
 	else: return False
 
 	mergedCFdata = oldCFdata | newCFData
-	mergedCF = os.path.join(curDir, "config.py")
+	mergedCF = os.path.join(curDir, "config.json")
 	if os.path.exists(mergedCF): os.remove(mergedCF)
 	with open(mergedCF, "w") as file:
 		json.dump(mergedCFdata, file, sort_keys=True, indent=4)

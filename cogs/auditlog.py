@@ -25,7 +25,6 @@ class auditlog(commands.Cog, name="AuditLogging"):
 
 	async def userRemove(self, data, auditID, guildData):
 		await self.bot.wait_until_ready()
-		log.debug(f"userRemove")
 		log.info(f"MemberRemove: {data.id}: {data.display_name}")
 		usr = data
 		guildCount = guildData.member_count
@@ -39,9 +38,9 @@ class auditlog(commands.Cog, name="AuditLogging"):
 
 	async def checkKickBan(self, usr, auditID, guildData, uR=0):
 		await self.bot.wait_until_ready()
-		log.debug("CheckKickBan")
+		log.debug(f"{usr.id}, {auditID}")
 		async for entry in guildData.audit_logs(limit=3):
-			print(entry.action)
+			log.debug(entry.action)
 			#if ("kick" or "ban") not in entry.action: continue
 			auditLog = entry
 			curStamp = int(time.time())
@@ -75,7 +74,6 @@ class auditlog(commands.Cog, name="AuditLogging"):
 
 	async def embed(self, data):
 		await self.bot.wait_until_ready()
-		log.debug("embed")
 		stdName = "Author ID | Account | Nick | Live Nick"
 		shtName = "Author ID | Account | Live Nick"
 		type = data['type']

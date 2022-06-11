@@ -4,3 +4,4 @@ python-dateutil
 netifaces
 pint
 gitpython
+gspread

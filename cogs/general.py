@@ -89,9 +89,8 @@ class general(commands.Cog, name="General"):
 	async def pingSlash(self, interaction:Interaction, api:str = SlashOption(
 			name="api", description="Do you want to check API ping?", required=False)):
 		"""Gives ping to server in Melbourne, Australia"""
-		log.debug("pingSlash")
+		log.debug(interaction.user.id)
 		BL = await blacklistCheck(ctx=interaction, blklstType="gen")
-		print(BL)
 		if BL is False: return
 		if api is not None:
 			せ = time.perf_counter()
@@ -107,7 +106,7 @@ class general(commands.Cog, name="General"):
 	@commands.cooldown(1, 1, commands.BucketType.user)
 	async def info(self, ctx: commands.Context, ver=None):
 		"""Gives information about the bot"""
-		log.debug("infoCommand")
+		log.debug(ctx.author.id)
 		configGen = readJSON(filename = "config")['General']
 		mV = configGen['verMajor']
 		sV = configGen['VerMinor']
@@ -144,94 +143,185 @@ class general(commands.Cog, name="General"):
 	@commands.cooldown(1, 1, commands.BucketType.user)
 	async def memberCount(self, ctx: commands.Context):
 		"""Gives number of members current guild has"""
-		log.debug("guildCountCommand")
-		await ctx.send(f"**Member Count**: {ctx.guild.member_count}")
-		log.info(f"guildCountCommand: {ctx.author.id},{ctx.author.display_name}")
+		log.info(f"{ctx.author.id},{ctx.author.display_name}")
+		await ctx.send(f"**Member Count**: {ctx.guild.member_count}")		
 
 	@slash_command(name="membercount", guild_ids=config.SlashServers)
 	@commands.cooldown(1, 1, commands.BucketType.user)
 	async def memberCountSlash(self, interaction: Interaction):
 		"""Gives number of members current guild has"""
-		log.debug("guildCountSlash")
+		log.info(f"{interaction.user.id},{interaction.user.display_name}")
 		if not await blacklistCheck(ctx=interaction, blklstType="gen"): return
-		await interaction.response.send_message(interaction.user.guild.member_count)
-		log.info(f"guildCountSlash: {interaction.user.id},{interaction.user.display_name}")
+		await interaction.send(interaction.user.guild.member_count)		
 
-	@commands.command(name="emoji", aliases=['emo']) #make better one day
+	@commands.command(name="react", aliases=['emoji'])
 	@commands.cooldown(1, 1, commands.BucketType.user)
 	@commands.has_permissions(manage_messages=True)
-	async def emoji(self, ctx, messid1, messid2=None, messid3=None):
-		"""When given up to 3 message IDs, will add first 10 reactions, if no emoji passed, will add star.
-		Locked to those who have 'Manage Messages' permssions"""
-		log.debug("emojiCommand")
-		mess1 = await ctx.fetch_message(messid1)
-		mess2 = None
-		mess3 = None
-		if messid2:
-			if messid2.isdigit(): mess2 = await ctx.fetch_message(messid2)
-		else:
-			messid2 = None
-		if messid3:
-			if messid3.isdigit(): mess3 = await ctx.fetch_message(messid3)
-		else:
-			messid3 = None
-			mess3 = None
-		cont = ctx.message.content
-		cont = cont.split(' ')
-		print(cont)
-		cont = cont.removeprefix("~e")
-		cont = cont.removeprefix("moji")
-		cont.remove(messid1)
-		if messid2 != None:
-			if messid2.isdigit(): cont.remove(messid2)
-		if messid3 != None:
-			if messid3.isdigit(): cont.remove(messid3)
-		print(cont)
-		cont = cont[:10]
-		if cont: pass
-		else:
-			cont = config.emoStar
-		messids = [messid1, messid2, messid3]
-		print(messids)
-		for emoji in cont:
-			await mess1.add_reaction(emoji)
-			if mess2 != None: await mess2.add_reaction(emoji)
-			if mess3 != None: await mess3.add_reaction(emoji)
+	async def react(self, ctx):
+		print(ctx.message.content)
+		rawItems = ctx.message.content.split(' ')[1:]
+		messIDs = []
+		emojiSet = set()
+		for item in rawItems:
+			if item[0].isdigit():
+				messIDs.append(int(item))
+			elif item[0].startswith('<'):
+				emojiSet.add(item)
+			else:
+				emojiSet.add(item)
+		messOBJs = []
+		print(messIDs)
+		print(emojiSet)
+		for item in messIDs:
+			messOBJs.append(await ctx.fetch_message(item))
+		if len(emojiSet) == 0: emojiSet = ['⭐']
+		badEmoji = set()
+		for item in messOBJs:
+			for element in emojiSet:
+				try: 
+					await item.add_reaction(element)
+				except Exception as xcp:
+					print(xcp)
+					if "Unknown Emoji" in str(xcp): badEmoji.add(element)
+		if len(badEmoji) != 0:
+			await ctx.send(f"Some emoji aren't accessible: {', '.join(badEmoji)}")
+		log.info(f"{messIDs}, {emojiSet}")
 		await ctx.message.delete()
-		log.info(f"emojiCommand: {messids}: {cont}: {ctx.author.id},{ctx.author.display_name}")
 
-	@slash_command(guild_ids=config.SlashServers) #make better one day
+	@slash_command(name= "convert", guild_ids=config.SlashServers)
 	async def convert(self, interaction: Interaction,
-	value:int = SlashOption(name="value", description="What is it we are converting?", required=True),
-	fromunit:str = SlashOption(name="original", description="What unit are we converting from?", required=True),
-	tounit:str = SlashOption(name="new", description="What unit are we converting to?", required=True)):
+	value:float = SlashOption(name="value",
+		description="What is it we are converting?",
+		required=True),
+	fromMetric:str = SlashOption(name="original-metric",
+		description="What Metric unit are we converting from?",
+		required=False,
+		choices = {
+					'Micrometre':'micrometre',
+					'Millimetre':"millimetre",
+					'Centimetre':"centimetre",
+					'Metre':"metre",
+					'Kilometre':"kilometre",
+					'Microgram':'microgram',
+					'Miligram':'miligram',
+					'Gram':'gram',
+					'Kilogram':'kilogram',
+					'Tonne':'tonne',
+			},),
+	fromImperialUS:str = SlashOption(name="original-imperial-us",
+		description="What Imperial/US unit are we converting from?",
+		required=False,
+		choices = {
+					'Inch':"inch",
+					'Feet':"feet",
+					'Yard':'yard',
+					'Mile':"mile",
+					'Teaspoon':'teaspoon',
+					'Tablespoon':'tablespoon',
+					'Fluid ounce':'fluid ounce',
+					'Cup':'cup',
+					'Pint':'pint',
+					'Quart':'quart',
+					'Gallon':'gallon',
+					'Ounce':'ounce',
+					'Pound':'pound',
+					'Ton':'ton',
+			},),
+	fromTime:str = SlashOption(name="original-time",
+		description="If a original-unit is also given, original-unit/original-time",
+		required=False,
+		choices = {
+					'Seconds':"seconds",
+					'Minute':"minute",
+					'Hour':"hour",
+					'Day':"day",
+					'Week':'week',
+					'Year':'year'
+			},),
+	toMetric:str = SlashOption(name="new-metric",
+		description="What unit are we converting to?",
+		required=False,
+		choices = {
+					'Micrometre':'micrometre',
+					'Millimetre':"millimetre",
+					'Centimetre':"centimetre",
+					'Metre':"metre",
+					'Kilometre':"kilometre",
+					'Microgram':'microgram',
+					'Miligram':'miligram',
+					'Gram':'gram',
+					'Kilogram':'kilogram',
+					'Tonne':'tonne',
+			},),
+	toImperialUS:str = SlashOption(name="new-imperial-us",
+		description="What unit are we converting to?",
+		required=False,
+		choices = {
+					'Inch':"inch",
+					'Feet':"feet",
+					'Yard':'yard',
+					'Mile':"mile",
+					'Teaspoon':'teaspoon',
+					'Tablespoon':'tablespoon',
+					'Fluid ounce':'fluid ounce',
+					'Cup':'cup',
+					'Pint':'pint',
+					'Quart':'quart',
+					'Gallon':'gallon',
+					'Ounce':'ounce',
+					'Pound':'pound',
+					'Ton':'ton',
+			},),
+	toTime:str = SlashOption(name="new-time",
+		description="If a new-unit is also given, new-unit/original-time",
+		required=False,
+		choices = {
+					'Seconds':"seconds",
+					'Minute':"minute",
+					'Hour':"hour",
+					'Day':"day",
+					'Week':'week',
+					'Year':'year'
+			},)):
 		"""Converts between units using pint."""
-		if not await blacklistCheck(ctx=interaction, blklstType="gen"): return
-		log.debug(f"convert: {value} {fromunit} {tounit} | {interaction.user.id},{interaction.user.display_name}")
-		if "/s" in fromunit:
-			fromunit = fromunit.replace("/s", "/seconds")
-		if "/s" in tounit:
-			tounit = tounit.replace("/s", "/seconds")
-		if "/h" in fromunit:
-			fromunit = fromunit.replace("/h", "/hour")
-		if "/h" in tounit:
-			tounit = tounit.replace("/h", "/hour")
+		if not await blacklistCheck(ctx=interaction): return
+		if fromMetric and fromImperialUS:
+			await interaction.send(f"Conflicting `originalUnit` arguments. {fromMetric.title()} {fromImperialUS.title()}", ephemeral=True)
+			return
+		if toMetric and toImperialUS:
+			await interaction.send(f"Conflicting `toUnit` arguments. {toMetric.title()} {toImperialUS.title()}", ephemeral=True)
+			return
+		if (fromTime is not None and toTime is None) or (toTime is not None and fromTime is None):
+			await interaction.send("Must have both `original` and `to` time units.", ephemeral=True)
+			return
+		fromUnit = ''.join(filter(None, [fromMetric, fromImperialUS]))
+		toUnit = ''.join(filter(None, [toMetric, toImperialUS]))
+		if fromUnit and fromTime is not None:
+			fromTime = '/' + fromTime
+		if toUnit and toTime is not None:
+			toTime = '/' + toTime
 		u = pint.UnitRegistry()
 		Q = u.Quantity
-		val = Q(value, fromunit)
-		txt = round(val.to(tounit), 3)
-		await interaction.response.send_message(f"{val} is {txt}")
-		log.info(f"convertSlash")
+		try:
+			orig = Q(value, (''.join(filter(None, [fromUnit, fromTime]))))
+			new = round(orig.to(''.join(filter(None, [toUnit, toTime]))), 5)
+		except Exception as xcp:
+			if "cannot convert" in str(xcp).casefold():
+				await interaction.send(f"Conflicting units: {fromUnit.title()} {toUnit.title()}", ephemeral=True)
+			else:
+				await interaction.send(xcp)
+			return
+		ebed = nextcord.Embed(title="Conversion", colour=getCol('neutral_Light'),
+		description=f"{str(orig).replace('meter', 'metre')}\n{str(new).replace('meter', 'metre')}")
+		await interaction.send(embed=ebed)
 
 	@slash_command(name = "changelog", guild_ids = config.SlashServers)
 	async def changelog(self, interaction: Interaction,
 	ver = SlashOption(
-		name = "version",
-		description = "If looking for specific version; x.x.x or list",
-		required = False)):
+		name = "version", required = False,
+		description = "If looking for specific version; x.x.x or list")):
 		"""Provides the changelog"""
 		BL = await blacklistCheck(ctx=interaction, blklstType="gen")
-		print("BL:", BL)
 		if BL is False: return
 		log.debug(f"changelog: {ver} | {interaction.user.id},{interaction.user.display_name}")
 		data = readJSON(filename="changelog")
@@ -246,7 +336,6 @@ class general(commands.Cog, name="General"):
 					ver = ver + '.0.0'
 			else:
 				ver = "List"
-		print(ver)
 		if ver is None: ver = list(data)[-1] #default to last ver in changelog
 		async def sendMess(version:str, content:str):
 			await interaction.response.send_message(f"Version {version}```\n{content}\n```")
@@ -260,10 +349,9 @@ class general(commands.Cog, name="General"):
 			await sendMess(version=ver, content=txt)
 			return
 		else:
-			verName = str(data[f'{ver}'][0])
+			verNameDate = str(data[f'{ver}'][0]).split('::')
 			changeList = data[f'{ver}'][1:]	
-		version = ver + ' | ' + verName
-		
+		version = f"{ver} | {verNameDate[0]}\nDate: {verNameDate[1]}"
 		def chunkList(maxChars:int, txtList:list):
 			logLength = 0
 			entryList = []
@@ -280,18 +368,14 @@ class general(commands.Cog, name="General"):
 		for item in chunks:
 			eles = [changeList[i] for i in item]
 			txt = '\n'.join(eles)
-			print("response", bool(interaction.response.is_done()))
-			print("followup", bool(interaction.followup))
 			toSend = "Undefined"
 			if interaction.response.is_done():
+				log.debug("Followup")
 				toSend = f"... continued ... \n```\n{txt}\n```"
 			else:
+				log.debug("Response")
 				toSend = f"Version {version}      Items: {len(changeList)} ```\n{txt}\n```"
-			await interaction.send(content=toSend)
-		
-			
-
-		
+			await interaction.send(content=toSend)	
 
 	@slash_command(name = "profile", guild_ids = config.SlashServers)
 	async def profile(self, interaction: Interaction,
@@ -341,13 +425,13 @@ class general(commands.Cog, name="General"):
 			for element in permsList: #If admin skip the rest.
 				element = element.lower()
 				if "admin" in element:
-					print("admin")
+					log.debug("admin")
 					permsList2 = ["Administrator"]
 					break
 				else: #check if any of the noteable perms partially match each element of the permissions list.
 					for note in notePerms:
 						if note in element:
-							print("else")
+							log.debug("else")
 							element = element.replace('_', ' ')
 							permsList2.append(element.title())
 							#there must be a better way to do this?

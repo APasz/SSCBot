@@ -6,6 +6,7 @@ import re
 import shutil
 import textwrap
 from xml.etree import ElementTree as ETree
+import gspread
 
 import requests
 from git import Repo
@@ -16,7 +17,7 @@ import config
 
 
 def steamWSGet(wsID):
-	print("steamWS")
+	log.debug("steamWS")
 	url = "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/"
 	params = {
 		'itemcount':1,
@@ -26,7 +27,7 @@ def steamWSGet(wsID):
 		res = requests.post(url, data = params)
 	except Exception as e: log.error(f"{res.status_code} XCP {e}")
 	log.info(f"steamWSGet | {res.status_code}")
-	print(res.status_code)
+	log.debug(res.status_code)
 	dets = None
 	if res:
 		data = res.json()
@@ -35,7 +36,7 @@ def steamWSGet(wsID):
 	return dets
 
 def steamUsrGet(usrID):
-	print("steamUsr")
+	log.debug("steamUsr")
 	url = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/"
 	params = {
 		'key':str(config.STEAMAPI),
@@ -45,7 +46,7 @@ def steamUsrGet(usrID):
 		res = requests.get(url, params = params)
 	except Exception as e: log.error(f"{res.status_code} XCP {e}")
 	log.info(f"steamUsrGet | {res.status_code}")
-	print(res.status_code)
+	log.debug(res.status_code)
 	author = None
 	if res:
 		data = res.json()
@@ -54,7 +55,7 @@ def steamUsrGet(usrID):
 	return author
 	 
 def nexusModGet(game, modID):
-	print("nexusMod")
+	log.debug("nexusMod")
 	url = f"https://api.nexusmods.com/v1/games/{game}/mods/{modID}.json"
 	params = {
 		'apikey':config.NEXUSAPI
@@ -63,7 +64,7 @@ def nexusModGet(game, modID):
 		res = requests.get(url, headers = params)
 	except Exception as e: log.error(f"{res.status_code} XCP {e}")
 	log.info(f"nexusModGet | {res.status_code}")
-	print(res.status_code)
+	log.debug(res.status_code)
 	data = None
 	if res:
 		data = res.json()
@@ -71,7 +72,7 @@ def nexusModGet(game, modID):
 	return data
 
 def tpfnetModGet(data):
-	print("tpfnetMod")
+	log.debug("tpfnetMod")
 	return 200
 	params = {
 
@@ -81,7 +82,6 @@ def tpfnetModGet(data):
 		res = requests.get(url, data=params)
 	except Exception as e: log.error(f"{res.status_code} XCP {e}")
 	log.info(f"tpfnetModGet | {res.status_code}")
-	print(res.status_code)
 	return
 
 def parseURL(url):
@@ -113,6 +113,13 @@ def parseURL(url):
 	'game':game,
 	'platform':plat}
 	log.debug(data)
+	return data
+
+def GSheetGet(sheetName:str= "TpF Screenshot Competition Public", page:str= "List"):
+	log.debug(f"GSheetGet: {sheetName}")
+	servAcc = gspread.service_account(filename=f"secrets{os.sep}google_service_account.json")
+	sheet = servAcc.open(sheetName)
+	data = sheet.worksheet(page)
 	return data
 
 #MIT APasz

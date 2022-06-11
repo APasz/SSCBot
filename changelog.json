@@ -1,8 +1,11 @@
 {
-    "2.0.0": [ "Dawnbreak",
+    "2.0.0": [ "Dawnbreak::20220310",
         "-Complete from scratch rewrite, now using using nextcord wrapper and cogs/modules."
     ],
-    "2.1.0": [ "Previews",
+    "2.0.1": [ "Dawnbreak::20220316",
+        "-Fixed; auditlog: kick log entry not tiggering."
+    ],
+    "2.1.0": [ "Previews::20220324",
         "-Added; admin: Auditlog triggers for own pruge command, and blacklist add/remove.",
         "-Added; bot: Added config option for ready message.",
         "-Added; general: Basic convert slash command.",
@@ -10,13 +13,13 @@
         "-Changed: auditlog: if auditlog trigger is passed but no audit channel, defaults to personal server.",
         "-Fixed; auditlog: Fixed userKicked to not check author name to guild name. (Why it was doing that ???)"
     ],
-    "2.1.1": [ "Previews",
+    "2.1.1": [ "Previews::20220329",
         "-Fixed; NIX: Aussie and Kiwi roles buttons. Config file variable typo."
     ],
-    "2.1.2": [ "Previews",
+    "2.1.2": [ "Previews::20220331",
         "-Changed; general: ping command no longer requires api, anything will trigger it."
     ],
-    "2.2.0": [ "Updates",
+    "2.2.0": [ "Updates::20220423",
         "-Added: Bot is now started via a script which does various checks and grabs the latest bot version from Github, runs bot in new folder. If bot exits, script will restart it. Tigger script included for auditing purpose, it resides in parent folder of bot.",
         "-Added; bot: Commands to update config.json or restart the bot. OwnerOnly",
         "-Added; bot: Memory command to see currently used RAM usuage of process and system. Also hostname. OwnerOnly.",
@@ -35,7 +38,7 @@
         "-Added; views: Verified role for TpF server.",
         "-Changed; Configuration: Config is now from a JSON file. Almost all calls to config were changed.",
         "-Changed; auditlog: Message Deleted embed with remove all '`' with nothing.",
-        "-Changed; bot, fileUtil: Now OS independent.",
+        "-Changed; fileUtil: Now OS independent. Moving forward I'm going to try and support both Linux and Windows but since I primarily use Linux, that is my main concern.",
         "-Changed; bot: Config file existence check is now a list and will exit if file isn't found.",
         "-Changed; fileUtil: readJSON and writeJSON now require list containing the folders from root to desired file. Empty for root.",
         "-Changed; genUtilp: Blacklist check is now actally called by both regular commands and slash commands. Also it was rewritten.",
@@ -49,7 +52,7 @@
         "-Fixed; auditlog: checkKickBan will now grab the last 3 entries and will now consider entries up to 15 seconds old instead of just 5.",
         "-Fixed; auditlog: checkKickBan no longer checks banned username against guild name. (Why it was doing that ???)"
     ],
-    "2.2.1":[ "Updates",
+    "2.2.1":[ "Updates::20220424",
         "-Changed: Blacklist checks on all commands, including admin.",
         "-Changed; bot: Version for ready message now pulled from changelog.json, then config is updated.",
         "-Changed; tpfssc: timestamp and timestampset functions are now in tpfssc cog.",
@@ -58,8 +61,28 @@
         "-Fixed; general: changelog commmand will now split changelog entry if too long. Here I was think the limit was 4000",
         "-Fixed; tpfssc: Reminder task checks remindSent instead of isPrize."
     ],
-    "2.2.2":[ "Updates",
-        "-Fixed: Blacklist checks are now awaited.",
+    "2.2.2":[ "Updates::20220425",
+        "-Fixed: All blacklist checks are now awaited.",
         "-Fixed; tpfssc: comp command timestamp set changed to reflect previous changes."
+    ],
+    "2.3.0":[ "Competition::20220612",
+        "-Added; admin: Slash version of purge command.",
+        "-Added; apiUtil: Can now get Google Sheets",
+        "-Changed: Logging is now multihead to file and console with different formats",
+        "-Changed: Logs are now in own folder.",
+        "-Changed; admin: Purge slash command now enforces limit.",
+        "-Changed; bot: New version number from changelog is no longer dependant on if the readyMessage is true. Also it's only written if it's different.",
+        "-Changed; bot: Version is now in the user activity.",
+        "-Changed; bot: Nextcord version in ready message.",
+        "-Changed; general: Changelog now includes date update was released.",
+        "-Changed; general: Convert redone. Now using choices and feedbacks when error.",
+        "-Changed; tpfssc: themeVote command redone as slash command. Can also update local theme list from Google Sheet [not by default - SSCManager Only]. Also custom themes and vote for text, so can be used to vote on other things.",
+        "-Changed; tpfssc: comp command redone as slash command. Now can post the full banner images to either tpf or other games ss chans.",
+        "-Changed; tpfssc: remindTask uses new alertType instead of either here or everyone based on isPrize.",
+        "-Changed; tpfssc: on_message can ignore users with winner/runnerup roles.",
+        "-Changed; tpfssc: delete command redone as slash command.",
+        "-Fixed; general: Emoji command redone. for loops for the win.",
+        "-Fixed; tpfssc: themeVote command won't pick current theme",
+        "-Removed; tpfssc: No longer check for themes.txt"
     ]
 }

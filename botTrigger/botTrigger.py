@@ -112,14 +112,14 @@ log.info(f"Internet... OK")
 fails = []
 def modules(fails):
 	for module in requiredModules:
-		if subprocess.run(["python3", "-m", "pip", "install", "-r", f"{module}"], stdout=subprocess.DEVNULL):
+		if subprocess.run(["python3", "-m", "pip", "install", "-r", "-U", f"{module}"], stdout=subprocess.DEVNULL):
 			log.info(f"{module}... Installed")
 		else:
 			log.error(f"{module}... Failure")
 			fails.append(module)
 		return fails
 fails = modules(fails)
-print(len(fails))
+log.info(len(fails))
 if len(fails) > 0:
 	log.critical(f"Module/s not found {fails}")
 	sys.exit()
@@ -153,9 +153,9 @@ log.critical(f"Starting Discord Bot {botRepo}")
 while True:
 	try:
 		subprocess.run("python3 bot.py", shell=True, cwd=newBotFold, check=True)
-	except subprocess.CalledProcessError as e:
-		log.critical(f"except: {e.returncode}")
-		if e.returncode == 194:
+	except subprocess.CalledProcessError as xcp:
+		log.critical(f"except: {xcp.returncode} :: {str(xcp)}")
+		if 194 in int(xcp.returncode):
 			log.critical("Rebooting Soon")
 			time.sleep(config.paceNorm)
 			if platformOS.startswith('linux'):
