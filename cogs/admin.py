@@ -20,7 +20,7 @@ from util.genUtil import getCol, blacklistCheck
 from util.views import nixroles, nixrolesCOL, tpfroles
 
 from cogs.auditlog import *
-from util.fileUtil import configUpdate, parentDir
+from util.fileUtil import configUpdate, parentDir, uploadfile
 
 def auditChanGet(guildID):
 		log.debug("auditGet")
@@ -299,8 +299,25 @@ Modder intern gives access to special channels full of useful info.""",
 		if nix == True: await ctx.send(view=view2)
 		await view.wait()
 
+	@slash_command(name="uploadfile", guild_ids=config.SlashServers)
+	@application_checks.is_owner()
+	async def uploadfileCOMM(self, interaction: Interaction,
+	 	newfile: nextcord.Attachment = SlashOption(name = "newfile", required = True,
+	 	description = "A file, ensure filename is correct."),
+		filepath:str = SlashOption(name = "filepath", required = False,
+	 	description = "Path of file, subfolders separated by spaces")):
+		log.info(interaction.user.id)
+		if filepath is not None:
+			filepath = filepath.split(' ')
+		if await uploadfile(directory=filepath, newfile=newfile, bak=True):
+			await interaction.send("Done!", ephemeral=True)
+		else:
+			await interaction.send("Error!", ephemeral=True)
+
+		
+	
 	# @slash_command(name="updateconfig", guild_ids=config.SlashServers)
-	# @commands.is_owner()
+	# @application_checks.is_owner()
 	# async def updateconfig(self, interaction: Interaction,
 	# 	newconfig: nextcord.Attachment = SlashOption(name = "newconfig", required = True,
 	# 	description = "A JSON file containing new or overriding elements.")):

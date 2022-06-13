@@ -6,6 +6,8 @@ import os
 import shutil
 import time
 
+import nextcord
+
 log = logging.getLogger("discordGeneral")
 
 ownerName = "APasz"
@@ -168,5 +170,22 @@ async def configUpdate(tmpDir:str, curDir:str, attachCF):
 	file.close()
 	return True
 
+async def uploadfile(directory, newfile:nextcord.Attachment, bak:bool):
+	log.debug(f"{directory}, {newfile.filename}, {bak}")
+	if directory is not None:
+		filepath = f'{os.sep}'.join(directory)
+		fullPath = os.path.join(parentDir(), filepath, newfile.filename)
+	else:
+		fullPath = os.path.join(parentDir(), newfile.filename)
+	log.debug(fullPath)
+	if os.path.exists(fullPath):
+		if bak is True:
+			shutil.move(fullPath, fullPath+".bak")
+			log.info("File bakked")
+		else:
+			os.remove(filepath)
+			log.info("File removed")
+	await newfile.save(fullPath)
+	return os.path.exists(fullPath)
 
 #MIT APasz

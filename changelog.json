@@ -84,5 +84,8 @@
         "-Fixed; general: Emoji command redone. for loops for the win.",
         "-Fixed; tpfssc: themeVote command won't pick current theme",
         "-Removed; tpfssc: No longer check for themes.txt"
+    ],
+    "2.3.1":[ "Competition::20220613",
+    "-Added; admin: Super simply command to add/replace a file with uploaded one."
     ]
 }
