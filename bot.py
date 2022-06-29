@@ -111,7 +111,7 @@ Nextcord v{nextcord.__version__} **Ready**\nUse /changelog to see changes"""
             configGen["VerMinor"] = verMinor
             configGen["verPoint"] = verPoint
             configGen["verName"] = verName
-            writeJSON(data=config, filename="config")
+            writeJSON(data=configuration, filename="config")
         if configGen["Events"]["ReadyMessage"] is False:
             return
         guilds = getGuilds().values()
