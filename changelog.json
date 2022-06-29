@@ -71,7 +71,7 @@
         "-Changed: Logging is now multihead to file and console with different formats",
         "-Changed: Logs are now in own folder.",
         "-Changed; admin: Purge slash command now enforces limit.",
-        "-Changed; bot: New version number from changelog is no longer dependant on if the readyMessage is true. Also it's only written if it's different.",
+        "-Changed; bot: New version number from changelog is no longer dependant on if the ReadyMessage is true. Also it's only written if it's different.",
         "-Changed; bot: Version is now in the user activity.",
         "-Changed; bot: Nextcord version in ready message.",
         "-Changed; general: Changelog now includes date update was released.",
@@ -81,11 +81,23 @@
         "-Changed; tpfssc: remindTask uses new alertType instead of either here or everyone based on isPrize.",
         "-Changed; tpfssc: on_message can ignore users with winner/runnerup roles.",
         "-Changed; tpfssc: delete command redone as slash command.",
+        "-Removed; tpfssc: No longer check for themes.txt",
         "-Fixed; general: Emoji command redone. for loops for the win.",
-        "-Fixed; tpfssc: themeVote command won't pick current theme",
-        "-Removed; tpfssc: No longer check for themes.txt"
+        "-Fixed; tpfssc: themeVote command won't pick current theme"
     ],
     "2.3.1":[ "Competition::20220613",
-    "-Added; admin: Super simply command to add/replace a file with uploaded one."
+        "-Added; admin: Super simply command to add/replace a file with uploaded one."
+    ],
+    "2.4.0":[ "Toggles::20220629",
+        "-Added: generalEvent cog to house events like on_message or on_member_update that aren't server specific. All items from tpf, nix, and vk have been moved and combined.",
+        "-Added: suggestions cog to house things related to suggestions for the bot, game, etc.\nFor now they're DMed to owner (APasz).",
+        "-Added; config: Global and server specific toggles most for events in generalEvent. On load or invoked via new updateEventList command or toggleEvent slash command, these settings are written to file, so it can be cache separately.",
+        "-Added; generalEvent: On_raw_member_remove just in case a member isn't in the interal cache for some reason. Checks if regular one has been called.",
+        "-Added; modding: Mod releases in other servers can now be posted to the global server as well.",
+        "-Changed: Now using black formatting.",
+        "-Changed; cogs: auditlog renamed to auditLog and auditlog class renamed to auditLogger, gamehelp renamed to gameHelp, tpfssc renamed to ssc",
+        "-Removed: tpf, nix, and vk cogs.",
+        "-Fixed; bot: On ready now writes the new version to config instead of the old. I have no idea why or how this changed.",
+        "-Fixed; modding: modRelease splits message content at spaces rather than newlines so multiple mods links can be on the same line now."
     ]
 }
