@@ -13,11 +13,17 @@ from nextcord.ext.commands.cooldowns import BucketType
 
 log = logging.getLogger("discordGeneral")
 
-import config
-from config import userDiction as usrDic
-from cogs.generalEvent import setupEventList
-from util.fileUtil import configUpdate, parentDir, readJSON, uploadfile, writeJSON
-from util.genUtil import blacklistCheck, getCol, getGuilds, getGlobalEventConfig
+from config import dataObject as dataObject, genericConfig
+from cogs.generalEvent import generalEvent
+from util.fileUtil import readJSON, uploadfile, writeJSON
+from util.genUtil import (
+    blacklistCheck,
+    getCol,
+    getGuilds,
+    getGlobalEventConfig,
+    getChan,
+    getEventConfig,
+)
 from util.views import nixroles, nixrolesCOL, tpfroles
 
 from cogs.auditLog import auditLogger
@@ -25,16 +31,24 @@ from cogs.auditLog import auditLogger
 
 def auditChanGet(guildID):
     log.debug("auditGet")
-    audit = config.auditChan
+    audit = genericConfig.auditChan
     if str(guildID) in audit.keys():
         return audit[f"{guildID}"]
     else:
-        return config.ownerAuditChan
+        return genericConfig.ownerAuditChan
 
 
 class admin(commands.Cog, name="Admin"):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        self.guilds = getGuilds()
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        self.bot.add_view(tpfroles())
+        self.bot.add_view(nixroles())
+        self.bot.add_view(nixrolesCOL())
+        log.debug("Ready")
 
     async def purge(self, ctx, limit: int):
         if not await blacklistCheck(ctx=ctx):
@@ -49,19 +63,16 @@ class admin(commands.Cog, name="Admin"):
         max = readJSON(filename="config")["General"]["purgeLimit"]
         if limit <= max:
             await asyncio.sleep(0.5)
-            audit = auditChanGet(guildID=ctx.guild.id)
-            usrDic = {"type": "P_C", "auth": usr, "exta": limit, "chanAudit": audit}
-            await auditLogger.logEmbed(self, usrDic)
+            dataObject.type = "CommandPurge"
+            dataObject.userObject = usr
+            dataObject.limit = limit
+            dataObject.auditChan = getChan(
+                self=self, guild=ctx.guild.id, chan="Audit", admin=True
+            )
+            await auditLogger.logEmbed(self, dataObject)
             await ctx.channel.purge(limit=limit2)
             return True
         return False
-
-    @commands.Cog.listener()
-    async def on_ready(self):
-        self.bot.add_view(tpfroles())
-        self.bot.add_view(nixroles())
-        self.bot.add_view(nixrolesCOL())
-        log.debug("Ready")
 
     @commands.command(name="purge")
     @commands.cooldown(2, 7.5, commands.BucketType.user)
@@ -78,7 +89,7 @@ class admin(commands.Cog, name="Admin"):
 
     @slash_command(
         name="purge",
-        guild_ids=config.SlashServers,
+        guild_ids=genericConfig.slashServers,
         default_member_permissions=Permissions(manage_messages=True),
     )
     async def purgeSlash(
@@ -138,7 +149,7 @@ class admin(commands.Cog, name="Admin"):
             usr = str(ctx.message.mentions[0].id)
         else:
             usr = str(usr)
-        if int(usr) == config.ownerID:
+        if int(usr) == genericConfig.ownerID:
             await ctx.send("You can't blacklist bot owner.", delete_after=delTime)
         if usr in data:
             reason = data.get(usr)
@@ -147,18 +158,16 @@ class admin(commands.Cog, name="Admin"):
             id = int(usr)
             data[f"{id}"] = reason
             check = writeJSON(data, filename=blklstType, directory=["secrets"])
-            if check == 1:
-                usr = await self.bot.fetch_user(id)
-                audit = auditChanGet(guildID=ctx.guild.id)
-                usrDic = {
-                    "type": "Bl_A",
-                    "auth": ctx.author,
-                    "usr": usr,
-                    "reason": reason,
-                    "cat": cat,
-                    "chanAudit": audit,
-                }
-                await auditLogger.logEmbed(self, usrDic)
+            if check == True:
+                dataObject.type = "BlacklistAdd"
+                dataObject.userObject = ctx.author
+                dataObject.commandArg1 = await self.bot.fetch_user(id)
+                dataObject.reason = reason
+                dataObject.category = cat
+                dataObject.auditChan = getChan(
+                    self=self, guild=ctx.guild.id, chan="Audit", admin=True
+                )
+                await auditLogger.logEmbed(self, dataObject)
                 await ctx.send(f"{usr.id} has been added")
             else:
                 await ctx.send("Error occured during write", delete_after=delTime)
@@ -184,16 +193,14 @@ class admin(commands.Cog, name="Admin"):
             del data[f"{usr}"]
             check = writeJSON(data, filename=blklstType, directory=["secrets"])
             if check == True:
-                usr = await self.bot.fetch_user(usr)
-                audit = auditChanGet(guildID=ctx.guild.id)
-                usrDic = {
-                    "type": "Bl_R",
-                    "auth": ctx.author,
-                    "usr": usr,
-                    "cat": cat,
-                    "chanAudit": audit,
-                }
-                await auditLogger.logEmbed(self, usrDic)
+                dataObject.type = "BlacklistRemove"
+                dataObject.userObject = ctx.author
+                dataObject.commandArg1 = await self.bot.fetch_user(id)
+                dataObject.category = cat
+                dataObject.auditChan = getChan(
+                    self=self, guild=ctx.guild.id, chan="Audit", admin=True
+                )
+                await auditLogger.logEmbed(self, dataObject)
                 await ctx.send(f"{usr.id}: User removed from blacklist.")
             else:
                 delTime = readJSON(filename="config")["General"]["delTime"]
@@ -247,16 +254,18 @@ class admin(commands.Cog, name="Admin"):
         log.info(f"auditGet: {filename}")
         fName = f"./{filename}"
         if os.path.exists(fName) and not os.path.isdir(fName):
-            if ("secrets" not in filename) or (ctx.author.id == config.ownerID):
-                audit = None  # this section will be redone
-                audit = auditChanGet(guildID=ctx.guild.id)
-                usrDic = {
-                    "type": "A_G",
-                    "auth": ctx.author,
-                    "exta": filename,
-                    "chanAudit": audit,
-                }
-                await auditLogger.logEmbed(self, usrDic)
+            if (
+                ("secret" not in filename)
+                or ("log" not in filename)
+                or (ctx.author.id == genericConfig.ownerID)
+            ):
+                dataObject.type = "CommandAuditGet"
+                dataObject.userObject = ctx.author
+                dataObject.filename = filename
+                dataObject.auditID = getChan(
+                    guild=ctx.guild.id, chan="Audit", admin=True
+                )
+                await auditLogger.logEmbed(self, dataObject)
                 file = nextcord.File(fName)
                 await ctx.send(file=file)
             else:
@@ -320,7 +329,8 @@ If in a folder please include the foldername followed by a slash. eg [ foldernam
             return
         await ctx.message.delete()
         nix = False
-        if ctx.guild.id == readJSON(filename="config")["TPFGuild"]["ID"]:
+        guilds = getGuilds()
+        if "TPFGuild" == guilds[ctx.guild.id]:
             e = nextcord.Embed(
                 title="Roles",
                 description="""Pick which roles you'd like.
@@ -328,7 +338,7 @@ Modder intern gives access to special channels full of useful info.""",
                 colour=getCol("neutral_Light"),
             )
             view = tpfroles()
-        elif ctx.guild.id == readJSON(filename="config")["NIXGuild"]["ID"]:
+        elif "NIXGuild" == guilds[ctx.guild.id]:
             nix = True
             e = nextcord.Embed(
                 title="Roles",
@@ -345,7 +355,7 @@ Modder intern gives access to special channels full of useful info.""",
             await ctx.send(view=view2)
         await view.wait()
 
-    @slash_command(name="uploadfile", guild_ids=config.SlashServers)
+    @slash_command(name="uploadfile", guild_ids=genericConfig.slashServers)
     @application_checks.is_owner()
     async def uploadfileCOMM(
         self,
@@ -369,78 +379,133 @@ Modder intern gives access to special channels full of useful info.""",
         else:
             await interaction.send("Error!", ephemeral=True)
 
-    def userFriendlyGuildList():
-        guildList = getGuilds()
-        newGuildList = {}
-        for itemKey, itemVal in guildList.items():
-            newKey = f"{itemVal}: {itemKey}"
-            newGuildList[newKey] = itemVal
-        newGuildList["Global"] = "General"
-        return newGuildList
+    def userFriendlyConfigGroups():
+        groups = readJSON(filename="config")
+        configList = {}
+        for itemKey, itemVal in groups.items():
+            if itemKey != itemVal:
+                groups.pop(itemKey)
+            elif itemKey == itemVal:
+
+                configList[itemKey.replace("_", " ")] = itemKey
+        return configList
 
     @slash_command(
-        name="toggleevents",
+        name="configuration",
         default_member_permissions=Permissions(administrator=True),
-        guild_ids=config.SlashServers,
+        guild_ids=genericConfig.slashServers,
     )
-    # @application_checks.is_owner()
-    async def toggleevents(
+    async def configurationCOMM(
         self,
         interaction: Interaction,
-        event: str = SlashOption(
-            name="event", required=True, description="Which event you want to toggle?"
-        ),
-        guild: str = SlashOption(
-            name="guild",
+        group: str = SlashOption(
+            name="group",
             required=True,
-            description="Which guild do you want to edit? or global?",
-            choices=userFriendlyGuildList(),
+            description="Which group of config do you want to edit?",
         ),
-        newState: bool = SlashOption(
-            name="state",
+        option: str = SlashOption(
+            name="option",
             required=True,
-            description="Whether to allow or disallow the event.",
-            default=True,
+            description="Which option do you want to change?",
+        ),
+        value: str = SlashOption(
+            name="value",
+            required=True,
+            description="^^^ = Current. What is the new ID you wish to input? int | false | none",
         ),
     ):
-        """Finds and changes specified config value"""
-        guildsDic = getGuilds(includeGlobal=True)
-        for itemKey, itemVal in guildsDic.items():
-            if itemVal == guild:
-                guildID = itemKey
-        configuraton = readJSON("config")
-        oldState = configuraton[guild]["Events"][event]
-        configuraton[guild]["Events"][event] = newState
-        audit = auditChanGet(guildID=interaction.guild_id)
-        auditDic = {
-            "type": "ToggleEvent",
-            "auth": interaction.user,
-            "chanAudit": audit,
-            "cat": event,
-            "exta": (oldState, newState),
-            "guild": guild,
-            "guildID": guildID,
-        }
-        await auditLogger.logEmbed(self, data=auditDic)
-        log.warning(f"{event}, {guildID}, {oldState}|{newState}")
-        writeJSON(data=configuraton, filename="config")
-        if setupEventList():
-            await interaction.send(
-                f"**Event**: {event} for {guild} ({guildID}) set to **{newState}**"
-            )
-
-    @toggleevents.on_autocomplete("event")
-    async def eventList(self, interaction: Interaction, event: str):
-        globalEvents = list(
-            getGlobalEventConfig(configuration=readJSON("config"), listAll=True)
+        """Server admins can change bot configuration for their server."""
+        guildID = str(interaction.guild_id)
+        if value.lower() in ("false", "none"):
+            value = None
+        elif value.isdigit():
+            value = int(value)
+        else:
+            await interaction.send(f"ValueError")
+        configuration = readJSON(filename="config")
+        try:
+            oldValue = str(configuration[guildID][group][option])
+        except KeyError as xcp:
+            if group in str(xcp):
+                err = group
+            elif option in str(xcp):
+                err = option
+            await interaction.send(f"KeyError: {err}", ephemeral=True)
+        configuration[guildID][group][option] = value
+        log.info(
+            f"ConfigUpdated: {self.guilds[guildID]}, {interaction.user.id}, {group}-{option}:{oldValue} | {value}"
         )
-        if not event:
-            await interaction.response.send_autocomplete(globalEvents)
+        dataObject.type = "CommandGuildConfiguration"
+        dataObject.auditChan = getChan(
+            guild=guildID, chan="Audit", admin=True, self=self
+        )
+        dataObject.categoryGroup = group
+        dataObject.category = option
+        dataObject.commandArg1 = value
+        dataObject.commandArg2 = oldValue
+        dataObject.userObject = interaction.user
+        await auditLogger.logEmbed(self, auditInfo=dataObject)
+        if writeJSON(filename="config", data=configuration):
+            await interaction.send(
+                f"Config updated: {group}-{option}\n{oldValue} -> {value}"
+            )
+        else:
+            await interaction.send("Config not updated!", ephemeral=True)
+
+    @configurationCOMM.on_autocomplete("group")
+    async def configurationGroup(self, interaction: Interaction, group):
+        guildID = str(interaction.guild_id)
+        groups = readJSON(filename="config")[guildID]
+        configList = []
+        groupWhiteList = genericConfig.configCommGroupWhitelist
+        for itemKey, itemVal in groups.items():
+            if "dict" in str(type(itemVal)):
+                if str(itemKey) in groupWhiteList:
+                    configList.append(itemKey)
+        await interaction.response.send_autocomplete(configList)
+
+    @configurationCOMM.on_autocomplete("option")
+    async def configurationOption(self, interaction: Interaction, option, group):
+        if group is None:
             return
-        get_near_event = [
-            typ for typ in globalEvents if typ.lower.startswith(event.lower())
-        ]
-        await interaction.response.send_autocomplete(get_near_event)
+        optionsList = ["undefined"]
+        guildID = str(interaction.guild_id)
+        configuration = readJSON(filename="config")[guildID][group]
+        optionsList = list(configuration.keys())
+        finalOptionsList = []
+        if not option:
+            finalOptionsList = optionsList
+        elif option:
+            optionArg = option.lower()
+            for item in optionsList:
+                itemLow = item.lower()
+                if optionArg in itemLow:
+                    finalOptionsList.append(item)
+        if len(finalOptionsList) >= 25:
+            finalOptionsList = finalOptionsList[0:25]
+            finalOptionsList[0] = "**Options Truncated**"
+        await interaction.response.send_autocomplete(finalOptionsList)
+
+    @configurationCOMM.on_autocomplete("value")
+    async def configurationValue(self, interaction: Interaction, value, group, option):
+        if (group or option) is None:
+            return
+        print(group, option)
+        guildID = str(interaction.guild_id)
+        configuration = readJSON(filename="config")[guildID]
+        configItem = []
+        try:
+            item = str(configuration[group][option])
+            if item is None:
+                item = "Undefined Value"
+            configItem.append(item)
+        except KeyError:
+            configItem.append("Undefined Key")
+        if len(configItem) == 0:
+            configItem.append("Undefined Error")
+        if len(value) >= 3:
+            configItem.append(value)
+        await interaction.response.send_autocomplete(configItem)
 
 
 def setup(bot: commands.Bot):

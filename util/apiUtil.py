@@ -8,7 +8,7 @@ import requests
 
 log = logging.getLogger("discordGeneral")
 
-import config
+from config import genericConfig, STEAMAPI, NEXUSAPI
 
 
 def steamWSGet(wsID):
@@ -33,7 +33,7 @@ def steamWSGet(wsID):
 def steamUsrGet(usrID):
     log.debug("steamUsr")
     url = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/"
-    params = {"key": str(config.STEAMAPI), "steamids": str(usrID)}
+    params = {"key": str(STEAMAPI), "steamids": str(usrID)}
     try:
         res = requests.get(url, params=params)
     except Exception as e:
@@ -52,7 +52,7 @@ def steamUsrGet(usrID):
 def nexusModGet(game, modID):
     log.debug("nexusMod")
     url = f"https://api.nexusmods.com/v1/games/{game}/mods/{modID}.json"
-    params = {"apikey": config.NEXUSAPI}
+    params = {"apikey": NEXUSAPI}
     try:
         res = requests.get(url, headers=params)
     except Exception as e:

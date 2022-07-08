@@ -5,7 +5,7 @@ from nextcord.ext import commands
 
 log = logging.getLogger("discordGeneral")
 
-import config
+from config import genericConfig
 from util.genUtil import blacklistCheck
 
 
@@ -24,14 +24,18 @@ class gameHelp(commands.Cog, name="GameHelp"):
         if not await blacklistCheck(ctx=ctx):
             return
         if "2" in game:
-            await ctx.send(f"Here's the Wiki for Transport Fever 2.\n{config.Wiki2}")
+            await ctx.send(
+                f"Here's the Wiki for Transport Fever 2.\n{genericConfig.Wiki2}"
+            )
         elif "1" in game:
-            await ctx.send(f"Here's the Wiki for Transport Fever 1.\n{config.Wiki1}")
+            await ctx.send(
+                f"Here's the Wiki for Transport Fever 1.\n{genericConfig.Wiki1}"
+            )
         elif "tf" in game:
-            await ctx.send(f"Here's the Wiki for Train Fever.\n{config.Wiki0}")
+            await ctx.send(f"Here's the Wiki for Train Fever.\n{genericConfig.Wiki0}")
         else:
             await ctx.send(
-                f"Unable to figure out which Wiki you want. Defaulting to TpF2\n{config.Wiki2}"
+                f"Unable to figure out which Wiki you want. Defaulting to TpF2\n{genericConfig.Wiki2}"
             )
 
     @commands.command(name="modding", aliases=["m", "mod"])
@@ -41,7 +45,7 @@ class gameHelp(commands.Cog, name="GameHelp"):
         if not await blacklistCheck(ctx=ctx):
             return
         if type == None:
-            await ctx.send(config.Wiki2modInstall)
+            await ctx.send(genericConfig.Wiki2modInstall)
 
     @commands.command(name="log", aliases=["c", "crash", "stdout", "gamefiles"])
     @commands.cooldown(1, 1, commands.BucketType.user)
@@ -51,9 +55,9 @@ class gameHelp(commands.Cog, name="GameHelp"):
             return
         if "2" in game and "gameFiles" in type:
             if "stdout" in ctx.message.content:
-                await ctx.send(config.Wiki2gameFiles + "#game_log_files")
+                await ctx.send(genericConfig.Wiki2gameFiles + "#game_log_files")
             else:
-                await ctx.send(config.Wiki2gameFiles + "#folder_locations")
+                await ctx.send(genericConfig.Wiki2gameFiles + "#folder_locations")
 
 
 def setup(bot: commands.Bot):

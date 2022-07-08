@@ -3,7 +3,7 @@ import logging
 
 from discord import SlashOption
 
-import config
+from config import genericConfig
 import nextcord
 from nextcord.ext import commands
 
@@ -11,7 +11,7 @@ log = logging.getLogger("discordGeneral")
 
 
 class suggModal(nextcord.ui.Modal):
-    def __init__(self, suggTitle, nameLabel, descLabel) -> None:
+    def __init__(self, suggTitle, nameLabel, descLabel):
         super().__init__(
             title=suggTitle,
             timeout=5 * 60,
@@ -32,10 +32,10 @@ class suggModal(nextcord.ui.Modal):
         )
         self.add_item(self.description)
 
-    async def callback(self, interaction: nextcord.Interaction) -> None:
+    async def callback(self, interaction: nextcord.Interaction):
         txt = f"User suggestion: {self.name.value}\n{self.description.value}\n\n{interaction.user.id}"
         log.info(txt)
-        owner = interaction.guild.get_member(config.ownerID)
+        owner = interaction.guild.get_member(genericConfig.ownerID)
         await owner.send(txt)
 
 
@@ -46,7 +46,7 @@ class suggCOMM(commands.Cog, description="Trigger Modal"):
     @nextcord.slash_command(
         name="suggest",
         description="Trigger a form modal where you can explain your suggestion. Currently sent to APasz",
-        guild_ids=config.SlashServers,
+        guild_ids=genericConfig.slashServers,
     )
     async def send(
         self,

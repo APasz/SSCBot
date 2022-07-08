@@ -6,7 +6,7 @@ PID = os.getpid()
 print(f"\n***Starting*** PID'{PID}'")
 
 
-from util.fileUtil import configUpdate, newFile, readFile, readJSON, writeJSON
+from util.fileUtil import newFile, readFile, readJSON, writeJSON
 
 configuration = readJSON(filename="config")
 configGen = configuration["General"]
@@ -45,7 +45,7 @@ logMess.addHandler(messHandler)
 
 log.critical(f"\n***Starting*** PID'{PID}'")
 
-critFiles = ["config.json", "config.py"]
+critFiles = ["config.json", "config.py", "randomFact.txt", "missing.png"]
 configErr = False
 for element in critFiles:
     if not os.path.exists(element):
@@ -53,19 +53,20 @@ for element in critFiles:
         configErr = True
 
 if configErr:
-    log.critical(f"config missing")
+    log.critical(f"files missing!")
     sys.exit(78)
 
 import asyncio
-import time
 
 import nextcord
 from nextcord import ext
 from nextcord.ext import commands
 from nextcord.ext.commands import CommandNotFound
 
-import config
+from config import genericConfig
 from util.genUtil import blacklistCheck, getGuilds
+
+log.info(f"SlashComm Guilds: {genericConfig.slashServers}")
 
 
 def main():
@@ -80,11 +81,11 @@ def main():
 
     activity = nextcord.Activity(
         type=nextcord.ActivityType.listening,
-        name=f"{config.BOT_PREFIX} and / | v{verMajor}.{verMinor}",
+        name=f"{genericConfig.BOT_PREFIX} and / | v{verMajor}.{verMinor}",
     )
 
     bot = commands.Bot(
-        commands.when_mentioned_or(config.BOT_PREFIX),
+        commands.when_mentioned_or(genericConfig.BOT_PREFIX),
         intents=intents,
         activity=activity,
         case_insensitive=True,
@@ -114,7 +115,7 @@ Nextcord v{nextcord.__version__} **Ready**\nUse /changelog to see changes"""
             writeJSON(data=configuration, filename="config")
         if configGen["Events"]["ReadyMessage"] is False:
             return
-        guilds = getGuilds().values()
+        guilds = getGuilds().keys()
         sendReady = []
         for item in guilds:
             try:
@@ -141,7 +142,11 @@ Nextcord v{nextcord.__version__} **Ready**\nUse /changelog to see changes"""
     @bot.check
     async def blacklistedUser(ctx):
         if ctx.command is None:
-            return
+            print("ctxCommand")
+            return False
+        if "private" in str(ctx.channel.type).lower():
+            print("ctxChannelType")
+            return False
         log.debug("blacklistedUserCheck")
         if await blacklistCheck(ctx=ctx, blklstType="gen") is True:
             return True
@@ -170,11 +175,11 @@ Nextcord v{nextcord.__version__} **Ready**\nUse /changelog to see changes"""
             log.error(f"MissingRole. {auth}")
         if isinstance(error, (commands.CommandNotFound)):
             if ctx.message.content.startswith(
-                f"{config.BOT_PREFIX}{config.BOT_PREFIX}"
+                f"{genericConfig.BOT_PREFIX}{genericConfig.BOT_PREFIX}"
             ):
                 return
             await ctx.send(
-                f"Command not found.\nPlease check with {config.BOT_PREFIX}help"
+                f"Command not found.\nPlease check with {genericConfig.BOT_PREFIX}help"
             )
             log.error(f"CommandNotFound. {auth}")
         if isinstance(error, (commands.DisabledCommand)):
@@ -213,61 +218,6 @@ Nextcord v{nextcord.__version__} **Ready**\nUse /changelog to see changes"""
                 "Command not found"
             )  # this should probably check the list of commands...
 
-    @bot.command(name="reload", aliases=["rl"], hidden=True)
-    @commands.is_owner()
-    async def reload(ctx, extension):
-        """Reloads a specific cog"""
-        log.debug(ctx.author.id)
-        try:
-            bot.reload_extension(f"cogs.{extension}")
-        except:
-            await ctx.send(f"**{extension}** can't be reloaded.")
-            log.error(f"{extension} can't be reloaded")
-        else:
-            await ctx.send(f"**{extension}** successfully reloaded.")
-
-    @bot.command(name="load", hidden=True)
-    @commands.is_owner()
-    async def load(ctx, extension):
-        """Loads a specific cog"""
-        log.debug(ctx.author.id)
-        try:
-            bot.load_extension(f"cogs.{extension}")
-        except:
-            await ctx.send(f"**{extension}** can't be loaded.")
-            log.warning(f"{extension} can't be loaded")
-        else:
-            await ctx.send(f"**{extension}** successfully loaded.")
-
-    @bot.command(name="unload", hidden=True)
-    @commands.is_owner()
-    async def unload(ctx, extension):
-        """Unloads a specific cog"""
-        log.debug(ctx.author.id)
-        try:
-            bot.unload_extension(f"cogs.{extension}")
-        except:
-            await ctx.send(f"**{extension}** can't be unloaded.")
-            log.warning(f"{extension} can't be unloaded")
-        else:
-            await ctx.send(f"**{extension}** successfully unloaded.")
-
-    @bot.command(name="reloadAll", hidden=True)
-    @commands.is_owner()
-    async def reloadAll(ctx):
-        """Reloads all cogs"""
-        log.debug(ctx.author.id)
-        try:
-            for filename in os.listdir(cogsDir):
-                if filename.endswith(".py") and filename != "__init__.py":
-                    bot.reload_extension(f"cogs.{filename[:-3]}")
-            log.info("All cogs reloaded")
-        except:
-            await ctx.send("Cogs can't be reloaded.")
-            log.error("Cogs can't be reloaded")
-        else:
-            await ctx.send("All cogs successfully reloaded.")
-
     @bot.command(name="memory", hidden=True)
     @commands.is_owner()
     async def memory(ctx):
@@ -290,7 +240,7 @@ Nextcord v{nextcord.__version__} **Ready**\nUse /changelog to see changes"""
             f"{platform.node()}\nProcess: {memMB}MB\nSystem: {usedMemory} {percent}%"
         )
 
-    async def botRestartCheck(ctx, curDir: str):
+    async def botRestartCheck(ctx, currentDirectory: str):
         log.critical(ctx.author)
         mess = await ctx.send("Commencing restart squence...")
 
@@ -309,11 +259,11 @@ Nextcord v{nextcord.__version__} **Ready**\nUse /changelog to see changes"""
         await reply.delete()
         await mess.edit(content="Confirmed. Restartig momentarily")
         IDs = f"{mess.id}|{mess.channel.id}"
-        file = os.path.join(curDir, "messID.txt")
+        file = os.path.join(currentDirectory, "messID.txt")
         if os.path.exists(file):
             log.debug("File found")
             os.remove(file)
-        if not newFile(IDs, directory=curDir, filename="messID"):
+        if not newFile(IDs, directory=currentDirectory, filename="messID"):
             ctx.send("Restart Halted: Error noting message ID\nContinue anyway?")
             if not await bot.wait_for("message", check=check, timeout=10.0):
                 return False
@@ -329,8 +279,8 @@ Nextcord v{nextcord.__version__} **Ready**\nUse /changelog to see changes"""
     @bot.command(name="botRestart", hidden=True)
     @commands.is_owner()
     async def botRestart(ctx, system=True):
-        """Exits the Discord Bot script. By default server automatically restarts"""
-        if await botRestartCheck(ctx, curDir) is False:
+        """Exits the Discord Bot script. By default it's automatically restarted by the trigger script"""
+        if await botRestartCheck(ctx, currentDirectory=curDir) is False:
             return
         systemRestart(system)
 
@@ -338,7 +288,10 @@ Nextcord v{nextcord.__version__} **Ready**\nUse /changelog to see changes"""
         if filename.endswith(".py") and filename != "__init__.py":
             bot.load_extension(f"cogs.{filename[:-3]}")
 
-    bot.run(config.DISTOKEN)
+    log.critical("Conecting to Discord")
+    from config import DISTOKEN
+
+    bot.run(DISTOKEN)
 
 
 if __name__ == "__main__":

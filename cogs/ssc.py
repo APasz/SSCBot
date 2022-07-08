@@ -1,5 +1,6 @@
 print("CogSSC")
 import asyncio
+from dataclasses import dataclass
 import datetime
 import logging
 import os
@@ -9,15 +10,15 @@ import time
 import nextcord
 import nextcord.ext
 from discord import Permissions
-from nextcord import Interaction, SlashOption, slash_command
+from nextcord import Interaction, SlashOption, slash_command, message_command
 from nextcord.ext import application_checks, commands, tasks
 
 log = logging.getLogger("discordGeneral")
 
-import config
+from config import genericConfig
 from util.apiUtil import GSheetGet
 from util.fileUtil import readJSON, writeJSON
-from util.genUtil import blacklistCheck, getCol, hasRole
+from util.genUtil import blacklistCheck, getCol, getGuilds, hasRole
 
 
 async def timestampset():
@@ -57,17 +58,27 @@ async def timestampset():
         return False
 
 
-class ssc(commands.Cog, name="TpFSSC"):
+@dataclass
+class sscConfig:
+    tpfID = getGuilds(by="name")["TPFGuild"]
+    tpfConfig = readJSON(filename="config")[tpfID]
+    sscmanager = tpfConfig["Roles"]["SSC_Manager"]
+    winner = tpfConfig["Roles"]["SSC_Winner"]
+    winnerPrize = tpfConfig["Roles"]["SSC_WinnerPrize"]
+    runnerUp = tpfConfig["Roles"]["SSC_Runnerup"]
+    remindChan = tpfConfig["Channels"]["SSC_Remind"]
+    sscChan = tpfConfig["Channels"]["SSC_Comp"]
+    TPFssChan = tpfConfig["Channels"]["ScreenshotsTPF"]
+    OGssChan = tpfConfig["Channels"]["ScreenshotsGames"]
+
+
+class ssc(commands.Cog, name="SSC"):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.remindTask.start()
 
     @commands.Cog.listener()
     async def on_ready(self):
-        if not os.path.exists("missing.png"):
-            log.critical("ThemeFile; missing.png is missing")
-        if not os.path.exists("randomFact.txt"):
-            log.critical("randomFact.txt file is missing")
         log.debug("Ready")
 
     @tasks.loop(
@@ -77,7 +88,7 @@ class ssc(commands.Cog, name="TpFSSC"):
         """Get reminder timestamp from file, check if current time is in within range of remindStamp and nextStamp(-2h), if so invoke SSC minder command"""
         configuration = readJSON(filename="config")
         configSSC = configuration["General"]["SSC_Data"]
-        log.debug(f"remindTask_run: {configSSC['remindSent']}")
+        log.debug(f"remindTask_run:rmSent {configSSC['remindSent']}")
         if configSSC["remindSent"] == True:
             log.debug(f"remindYes {configSSC['remindSent']}")
             return
@@ -90,16 +101,14 @@ class ssc(commands.Cog, name="TpFSSC"):
             configSSC["remindSent"] = True
             writeJSON(data=configuration, filename="config")
             log.debug(f"PT: {alert}")
-            chan = self.bot.get_channel(
-                readJSON(filename="config")["TPFGuild"]["Channels"]["SSC_Remind"]
-            )
+            chan = sscConfig.remindChan
             await chan.send(
                 f"Reminder that the competiton ends soon;\n**<t:{nex}:R>**\nGet you images and votes in. 🇻 🇴 🇹 🇪 @{alert}"
             )
             await asyncio.sleep(0.1)
             lastID = chan.last_message_id
             mess = await chan.fetch_message(int(lastID))
-            emojis = [config.emoNotifi]
+            emojis = [genericConfig.emoNotifi]
             for emoji in emojis:
                 await mess.add_reaction(emoji)
             log.info(f"SSC Reminder: {alert}")
@@ -136,13 +145,11 @@ class ssc(commands.Cog, name="TpFSSC"):
     @slash_command(
         name="sscomp-start",
         guild_ids=[
-            int(readJSON(filename="config")["TPFGuild"]["ID"]),
-            config.ownerGuild,
+            sscConfig.tpfID,
+            genericConfig.ownerGuild,
         ],
     )
-    @application_checks.has_role(
-        readJSON(filename="config")["TPFGuild"]["Roles"]["SSC_Manager"]
-    )
+    @application_checks.has_role(sscConfig.sscmanager)
     async def comp(
         self,
         interaction: Interaction,
@@ -229,20 +236,26 @@ class ssc(commands.Cog, name="TpFSSC"):
         theme = banner.filename.split(".")[0].replace("-", " ")
         configSSC["theme"] = theme
         nextstamp = int(configSSC["nextStamp"])
-        ebed = nextcord.Embed(title=config.txt_CompStart, colour=getCol("ssc"))
+        from config import (
+            txt_CompEnd,
+            txt_CompStart,
+            txt_CompTheme,
+            txt_CompGift,
+            txt_CompRules,
+        )
+
+        ebed = nextcord.Embed(title=txt_CompStart, colour=getCol("ssc"))
         if prize:
             configSSC["isPrize"] = True
             if prizeUser:
                 giver = f" provided by {prizeUser.mention}"
             else:
                 giver = ""
-            ebed.add_field(
-                name=config.txt_CompGift, value=f"{prize}{giver}", inline=False
-            )
+            ebed.add_field(name=txt_CompGift, value=f"{prize}{giver}", inline=False)
         else:
             configSSC["isPrize"] = False
-        ebed.add_field(name=config.txt_CompTheme, value=f"{theme}", inline=True)
-        ebed.add_field(name=config.txt_CompEnd, value=f"<t:{nextstamp}:f>", inline=True)
+        ebed.add_field(name=txt_CompTheme, value=f"{theme}", inline=True)
+        ebed.add_field(name=txt_CompEnd, value=f"<t:{nextstamp}:f>", inline=True)
         if note is not None:
             ebed.add_field(name="**Note**", value=f"\n```\n{note}\n```", inline=False)
         elif configSSC["allThemes"][theme] is not None:
@@ -254,7 +267,7 @@ class ssc(commands.Cog, name="TpFSSC"):
         if not writeJSON(data=configuration, filename="config"):
             await interaction.send("Failed to write to config", ephemeral=True)
             return
-        ebed.set_footer(text=config.txt_CompRules)
+        ebed.set_footer(text=txt_CompRules)
         if banner.content_type.startswith("image"):
             ebed.set_image(url=banner.url)
             last = await interaction.send(embed=ebed)
@@ -263,7 +276,7 @@ class ssc(commands.Cog, name="TpFSSC"):
             ebed.set_image(url="attachment://missing.png")
             last = await interaction.send(file=file, embed=ebed)
         last = await last.fetch()
-        emoListA = [config.emoTmbUp, config.emoTmbDown]
+        emoListA = [genericConfig.emoTmbUp, genericConfig.emoTmbDown]
         for element in emoListA:
             await last.add_reaction(element)
         try:
@@ -292,14 +305,12 @@ class ssc(commands.Cog, name="TpFSSC"):
             if not writeJSON(data=configuration, filename="config"):
                 await interaction.send("Failed to write to config", ephemeral=True)
                 return
-            emoListB = [config.emoNotifi]
+            emoListB = [genericConfig.emoNotifi]
             for element in emoListB:
                 await alert.add_reaction(element)
         log.info("Competition Start")
         bannerFullAll = [bannerFull1, bannerFull2, bannerFull4, bannerFull8]
-        ssChan = self.bot.get_channel(
-            configuration["TPFGuild"]["Channels"]["ScreenshotsTPF"]
-        )
+        ssChan = self.bot.get_channel(sscConfig.TPFssChan)
 
         async def sendSS(chan, ss):
             ebed = nextcord.Embed(title=f"{theme} theme", colour=getCol("ssc"))
@@ -310,9 +321,7 @@ class ssc(commands.Cog, name="TpFSSC"):
             if item is not None:
                 await sendSS(ssChan, item)
         bannerFullAllOG = [bannerFull1OG, bannerFull2OG, bannerFull4OG, bannerFull8OG]
-        ogChan = self.bot.get_channel(
-            configuration["TPFGuild"]["Channels"]["ScreenshotsGames"]
-        )
+        ogChan = self.bot.get_channel(sscConfig.OGssChan)
         for item in bannerFullAllOG:
             if item is not None:
                 await sendSS(ogChan, item)
@@ -322,8 +331,8 @@ class ssc(commands.Cog, name="TpFSSC"):
         name="delete",
         default_member_permissions=Permissions(manage_messages=True),
         guild_ids=[
-            int(readJSON(filename="config")["TPFGuild"]["ID"]),
-            config.ownerGuild,
+            sscConfig.tpfID,
+            genericConfig.ownerGuild,
         ],
     )
     async def sscDelete(
@@ -340,8 +349,8 @@ class ssc(commands.Cog, name="TpFSSC"):
             description="Preset reason for deletion",
             choices={
                 "Incorrect Theme": "1",
-                "Reposted": "1",
-                "Edited": "It has been edited.",
+                "Reposted": "2",
+                "Edited": "3",
             },
         ),
         customReason: str = SlashOption(
@@ -369,6 +378,8 @@ class ssc(commands.Cog, name="TpFSSC"):
                 txt.append(f"```\n{themeNote}\n```")
         elif reason == "2":
             txt.append("It's been posted before,")
+        elif reason == "3":
+            txt.append("It has been edited.")
 
         if reason and customReason:
             txt.append("\n")
@@ -404,7 +415,7 @@ class ssc(commands.Cog, name="TpFSSC"):
             return writeJSON(data=configuration, filename="config")
         return True
 
-    @slash_command(name="themevote", guild_ids=config.SlashServers)
+    @slash_command(name="themevote", guild_ids=genericConfig.slashServers)
     async def themeVote(
         self,
         interaction: Interaction,
@@ -434,10 +445,8 @@ class ssc(commands.Cog, name="TpFSSC"):
         log.debug(f"{Interaction.user}")
         configuration = readJSON(filename="config")
         if update is True:
-            role = interaction.guild.get_role(
-                readJSON(filename="config")["TPFGuild"]["Roles"]["SSC_Manager"]
-            )
-            if not hasRole(role=role, roles=interaction.user.roles):
+            role = interaction.guild.get_role(sscConfig.sscmanager)
+            if not hasRole(role=role, userRoles=interaction.user.roles):
                 await interaction.send("You're not SSC Manager.", ephemeral=True)
                 return
             try:
@@ -460,15 +469,15 @@ class ssc(commands.Cog, name="TpFSSC"):
             txt = [f"Vote for {opSplit[0]}"]
             options = opSplit[1:]
         numb = {
-            1: config.emo1,
-            2: config.emo2,
-            3: config.emo3,
-            4: config.emo4,
-            5: config.emo5,
-            6: config.emo6,
-            7: config.emo7,
-            8: config.emo8,
-            9: config.emo9,
+            1: genericConfig.emo1,
+            2: genericConfig.emo2,
+            3: genericConfig.emo3,
+            4: genericConfig.emo4,
+            5: genericConfig.emo5,
+            6: genericConfig.emo6,
+            7: genericConfig.emo7,
+            8: genericConfig.emo8,
+            9: genericConfig.emo9,
         }
         emo = []
         for idx, element in enumerate(options):
@@ -484,26 +493,23 @@ class ssc(commands.Cog, name="TpFSSC"):
         """Check if message has attachment or link, if 1 add reaction, if not 1 delete and inform user, set/check prize round state, ignore SSCmanager,"""
         configuration = readJSON(filename="config")
         configSSC = configuration["General"]["SSC_Data"]
-        configTPF = configuration["TPFGuild"]
         delTime = configuration["General"]["delTime"]
-        if ctx.content.startswith(f"{config.BOT_PREFIX}"):
+        if ctx.content.startswith(f"{genericConfig.BOT_PREFIX}"):
             return
-        if ctx.channel.id != configTPF["Channels"]["SSC_Comp"]:
+        if ctx.channel.id != sscConfig.sscChan:
             return
         log.debug("SSC listener")
         if ctx.author.bot:
-            if ctx.author.id == config.botID:
+            if ctx.author.id == genericConfig.botID:
                 return
             else:
                 log.info("A bot did something")
                 return
-        usrID = str(ctx.author.id)
-        sscMan = configTPF["Roles"]["SSC_Manager"]
         if not await blacklistCheck(ctx=ctx, blklstType="ssc"):
             return
-        if ctx.author.get_role(sscMan):
+        if ctx.author.get_role(sscConfig.sscmanager):
             if "upload" in ctx.content:
-                await ctx.add_reaction(config.emoStar)
+                await ctx.add_reaction(genericConfig.emoStar)
                 log.info("Manager Submission")
                 return
             else:
@@ -538,16 +544,13 @@ class ssc(commands.Cog, name="TpFSSC"):
             except:
                 pass
             return
-        sscWin = configTPF["Roles"]["SSC_Winner"]
-        sscRun = configTPF["Roles"]["SSC_Runnerup"]
-        sscPri = configTPF["Roles"]["SSC_WinnerPrize"]
         if len(ctx.attachments) == 1 or h == "y":
             if configSSC["ignoreWinner"]:
-                await ctx.add_reaction(config.emoStar)
+                await ctx.add_reaction(genericConfig.emoStar)
                 return
             prize = configSSC["isPrize"]
             if prize is True:
-                if ctx.author.get_role(int(sscPri)):
+                if ctx.author.get_role(int(sscConfig.winnerPrize)):
                     content = f"""You're a SSC Prize Winner, so can't participate in this round.
 					\n{delTime}sec *self-destruct*"""
                     await ctx.reply(content, delete_after=delTime)
@@ -561,13 +564,15 @@ class ssc(commands.Cog, name="TpFSSC"):
                         pass
                     pass
                 else:
-                    await ctx.add_reaction(config.emoStar)
+                    await ctx.add_reaction(genericConfig.emoStar)
                     log.info(
                         f"SubmissionPrize: {ctx.author.id},{ctx.author.display_name}"
                     )
                     return
             elif prize is False:
-                if ctx.author.get_role(int(sscWin)) or ctx.author.get_role(int(sscRun)):
+                if ctx.author.get_role(int(sscConfig.winner)) or ctx.author.get_role(
+                    int(sscConfig.runnerUp)
+                ):
                     log.debug("w")
                     content = f"""You're a SSC Winner/Runner Up, so can't participate in this round.
 					\n{delTime}sec *self-destruct*"""
@@ -581,7 +586,7 @@ class ssc(commands.Cog, name="TpFSSC"):
                     except:
                         pass
                 else:
-                    await ctx.add_reaction(config.emoStar)
+                    await ctx.add_reaction(genericConfig.emoStar)
                     log.info(f"Submission: {ctx.author.id},{ctx.author.display_name}")
                     return
             else:

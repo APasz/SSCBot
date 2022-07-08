@@ -4,7 +4,7 @@ import logging
 import random
 import time
 
-import config
+from config import dataObject, genericConfig
 import nextcord
 import pint
 from nextcord import Embed, Interaction, SlashOption, slash_command
@@ -26,7 +26,7 @@ class general(commands.Cog, name="General"):
 
     async def fact(self):
         e = f"""I'm sorry, I lost the fact I was getting for you.
-'An error occurred' Alert <@{config.ownerID}>"""
+'An error occurred' Alert <@{genericConfig.ownerID}>"""
         try:
             facts = open("randomFact.txt").read().splitlines()
             if len(facts) == 0:
@@ -64,7 +64,7 @@ class general(commands.Cog, name="General"):
                 await ctx.send(fact)
             log.info(f"Fact: {ctx.author.id},{ctx.author.display_name}")
 
-    @slash_command(name="fact", guild_ids=config.SlashServers)
+    @slash_command(name="fact", guild_ids=genericConfig.slashServers)
     @commands.cooldown(1, 1, commands.BucketType.user)
     async def factSlash(self, interaction: Interaction):
         """Serves Random facts"""
@@ -96,7 +96,7 @@ class general(commands.Cog, name="General"):
             await ctx.send(f"Ponging at {round(self.bot.latency * 1000)}ms")
         log.info(f"Ping: {ctx.author.id},{ctx.author.display_name}")
 
-    @slash_command(name="ping", guild_ids=config.SlashServers)
+    @slash_command(name="ping", guild_ids=genericConfig.slashServers)
     async def pingSlash(
         self,
         interaction: Interaction,
@@ -134,15 +134,15 @@ class general(commands.Cog, name="General"):
         pV = configGen["verPoint"]
         Vn = configGen["verName"]
         if ver is None:
-            if config.botName == "SSCBot":
+            if genericConfig.botName == "SSCBot":
                 txt1 = "Hi, I'm **SSCBot**"
             else:
-                txt1 = f"Hi, I'm **{config.botName}**, formally known as **SSCBot**."
+                txt1 = f"Hi, I'm **{genericConfig.botName}**, formally known as **SSCBot**."
             txt2 = f"""
 			Created by **APasz**
 			I'm written in Python and my code is freely avaliable on **[GitHub](https://github.com/APasz/SSCBot)**
 			My functions include: Reacting to things, Welcoming new users, Giving users the roles, random facts, and conversions they seek, logging, and more.
-			You can use **{config.BOT_PREFIX}help** to see a list of commands.
+			You can use **{genericConfig.BOT_PREFIX}help** to see a list of commands.
 			A select few commands are also avaliable as slash commands.
 			"""
             text = nextcord.Embed(
@@ -166,7 +166,7 @@ class general(commands.Cog, name="General"):
         log.info(f"{ctx.author.id},{ctx.author.display_name}")
         await ctx.send(f"**Member Count**: {ctx.guild.member_count}")
 
-    @slash_command(name="membercount", guild_ids=config.SlashServers)
+    @slash_command(name="membercount", guild_ids=genericConfig.slashServers)
     @commands.cooldown(1, 1, commands.BucketType.user)
     async def memberCountSlash(self, interaction: Interaction):
         """Gives number of members current guild has"""
@@ -250,7 +250,7 @@ class general(commands.Cog, name="General"):
         "Year": "year",
     }
 
-    @slash_command(name="convert", guild_ids=config.SlashServers)
+    @slash_command(name="convert", guild_ids=genericConfig.slashServers)
     async def convert(
         self,
         interaction: Interaction,
@@ -343,7 +343,7 @@ class general(commands.Cog, name="General"):
         )
         await interaction.send(embed=ebed)
 
-    @slash_command(name="changelog", guild_ids=config.SlashServers)
+    @slash_command(name="changelog", guild_ids=genericConfig.slashServers)
     async def changelog(
         self,
         interaction: Interaction,
@@ -422,7 +422,7 @@ class general(commands.Cog, name="General"):
                 )
             await interaction.send(content=toSend)
 
-    @slash_command(name="profile", guild_ids=config.SlashServers)
+    @slash_command(name="profile", guild_ids=genericConfig.slashServers)
     async def profile(
         self,
         interaction: Interaction,
@@ -482,6 +482,7 @@ class general(commands.Cog, name="General"):
                 "deafen",
                 "everyone",
                 "audit",
+                "timeout",
             ]
             for (
                 perm

@@ -9,10 +9,6 @@ import nextcord
 
 log = logging.getLogger("discordGeneral")
 
-ownerName = "APasz"
-botName = "Strider"
-botID = 764270771350142976
-
 cacheJSON = {}
 
 
@@ -68,7 +64,7 @@ def readJSON(filename: str, directory: list = None, cache: bool = True):
                 data = json.load(file)
         except FileNotFoundError:
             if writeJSON(data=data, directory=directory, filename=filename) is False:
-                log.error(f"readJSON; writeJSON: {fullDir}")
+                log.error(f"| writeJSON: {fullDir}")
                 return False
         except Exception as e:
             log.error(f"readJSON: XCP {e}")

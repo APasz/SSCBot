@@ -7,11 +7,12 @@ from nextcord import Interaction
 log = logging.getLogger("discordGeneral")
 
 from util.fileUtil import readJSON
-from util.genUtil import hasRole
+from util.genUtil import hasRole, getGuilds
 
 configuration = readJSON(filename="config")
-configTPF = configuration["TPFGuild"]["Roles"]
-configNIX = configuration["NIXGuild"]["Roles"]
+guilds = getGuilds(by="name")
+configTPF = configuration[str(guilds["TPFGuild"])]["Roles"]
+configNIX = configuration[str(guilds["NIXGuild"])]["Roles"]
 
 
 async def clicky(

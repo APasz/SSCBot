@@ -1,310 +1,337 @@
 print("CogGeneralEvent")
 import asyncio
 import logging
-import os
-import time
-
-import config
-import nextcord
-from nextcord.ext import commands
-from util.modding import modRelease
-
-from cogs.auditLog import auditLogger
+from cmath import e
 
 log = logging.getLogger("discordGeneral")
 logMess = logging.getLogger("discordMessages")
-from util.fileUtil import readJSON, writeJSON, parentDir
-from util.genUtil import getChan, getEventConfig, getGuilds
 
-global onMemberFired
-onMemberFired = False
+import nextcord
+from config import dataObject, genericConfig
+from discord import Permissions
+from nextcord import Interaction, SlashOption, slash_command
+from nextcord.ext import commands
+from util.fileUtil import readJSON, writeJSON
+from util.genUtil import getChan, getEventConfig, getGlobalEventConfig, getGuilds
 
-
-def setupEventList():
-    log.debug("run")
-    data = {}
-    data["event"] = getEventConfig()
-    data["guild"] = getGuilds()
-    evDir = os.path.join(parentDir(), "eventConfig.json")
-    if os.path.exists(path=evDir):
-        os.remove(evDir)
-    time.sleep(0.1)
-    if writeJSON(data=data, filename="eventConfig"):
-        return True
-
-
-setupEventList()
+from cogs.auditLog import auditLogger
+from cogs.modding import modding
 
 
 class generalEvent(commands.Cog, name="GeneralEvent"):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        self.onMemberFired = False
+        self.eventConfig = getEventConfig()
+        self.guildList = getGuilds()
 
     @commands.Cog.listener()
     async def on_ready(self):
         log.debug("Ready")
 
     @commands.command(name="updateEventList")
-    @commands.has_permissions(administrator=True)
-    async def updateEventList(self, ctx):
+    @commands.is_owner()
+    async def updateEventList(self, ctx=None):
         """Updates the config for discord events"""
-        if setupEventList() is True:
-            await ctx.send("Done!")
-        else:
-            await ctx.send(f"Error!")
+        try:
+            self.eventConfig = getEventConfig()
+            self.guildList = getGuilds()
+            log.info("Events updated")
+            return True
+        except Exception as xcp:
+            log.error(xcp)
+            return False
+
+    @slash_command(
+        name="toggleevents",
+        default_member_permissions=Permissions(administrator=True),
+        guild_ids=genericConfig.slashServers,
+    )
+    async def toggleevents(
+        self,
+        interaction: Interaction,
+        event: str = SlashOption(
+            name="event", required=True, description="Which event you want to toggle?"
+        ),
+        newState: bool = SlashOption(
+            name="newstate",
+            required=True,
+            description="Whether to allow or disallow the event.",
+            default=True,
+        ),
+    ):
+        """Finds and changes specified event config value"""
+        guildID = str(interaction.guild_id)
+        event = event.removeprefix("O | ")
+        event = event.removeprefix("X | ")
+        configuraton = readJSON("config")
+        try:
+            oldState = configuraton[guildID]["Events"][event]
+        except KeyError:
+            await interaction.send(
+                "This item is not avaliable for this guild", ephemeral=True
+            )
+            return
+        configuraton[guildID]["Events"][event] = newState
+        dataObject.type = "CommandToggleEvent"
+        dataObject.auditChan = getChan(
+            self=self, guild=guildID, chan="Audit", admin=True
+        )
+        dataObject.category = event
+        dataObject.commandArg1 = oldState
+        dataObject.commandArg2 = newState
+        dataObject.userObject = interaction.user
+        print(dataObject)
+        await auditLogger.logEmbed(self, dataObject)
+        log.warning(f"{event}, {guildID}, {oldState}|{newState}")
+        writeJSON(data=configuraton, filename="config")
+        if await self.updateEventList(self):
+            await interaction.send(
+                f"Event: **{event}** was {oldState}, set to **{newState}**"
+            )
+
+    @toggleevents.on_autocomplete("event")
+    async def eventList(self, interaction: Interaction, event: str):
+        guildID = str(interaction.guild_id)
+        guildEvents = self.eventConfig[guildID]
+        globalEvents = getGlobalEventConfig(listAll=True)
+        enabledEvents = []
+        for item in globalEvents:
+            if item in guildEvents:
+                enabledEvents.append(f"O | {item}")
+            else:
+                enabledEvents.append(f"X | {item}")
+
+        if not event:
+            finalEventList = enabledEvents
+        elif event:
+            eventArg = event.lower()
+            for item in enabledEvents:
+                itemLow = item.lower()
+                if eventArg in itemLow:
+                    finalEventList.append(item)
+        if len(finalEventList) >= 25:
+            finalEventList = finalEventList[0:25]
+            finalEventList[0] = "**Options Truncated**"
+        await interaction.response.send_autocomplete(finalEventList)
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
         """Send welcome message when new user joins"""
         await self.bot.wait_until_ready()
-        guildID = str(member.guild.id)
-        eventJSON = readJSON("eventConfig")
-        eventsAllowed = eventJSON["event"]
-        guildsList = eventJSON["guild"]
         if member.bot:
             return
-        if guildID not in guildsList:
+        guildID = str(member.guild.id)
+        if guildID not in self.guildList:
             return
-        configName = guildsList[guildID]
-        if "MemberJoin" in eventsAllowed[guildID]:
-            log.info(f"MemberJoin: {configName}, {member.id}, {member.display_name}")
-            audit = getChan(guild=configName, chan="Audit", admin=True)
-            guildCount = member.guild.member_count
-            usrDic = {
-                "type": "MemberJoin",
-                "auth": member,
-                "guildExta": guildCount,
-                "chanAudit": audit,
-            }
-            await auditLogger.logEmbed(self, usrDic)
+        if "MemberJoin" in self.eventConfig[guildID]:
+            logMess = f"{self.guildList[guildID]}, {member.id}: {member.display_name}"
+            log.info(f"MemberJoin: {logMess}")
+            dataObject.type = "MemberJoin"
+            dataObject.userObject = member
+            dataObject.count = member.guild.member_count
+            dataObject.auditChan = getChan(
+                self=self, guild=guildID, chan="Audit", admin=True
+            )
+            await auditLogger.logEmbed(self, dataObject)
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
         """Check if new user has passed membership or display name changes."""
         await self.bot.wait_until_ready()
         guildID = str(after.guild.id)
-        eventJSON = readJSON("eventConfig")
-        eventsAllowed = eventJSON["event"]
-        guildsList = eventJSON["guild"]
-        if guildID not in guildsList:
+        if guildID not in self.guildList:
             return
-        log.debug("on_member_update")
-        configName = guildsList[guildID]
-        audit = getChan(guild=configName, chan="Audit", admin=True)
         if before.pending and after.pending is True:
             return
-        elif before.pending and after.pending is False:
-            if "MemberAccept" in eventsAllowed[guildID]:
-                log.info(
-                    f"MemberAccept: {configName}, {after.id}: {after.display_name}"
-                )
-                guildCount = after.guild.member_count
-                usrDic = {
-                    "type": "MemberAccept",
-                    "auth": after,
-                    "guildExta": guildCount,
-                    "chanAudit": audit,
-                }
-                await auditLogger.logEmbed(self, usrDic)
-            if "MemberVerifiedRole" in eventsAllowed[guildID]:
-                log.info(
-                    f"MemberVerifiedRole: {configName}, {after.id}: {after.display_name}"
-                )
-                role = nextcord.utils.get(
-                    before.guild.roles,
-                    id=readJSON(filename="config")[configName]["Roles"]["Verified"],
-                )
-                await after.add_roles(role, atomic=True)
-            if "MemberWelcome" in eventsAllowed[guildID]:
-                log.info(
-                    f"MemberVerifiedRole: {configName}, {after.id}: {after.display_name}"
-                )
+        log.debug("on_member_update")
+        logMess = f"{self.guildList[guildID]}, {before.id}: {before.display_name}"
+        dataObject.auditChan = getChan(
+            self=self, guild=guildID, chan="Audit", admin=True
+        )
+        if before.pending and after.pending is False:
+            if "MemberAccept" in self.eventConfig[guildID]:
+                log.info(f"MemberAccept: {logMess}")
+                dataObject.type = "MemberAccept"
+                dataObject.userObject = after
+                dataObject.count = after.guild.member_count
+                await auditLogger.logEmbed(self, dataObject)
+            if "MemberWelcome" in self.eventConfig[guildID]:
+                log.info(f"MemberVerifiedRole: {logMess}")
                 guild = after.guild
                 if guild.system_channel is None:
                     return
+                from config import txt_TpFwelcome
+
                 toSend = (
-                    f"{after.mention}, Welcome to {after.guild.name}"
-                    + config.txt_TpFwelcome
+                    f"{after.mention}, Welcome to {after.guild.name}" + txt_TpFwelcome
                 )
                 await guild.system_channel.send(toSend)
+            if "MemberVerifiedRole" in self.eventConfig[guildID]:
+                log.info(f"MemberVerifiedRole: {logMess}")
+                role = nextcord.utils.get(
+                    before.guild.roles,
+                    id=readJSON(filename="config")[guildID]["Roles"]["Verified"],
+                )
+                await after.add_roles(role, atomic=True)
 
         elif before.display_name != after.display_name:
-            if "MemberNameChange" in eventsAllowed[guildID]:
-                usrDic = {
-                    "type": "MemberNameChange",
-                    "auth": before,
-                    "exta": after,
-                    "chanAudit": audit,
-                }
-                log.info(
-                    f"UserNameChange: {configName}, {after.id}: {before.display_name} | {after.display_name}"
-                )
-                await auditLogger.logEmbed(self, usrDic)
+            if "MemberNameChange" in self.eventConfig[guildID]:
+                dataObject.type = "MemberNameChange"
+                dataObject.userObject = before
+                dataObject.userObjectExtra = after
+                log.info(f"UserNameChange: {logMess} | {after.display_name}")
+                await auditLogger.logEmbed(self, dataObject)
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
         """Log to audit-log channel when member leaves."""
         await self.bot.wait_until_ready()
         guildID = str(member.guild.id)
-        eventJSON = readJSON("eventConfig")
-        eventsAllowed = eventJSON["event"]
-        guildsList = eventJSON["guild"]
-        if guildID not in guildsList:
+        if guildID not in self.guildList:
             return
-        if "MemberLeave" in eventsAllowed[guildID]:
-            global onMemberFired
-            onMemberFired = True
-            configName = guildsList[guildID]
-            audit = getChan(guild=configName, chan="Audit", admin=True)
-            guildData = self.bot.get_guild(member.guild.id)
-            await auditLogger.userRemove(self, member, audit, guildData)
+        if "MemberLeave" in self.eventConfig[guildID]:
+            self.onMemberFired = True
+            dataObject.userObject = member
+            dataObject.auditChan = getChan(
+                self=self, guild=guildID, chan="Audit", admin=True
+            )
+            dataObject.guildObject = self.bot.get_guild(member.guild.id)
+            await auditLogger.userRemove(self, dataObject)
+            log.info(f"MemberLeave: {self.guildList[guildID]}, {member.user.id}")
             await asyncio.sleep(3)
-            onMemberFired = False
+            self.onMemberFired = False
 
     @commands.Cog.listener()
     async def on_raw_member_remove(self, payload):
         await self.bot.wait_until_ready()
-        guildID = str(payload.guild_id)
         await asyncio.sleep(1.5)
-        eventJSON = readJSON("eventConfig")
-        eventsAllowed = eventJSON["event"]
-        guildsList = eventJSON["guild"]
-        global onMemberFired
-        if onMemberFired:
+        guildID = str(payload.guild_id)
+        if self.onMemberFired:
             return
-        if guildID not in guildsList:
+        if guildID not in self.guildList:
             return
-        if "MemberLeave" in eventsAllowed[guildID]:
+        if "MemberLeave" in self.eventConfig[guildID]:
             guildData = self.bot.get_guild(payload.guild_id)
-            guildCount = guildData.member_count
-            configName = guildsList[guildID]
-            audit = getChan(guild=configName, chan="Audit", admin=True)
-            log.info(f"RawMemberLeave: {configName}, {payload.user}")
-            usrDic = {
-                "type": "RawMemberLeave",
-                "auth": payload.user,
-                "guildExta": guildCount,
-                "chanAudit": audit,
-            }
-            await auditLogger.logEmbed(self, usrDic)
-            onMemberFired = False
+            log.info(f"RawMemberLeave: {self.guildList[guildID]}, {payload.user}")
+            dataObject.type = "RawMemberLeave"
+            dataObject.userObject = guildData
+            dataObject.count = guildData.member_count
+            dataObject.auditChan = getChan(
+                self=self, guild=guildID, chan="Audit", admin=True
+            )
+            await auditLogger.logEmbed(self, dataObject)
+            self.onMemberFired = False
 
     @commands.Cog.listener()
     async def on_member_ban(self, guild, usr):
         """Log to audit-log channel when member is banned."""
         await self.bot.wait_until_ready()
         guildID = str(guild.id)
-        eventJSON = readJSON("eventConfig")
-        eventsAllowed = eventJSON["event"]
-        guildsList = eventJSON["guild"]
-        if guildID not in guildsList:
+        if guildID not in self.guildList:
             return
-        if "MemberBan" in eventsAllowed[guildID]:
-            configName = guildsList[guildID]
-            log.info(f"MemberBan: {configName}, {usr.id}, {usr.display_name}")
-            audit = getChan(guild=configName, chan="Audit", admin=True)
-            await auditLogger.checkKickBan(self, usr, audit, guild)
+        if "MemberBan" in self.eventConfig[guildID]:
+            log.info(
+                f"MemberBan: {self.guildList[guildID]}, {usr.id}, {usr.display_name}"
+            )
+            dataObject.userObject = usr
+            dataObject.guildObject = guild
+            dataObject.auditChan = getChan(
+                self=self, guild=guildID, chan="Audit", admin=True
+            )
+            await auditLogger.checkKickBan(self, dataObject)
 
     @commands.Cog.listener()
     async def on_member_unban(self, guild, usr):
         """Log to audit-log channel when member is unbanned."""
         await self.bot.wait_until_ready()
         guildID = str(guild.id)
-        eventJSON = readJSON("eventConfig")
-        eventsAllowed = eventJSON["event"]
-        guildsList = eventJSON["guild"]
-        if guildID not in guildsList:
+        if guildID not in self.guildList:
             return
-        if "MemberUnban" in eventsAllowed[guildID]:
-            configName = guildsList[guildID]
-            log.info(f"MemberUnban: {configName}, {usr.id}, {usr.display_name}")
-            audit = getChan(guild=configName, chan="Audit", admin=True)
-            usrDic = {"type": "MemberUnban", "auth": usr, "chanAudit": audit}
-            await auditLogger.logEmbed(self, usrDic)
+        if "MemberUnban" in self.eventConfig[guildID]:
+            log.info(
+                f"MemberUnban: {self.guildList[guildID]}, {usr.id}, {usr.display_name}"
+            )
+            dataObject.type = "MemberUnban"
+            dataObject.userObject = usr
+            dataObject.auditChan = getChan(
+                self=self, guild=guildID, chan="Audit", admin=True
+            )
+            await auditLogger.logEmbed(self, dataObject)
 
     @commands.Cog.listener()
     async def on_raw_message_delete(self, payload):
         await self.bot.wait_until_ready()
         guildID = str(payload.guild_id)
-        eventJSON = readJSON("eventConfig")
-        eventsAllowed = eventJSON["event"]
-        guildsList = eventJSON["guild"]
-        if guildID not in guildsList:
+        if guildID not in self.guildList:
             return
-        if "MessageDelete" in eventsAllowed[guildID]:
-            configName = guildsList[guildID]
-            log.debug(f"MessageDelete: {configName}")
-            audit = getChan(guild=configName, chan="Audit", admin=True)
+        if "MessageDelete" in self.eventConfig[guildID]:
+            log.debug(f"MessageDelete: {self.guildList[guildID]}")
             message = payload.cached_message
+            dataObject.auditChan = getChan(
+                self=self, guild=guildID, chan="Audit", admin=True
+            )
             if message is not None:
                 logMess.info(
                     f"""MessageID: {message.id}:
 				Author: {message.author.id}: {message.author.name} | {message.author.display_name};
 				\nContent: '' {message.content} ''"""
                 )
-                usrDic = {"type": "MessageDelete", "mess": message, "chanAudit": audit}
+                dataObject.type = "MessageDelete"
+                dataObject.messageObject = message
             else:
                 log.info(
                     f"R_M_D; MessageID: {payload.message_id}, ChannelID: {payload.channel_id}"
                 )
-                usrDic = {
-                    "type": "RawMessageDelete",
-                    "mess": payload.message_id,
-                    "chan": payload.channel_id,
-                    "chanAudit": audit,
-                }
-            await auditLogger.logEmbed(self, usrDic)
+                dataObject.type = "RawMessageDelete"
+                dataObject.messageID = payload.message_id
+                dataObject.channelID = payload.channel_id
+            await auditLogger.logEmbed(self, dataObject)
 
     @commands.Cog.listener()
     async def on_message(self, ctx):
         """Check for Author in message and adds heart reaction. Restricted to artwork channel in TpF server."""
         await self.bot.wait_until_ready()
         guildID = str(ctx.guild.id)
-        eventJSON = readJSON("eventConfig")
-        eventsAllowed = eventJSON["event"]
-        guildsList = eventJSON["guild"]
-        configName = guildsList[guildID]
-        log.debug(f"{configName}, {guildID}")
-        if "Artwork" in eventsAllowed[guildID]:
-            artChan = getChan(configName, "Artwork")
+        log.debug(f"{self.guildList[guildID]}, {guildID}")
+        if "Artwork" in self.eventConfig[guildID]:
+            artChan = getChan(guildID, "Artwork")
             if ctx.channel.id == artChan:
                 log.debug("AW listener")
                 if "author" in ctx.content.casefold():
-                    await ctx.add_reaction(config.emoHeart)
+                    await ctx.add_reaction(genericConfig.emoHeart)
                     log.info("AW Reaction")
                     return
                 else:
                     log.debug("AW")
-        if "ModPreview" in eventsAllowed[guildID]:
-            nmrChan = getChan(configName, "NewModRelease")
-            nmpChan = getChan(configName, "NewModPreview")
-            globalNMPChan = getChan("TPFGuild", "NewModPreview")
+        if "ModPreview" in self.eventConfig[guildID]:
+            nmrChan = getChan(guildID, "NewModRelease")
+            nmpChan = getChan(guildID, "NewModPreview")
+            globalnmpChan = getChan(guildID, "NewModPreview")
             if (ctx.channel.id == nmrChan) and (ctx.author.bot is False):
                 log.debug("NMR listener")
                 nmp = await self.bot.fetch_channel(nmpChan)
-                globalPreviewChan = await self.bot.fetch_channel(globalNMPChan)
-                if ("ModPreviewGlobal" in eventsAllowed[guildID]) and (
-                    guildID != str(readJSON("config")["TPFGuild"]["ID"])
+                if ("ModPreviewGlobal" in self.eventConfig[guildID]) and (
+                    nmpChan != globalnmpChan
                 ):
                     globalPreview = True
                 else:
                     globalPreview = False
-                await modRelease(
+                await modding.modRelease(
                     ctx=ctx,
                     chan=nmp,
-                    globalPreviewChan=globalPreviewChan,
                     globalPreview=globalPreview,
                 )
                 log.info("modReleaseSent")
-        if "Battles" in eventsAllowed[guildID]:
-            BattlesChan = getChan(configName, "infoBattles")
+        if "Battles" in self.eventConfig[guildID]:
+            BattlesChan = getChan(guildID, "infoBattles")
             if ctx.channel.id == BattlesChan:
                 log.debug("vkListener")
-                if config.emoCheck in ctx.content:
-                    await ctx.add_reaction(config.emoCheck)
+                if genericConfig.emoCheck in ctx.content:
+                    await ctx.add_reaction(genericConfig.emoCheck)
                     log.info("VK_Checkmark")
-                if config.emoTmbUp in ctx.content:
-                    await ctx.add_reaction(config.emoTmbUp)
+                if genericConfig.emoTmbUp in ctx.content:
+                    await ctx.add_reaction(genericConfig.emoTmbUp)
                     log.info("VK_ThumbsUp")
 
 
