@@ -18,7 +18,7 @@ log = logging.getLogger("discordGeneral")
 from config import genericConfig
 from util.apiUtil import GSheetGet
 from util.fileUtil import readJSON, writeJSON
-from util.genUtil import blacklistCheck, getCol, getGuilds, hasRole
+from util.genUtil import blacklistCheck, getChan, getCol, getGuilds, hasRole
 
 
 async def timestampset():
@@ -101,7 +101,7 @@ class ssc(commands.Cog, name="SSC"):
             configSSC["remindSent"] = True
             writeJSON(data=configuration, filename="config")
             log.debug(f"PT: {alert}")
-            chan = sscConfig.remindChan
+            chan = getChan(self=self, guild=sscConfig.tpfID, chan="SSC_Comp")
             await chan.send(
                 f"Reminder that the competiton ends soon;\n**<t:{nex}:R>**\nGet you images and votes in. 🇻 🇴 🇹 🇪 @{alert}"
             )

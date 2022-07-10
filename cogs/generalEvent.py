@@ -318,6 +318,7 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
                 else:
                     globalPreview = False
                 await modding.modRelease(
+                    self=self,
                     ctx=ctx,
                     chan=nmp,
                     globalPreview=globalPreview,

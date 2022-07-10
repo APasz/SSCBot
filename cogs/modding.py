@@ -191,7 +191,8 @@ class modding(commands.Cog, name="Modding"):
                         await ctx.channel.send(err)
                         return
                     dets = dets | author
-                    await self.modPreview(
+                    await modding.modPreview(
+                        self=self,
                         dets=dets,
                         chan=chan,
                         platform=plat,
@@ -205,7 +206,7 @@ class modding(commands.Cog, name="Modding"):
                         log.error(f"nexus | {dets}")
                         await ctx.channel.send(err)
                         return
-                    await self.modPreview(
+                    await modding.modPreview(
                         dets=dets,
                         chan=chan,
                         platform=plat,
@@ -222,7 +223,7 @@ class modding(commands.Cog, name="Modding"):
                     # 	await ctx.channel.send(err)
                     # 	return
                     dets = {"ID": ID, "name": game}
-                    await self.modPreview(
+                    await modding.modPreview(
                         dets=dets,
                         chan=chan,
                         platform=plat,

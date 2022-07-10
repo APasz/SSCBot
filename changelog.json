@@ -91,7 +91,7 @@
 	"2.4.0":[ "Toggles::20220629",
 		"-Added: generalEvent cog to house events like on_message or on_member_update that aren't server specific. All items from tpf, nix, and vk have been moved and combined.",
 		"-Added: suggestions cog to house things related to suggestions for the bot, game, etc.\nFor now they're DMed to owner (APasz).",
-		"-Added; config: Global and server specific toggles most for events in generalEvent. On load or invoked via new updateEventList command or toggleEvent slash command, these settings are written to file, so it can be cache separately.",
+		"-Added; config: Global and server specific toggles most for events in generalEvent. On load or invoked via new updateEventList command or toggleEvent slash command, these settings are written to file, so it can be cache separately. #3", 
 		"-Added; generalEvent: On_raw_member_remove just in case a member isn't in the interal cache for some reason. Checks if regular one has been called.",
 		"-Added; modding: Mod releases in other servers can now be posted to the global server as well.",
 		"-Changed: Now using black formatting.",
@@ -101,7 +101,7 @@
 		"-Fixed; modding: modRelease splits message content at spaces rather than newlines so multiple mods links can be on the same line now."
 	],
 	"2.5.0":[ "Configuration::20220708",
-		"-Added; admin: Configuration slash command that allows server admins to change existing value in config.json.",
+		"-Added; admin: Configuration slash command that allows server admins to change existing value in config.json. #6",
 		"-Added; botManage: New cog to house commands and whatnot for managing the bot, wow. Currently only the extension commands are here.",
 		"-Changed; admin: toggleEvent command moved to generalEvent cog.",
 		"-Changed; auditLog: type keys are now more human readable. eg MessageDelete instead of M_D.",
@@ -109,7 +109,11 @@
 		"-Changed; config: Practically all items moved into dataclasses. Many changes were required across the codebase but type-hinting and autocomplete are nice.",
 		"-Changed; generalEvent: toggleEvent is now restricted to the current guild. And better shows the current state, O = True X = False",
 		"-Changed; modding: Upgraded to a cog.",
-		"-Fixed; generalEvent: Can now be reloaded",
+		"-Fixed; generalEvent: Can now be reloaded. #15",
 		"-Fixed; generalEvent: toggleEvent command autocomplete now works better."
+	],
+	"2.5.1": ["Configuration::20220708",
+		"-Fixed; generalEvent|modding: Not passing self to modRelease and modPreview, also incorect use of self in modding.",
+		"-Fixed; ssc: Reminder task given an int instead of a channel object."
 	]
 }
