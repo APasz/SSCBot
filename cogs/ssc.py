@@ -145,11 +145,11 @@ class ssc(commands.Cog, name="SSC"):
     @slash_command(
         name="sscomp-start",
         guild_ids=[
-            sscConfig.tpfID,
-            genericConfig.ownerGuild,
+            246190532949180417,
+            431272247001612309,
         ],
     )
-    @application_checks.has_role(sscConfig.sscmanager)
+    @application_checks.has_role(723602126294614157)
     async def comp(
         self,
         interaction: Interaction,
