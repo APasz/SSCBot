@@ -115,5 +115,9 @@
 	"2.5.1": ["Configuration::20220708",
 		"-Fixed; generalEvent|modding: Not passing self to modRelease and modPreview, also incorect use of self in modding.",
 		"-Fixed; ssc: Reminder task given an int instead of a channel object."
+	],
+	"2.5.2": ["Configuration::20220708",
+		"-Fixed; admin: roleButton command checks guilds config name with str instead of int.",
+		"-Fixed; views: hasRole function updated to use correct keyword argument."
 	]
 }

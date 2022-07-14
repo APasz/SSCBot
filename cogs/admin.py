@@ -327,10 +327,12 @@ If in a folder please include the foldername followed by a slash. eg [ foldernam
     async def rolebuttons(self, ctx):
         if not await blacklistCheck(ctx=ctx):
             return
+        guildID = str(ctx.guild.id)
         await ctx.message.delete()
         nix = False
         guilds = getGuilds()
-        if "TPFGuild" == guilds[ctx.guild.id]:
+        print(guilds)
+        if "TPFGuild" == guilds[guildID]:
             e = nextcord.Embed(
                 title="Roles",
                 description="""Pick which roles you'd like.
@@ -338,7 +340,7 @@ Modder intern gives access to special channels full of useful info.""",
                 colour=getCol("neutral_Light"),
             )
             view = tpfroles()
-        elif "NIXGuild" == guilds[ctx.guild.id]:
+        elif "NIXGuild" == guilds[guildID]:
             nix = True
             e = nextcord.Embed(
                 title="Roles",

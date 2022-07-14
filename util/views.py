@@ -35,7 +35,7 @@ async def clicky(
         log.debug(f"clickyRMV: {interaction.user.id} | {button.label}")
         return txt
 
-    roly = hasRole(role=role, roles=interaction.user.roles)
+    roly = hasRole(role=role, userRoles=interaction.user.roles)
     if roly:
         if action == "add":
             Rtxt = "role can not be removed."
