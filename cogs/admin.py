@@ -413,7 +413,7 @@ Modder intern gives access to special channels full of useful info.""",
         value: str = SlashOption(
             name="value",
             required=True,
-            description="^^^ = Current. What is the new ID you wish to input? int | false | none",
+            description="^^^ = Current. What is the new ID/Value you wish to input? int | false",
         ),
     ):
         """Server admins can change bot configuration for their server."""

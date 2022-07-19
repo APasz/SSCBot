@@ -119,5 +119,14 @@
 	"2.5.2": ["Configuration::20220708",
 		"-Fixed; admin: roleButton command checks guilds config name with str instead of int.",
 		"-Fixed; views: hasRole function updated to use correct keyword argument."
+	],
+	"2.5.3": ["Configuration::20220720",
+		"-Added; config: Notfiy channel to admin channels section. Also a MISC section that currently only holds the time in hours a account is considered recently created.",
+		"-Added; generalEvent, auditLog: When a user joins with a recently created account, an embed message is sent to the Notify channel.",
+		"-Fixed; auditLog: Errors in userRemove and checkKickBan that blocked auditlog entries being sent when member leaves.",
+		"-Fixed; bot: #17 Global ReadyMessage setting is respected. Also won't block the restart stuff.",
+		"-Fixed; generalEvent: Events error when there is no guild id.",
+		"-Fixed; generalEvent: on_member_remove actually logs user id.",
+		"-Fixed; modding: #16 Replace instances of newline with space first."
 	]
 }

@@ -166,6 +166,7 @@ class modding(commands.Cog, name="Modding"):
         else:
             img = None
         cont = ctx.content
+        cont = cont.replace("\n", " ")
         mess = cont.split(" ")
         for l in mess:
             # print(f"L: {l}")

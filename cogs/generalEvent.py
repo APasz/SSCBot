@@ -1,7 +1,7 @@
 print("CogGeneralEvent")
 import asyncio
 import logging
-from cmath import e
+import time
 
 log = logging.getLogger("discordGeneral")
 logMess = logging.getLogger("discordMessages")
@@ -12,7 +12,13 @@ from discord import Permissions
 from nextcord import Interaction, SlashOption, slash_command
 from nextcord.ext import commands
 from util.fileUtil import readJSON, writeJSON
-from util.genUtil import getChan, getEventConfig, getGlobalEventConfig, getGuilds
+from util.genUtil import (
+    getChan,
+    getEventConfig,
+    getGlobalEventConfig,
+    getGuilds,
+    getGuildID,
+)
 
 from cogs.auditLog import auditLogger
 from cogs.modding import modding
@@ -92,7 +98,9 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
 
     @toggleevents.on_autocomplete("event")
     async def eventList(self, interaction: Interaction, event: str):
-        guildID = str(interaction.guild_id)
+        guildID = getGuildID(obj=interaction)
+        if guildID is None:
+            return
         guildEvents = self.eventConfig[guildID]
         globalEvents = getGlobalEventConfig(listAll=True)
         enabledEvents = []
@@ -121,7 +129,9 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
         await self.bot.wait_until_ready()
         if member.bot:
             return
-        guildID = str(member.guild.id)
+        guildID = getGuildID(obj=member)
+        if guildID is None:
+            return
         if guildID not in self.guildList:
             return
         if "MemberJoin" in self.eventConfig[guildID]:
@@ -134,12 +144,30 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
                 self=self, guild=guildID, chan="Audit", admin=True
             )
             await auditLogger.logEmbed(self, dataObject)
+            if "MemberJoinRecentCreation" in self.eventConfig[guildID]:
+                usrCrtd = int(round(member.created_at.timestamp()))
+                configuration = readJSON(filename="config")[guildID]
+                crtTime = (
+                    configuration["MISC"]["MemberJoinRecentCreationTimeHours"] * 60
+                ) * 60
+                unix = int(time.time())
+                threshold = unix - crtTime
+                if usrCrtd > threshold:
+                    notifyChan = getChan(
+                        self=self, guild=guildID, chan="Notify", admin=True
+                    )
+                    dataObject.type = "MemberJoinRecentCreation"
+                    dataObject.count = unix - usrCrtd
+                    dataObject.auditChan = notifyChan
+                    await auditLogger.logEmbed(self, dataObject)
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
         """Check if new user has passed membership or display name changes."""
         await self.bot.wait_until_ready()
-        guildID = str(after.guild.id)
+        guildID = getGuildID(obj=after)
+        if guildID is None:
+            return
         if guildID not in self.guildList:
             return
         if before.pending and after.pending is True:
@@ -187,7 +215,9 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
     async def on_member_remove(self, member):
         """Log to audit-log channel when member leaves."""
         await self.bot.wait_until_ready()
-        guildID = str(member.guild.id)
+        guildID = getGuildID(obj=member)
+        if guildID is None:
+            return
         if guildID not in self.guildList:
             return
         if "MemberLeave" in self.eventConfig[guildID]:
@@ -198,7 +228,7 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
             )
             dataObject.guildObject = self.bot.get_guild(member.guild.id)
             await auditLogger.userRemove(self, dataObject)
-            log.info(f"MemberLeave: {self.guildList[guildID]}, {member.user.id}")
+            log.info(f"MemberLeave: {self.guildList[guildID]}, {member.id}")
             await asyncio.sleep(3)
             self.onMemberFired = False
 
@@ -206,7 +236,9 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
     async def on_raw_member_remove(self, payload):
         await self.bot.wait_until_ready()
         await asyncio.sleep(1.5)
-        guildID = str(payload.guild_id)
+        guildID = getGuildID(obj=payload)
+        if guildID is None:
+            return
         if self.onMemberFired:
             return
         if guildID not in self.guildList:
@@ -262,7 +294,9 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
     @commands.Cog.listener()
     async def on_raw_message_delete(self, payload):
         await self.bot.wait_until_ready()
-        guildID = str(payload.guild_id)
+        guildID = getGuildID(obj=payload)
+        if guildID is None:
+            return
         if guildID not in self.guildList:
             return
         if "MessageDelete" in self.eventConfig[guildID]:
@@ -292,7 +326,9 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
     async def on_message(self, ctx):
         """Check for Author in message and adds heart reaction. Restricted to artwork channel in TpF server."""
         await self.bot.wait_until_ready()
-        guildID = str(ctx.guild.id)
+        guildID = getGuildID(obj=ctx)
+        if guildID is None:
+            return
         log.debug(f"{self.guildList[guildID]}, {guildID}")
         if "Artwork" in self.eventConfig[guildID]:
             artChan = getChan(guildID, "Artwork")

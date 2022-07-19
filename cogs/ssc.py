@@ -60,8 +60,8 @@ async def timestampset():
 
 @dataclass
 class sscConfig:
-    tpfID = getGuilds(by="name")["TPFGuild"]
-    tpfConfig = readJSON(filename="config")[tpfID]
+    tpfID = int(getGuilds(by="name")["TPFGuild"])
+    tpfConfig = readJSON(filename="config")[str(tpfID)]
     sscmanager = tpfConfig["Roles"]["SSC_Manager"]
     winner = tpfConfig["Roles"]["SSC_Winner"]
     winnerPrize = tpfConfig["Roles"]["SSC_WinnerPrize"]
@@ -80,6 +80,9 @@ class ssc(commands.Cog, name="SSC"):
     @commands.Cog.listener()
     async def on_ready(self):
         log.debug("Ready")
+        log.debug(
+            f"{sscConfig.tpfID}, {sscConfig.sscChan}, {sscConfig.sscmanager}, {genericConfig.ownerGuild}"
+        )
 
     @tasks.loop(
         minutes=readJSON(filename="config")["General"]["TaskLengths"]["SSC_Remind"]
@@ -145,11 +148,11 @@ class ssc(commands.Cog, name="SSC"):
     @slash_command(
         name="sscomp-start",
         guild_ids=[
-            246190532949180417,
-            431272247001612309,
+            int(genericConfig.ownerGuild),
+            int(sscConfig.tpfID),
         ],
     )
-    @application_checks.has_role(723602126294614157)
+    @application_checks.has_role(sscConfig.sscmanager)
     async def comp(
         self,
         interaction: Interaction,
@@ -169,12 +172,12 @@ class ssc(commands.Cog, name="SSC"):
             description="The second image that makes the banner",
         ),
         bannerFull4: nextcord.Attachment = SlashOption(
-            name="bannerfull4",
+            name="bannerfull3",
             required=False,
             description="The third image that makes the banner",
         ),
         bannerFull8: nextcord.Attachment = SlashOption(
-            name="bannerfull8",
+            name="bannerfull4",
             required=False,
             description="The fourth image that makes the banner",
         ),
@@ -189,12 +192,12 @@ class ssc(commands.Cog, name="SSC"):
             description="The second image that makes the banner but for othergames channel",
         ),
         bannerFull4OG: nextcord.Attachment = SlashOption(
-            name="bannerfull4-og",
+            name="bannerfull3-og",
             required=False,
             description="The third image that makes the banner but for othergames channel",
         ),
         bannerFull8OG: nextcord.Attachment = SlashOption(
-            name="bannerfull8-og",
+            name="bannerfull4-og",
             required=False,
             description="The fourth image that makes the banner but for othergames channel",
         ),
@@ -331,8 +334,8 @@ class ssc(commands.Cog, name="SSC"):
         name="delete",
         default_member_permissions=Permissions(manage_messages=True),
         guild_ids=[
-            sscConfig.tpfID,
-            genericConfig.ownerGuild,
+            int(genericConfig.ownerGuild),
+            int(sscConfig.tpfID),
         ],
     )
     async def sscDelete(

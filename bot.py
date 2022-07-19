@@ -113,20 +113,28 @@ Nextcord v{nextcord.__version__} **Ready**\nUse /changelog to see changes"""
             configGen["verPoint"] = verPoint
             configGen["verName"] = verName
             writeJSON(data=configuration, filename="config")
-        if configGen["Events"]["ReadyMessage"] is False:
-            return
-        guilds = getGuilds().keys()
-        sendReady = []
-        for item in guilds:
-            try:
-                event = configuration[item]["Events"]["ReadyMessage"]
-                if event is True:
-                    sendReady.append(configuration[item]["Channels"]["ReadyMessage"])
-            except:
-                pass
-        for element in sendReady:
-            chan = await bot.fetch_channel(element)
-            await chan.send(txt)
+        globalReady = configGen["Events"]["ReadyMessage"]
+        log.debug(f"globalReady: {globalReady}")
+        if globalReady is True:
+            guilds = getGuilds().keys()
+            sendReady = []
+            for item in guilds:
+                try:
+                    event = configuration[item]["Events"]["ReadyMessage"]
+                    if event is True:
+                        sendReady.append(
+                            configuration[item]["Channels"]["ReadyMessage"]
+                        )
+                except KeyError:
+                    pass
+            for element in sendReady:
+                try:
+                    chan = await bot.fetch_channel(element)
+                    await chan.send(txt)
+                except Exception as xcp:
+                    if "Missing Access" in str(xcp):
+                        log.error(f"Missing Access: {element}")
+                        pass
         messFile = os.path.join(curDir, "messID.txt")
         if os.path.exists(messFile):
             messIDs = readFile(directory=curDir, filename="messID")

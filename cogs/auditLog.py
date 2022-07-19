@@ -13,7 +13,7 @@ from nextcord.ext import commands
 log = logging.getLogger("discordGeneral")
 
 from config import dataObject, genericConfig
-from util.genUtil import getCol
+from util.genUtil import getCol, hoursFromSeconds
 
 
 class auditLogger(commands.Cog, name="AuditLogging"):
@@ -27,7 +27,7 @@ class auditLogger(commands.Cog, name="AuditLogging"):
     async def userRemove(self, data: dataObject):
         await self.bot.wait_until_ready()
         dataObj = data
-        log.info(f"MemberRemove: {data.id}: {data.display_name}")
+        log.info(f"MemberRemove: {data.userObject.id}: {data.userObject.display_name}")
         dataObj.type = "MemberLeave"
         dataObject.count = data.guildObject.member_count
         await auditLogger.logEmbed(self, dataObj)
@@ -37,7 +37,7 @@ class auditLogger(commands.Cog, name="AuditLogging"):
     async def checkKickBan(self, data: dataObject, uR=0):
         await self.bot.wait_until_ready()
         dataObj = data
-        log.debug(f"{usr.id}, {data.auditChan.id}")
+        log.debug(f"{dataObj.userObject.id}, {dataObj.auditChan.id}")
         async for entry in data.guildObject.audit_logs(limit=3):
             log.debug(entry.action)
             # if ("kick" or "ban") not in entry.action: continue
@@ -69,6 +69,7 @@ class auditLogger(commands.Cog, name="AuditLogging"):
         await self.bot.wait_until_ready()
         stdName = "Author ID | Account | Nick | Live Nick"
         shtName = "Author ID | Account | Live Nick"
+        minName = "Author ID | Account"
         type = auditInfo.type
         # There has to be a better way to assign None to multiple variables.
         # fmt: off
@@ -150,7 +151,7 @@ class auditLogger(commands.Cog, name="AuditLogging"):
             if auditInfo.reason is not None:
                 fName5 = "Reason"
                 fValue5 = f"```\n{auditInfo.reason}\n```"
-            e = nextcord.Embed(title=title, colour=getCol("negative2"))
+            e = nextcord.Embed(title=title, colour=getCol("negative_Low"))
 
         elif "MemberLeave" == type:
             log.debug(type)
@@ -224,6 +225,19 @@ class auditLogger(commands.Cog, name="AuditLogging"):
             fName2 = "Member Count"
             fValue2 = auditInfo.count
             e = nextcord.Embed(title=title, colour=getCol("positive"))
+
+        elif "MemberJoinRecentCreation" == type:
+            log.debug(type)
+            title = "Recently Created User Joined"
+            usr = auditInfo.userObject
+            fName1 = minName
+            auth = usr.name
+            authID = usr.id
+            fValue1 = f"{authID}\n{auth}"
+            fName2 = "Account Created"
+            accCrtdTime = hoursFromSeconds(seconds=auditInfo.count, asStr=True)
+            fValue2 = f"{accCrtdTime} ago"
+            e = nextcord.Embed(title=title, colour=getCol("warning_Low"))
 
         elif "MemberNameChange" == type:
             log.debug(type)
@@ -343,7 +357,9 @@ class auditLogger(commands.Cog, name="AuditLogging"):
         else:
             chan = auditInfo.auditChan
         if chan is None:
+            log.error("chan is None")
             chan = self.bot.get_channel(genericConfig.ownerAuditChan)
+        log.debug(f"AuditChan: {chan.id}")
         await chan.send(embed=e)
 
 

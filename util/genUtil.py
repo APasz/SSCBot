@@ -57,6 +57,44 @@ def getChan(guild: str | int, chan: str, admin: bool = False, self=None):
         return chanID
 
 
+def hoursFromSeconds(
+    seconds: int | str,
+    asStr: bool = False,
+) -> tuple | str:
+    """Returns hours, minutes, and seconds as tuple or string(# H, ) from an int/str of seconds."""
+    seconds = int(seconds)
+    minute, second = divmod(seconds, 60)
+    hour, minute = divmod(minute, 60)
+
+    if not asStr:
+        return (hour, minute, second)
+    timeList = []
+    if hour != 0:
+        timeList.append(f"{hour} Hour")
+        if hour > 1:
+            timeList[-1] = timeList[-1] + "s"
+    if minute != 0:
+        timeList.append(f"{minute} Min")
+        if minute > 1:
+            timeList[-1] = timeList[-1] + "s"
+    if second != 0:
+        timeList.append(f"{second} Sec")
+        if second > 1:
+            timeList[-1] = timeList[-1] + "s"
+    return ", ".join(timeList)
+
+
+def getGuildID(obj) -> str | None:
+    """Gets guild id from a guild object"""
+    if hasattr(obj, "guild_id"):
+        return str(obj.guild_id)
+    elif hasattr(obj, "guild"):
+        if hasattr(obj.guild, "id"):
+            return str(obj.guild.id)
+    else:
+        return None
+
+
 async def blacklistCheck(ctx, blklstType: str = "gen"):
     """Checks if user in the blacklist"""
     # log.debug(ctx)
