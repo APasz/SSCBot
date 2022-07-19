@@ -505,7 +505,7 @@ Modder intern gives access to special channels full of useful info.""",
             configItem.append("Undefined Key")
         if len(configItem) == 0:
             configItem.append("Undefined Error")
-        if len(value) >= 3:
+        if len(value) >= 1:
             configItem.append(value)
         await interaction.response.send_autocomplete(configItem)
 
