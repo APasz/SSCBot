@@ -1,24 +1,35 @@
-print("CogModding")
 import asyncio
 import logging
 import re
 import textwrap
 
-import nextcord
-from nextcord.ext import commands
+from config import generalEventConfig as geConfig
+from util.apiUtil import (nexusModGet, parseURL, steamUsrGet, steamWSGet,
+                          tpfnetModGet)
+from util.genUtil import getChan, getCol
+
+print("CogModding")
 
 log = logging.getLogger("discordGeneral")
-
-from util.apiUtil import nexusModGet, parseURL, steamUsrGet, steamWSGet, tpfnetModGet
-from util.genUtil import getChan, getCol, getGuilds
+try:
+    log.debug("TRY MODDING IMPORT MODULES")
+    import nextcord
+    from nextcord.ext import commands
+except Exception:
+    log.exception("MODDING IMPORT MODULES")
 
 
 class modding(commands.Cog, name="Modding"):
+    """Class containing commands and functions related to game modding"""
+
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.guilds = getGuilds(by="name")
-        tpfID = self.guilds["TPFGuild"]
+        tpfID = geConfig.guildListName["TPFGuild"]
         self.globalPreviewChan = getChan(guild=tpfID, chan="NewModPreview")
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        log.debug(f"{self.__cog_name__} Ready")
 
     async def modPreview(
         self,
@@ -28,6 +39,7 @@ class modding(commands.Cog, name="Modding"):
         img=None,
         globalPreview: bool = False,
     ):
+        """Create a mod preview embed and send it to the appropriate channel"""
         log.debug("modPreview")
         NSFW = False
         auth = authURL = authIcon = desc = createdAt = updatedAt = modThumb = None
@@ -103,7 +115,8 @@ class modding(commands.Cog, name="Modding"):
             )
             NSFW = dets["contains_adult_content"]
             if NSFW is True:
-                e.insert_field_at(1, name="NSFW", value="**`TRUE`**", inline=False)
+                e.insert_field_at(
+                    1, name="NSFW", value="**`TRUE`**", inline=False)
 
         elif platform == "tpfnet":
             modid = dets["ID"]
@@ -131,9 +144,11 @@ class modding(commands.Cog, name="Modding"):
         if desc is not None:
             e.add_field(name="Description", value=desc, inline=False)
         if createdAt is not None:
-            e.add_field(name="Published", value=f"<t:{createdAt}:R>", inline=True)
+            e.add_field(name="Published",
+                        value=f"<t:{createdAt}:R>", inline=True)
             if not createdAt <= updatedAt <= (createdAt + 3600):
-                e.add_field(name="Updated", value=f"<t:{updatedAt}:R>", inline=True)
+                e.add_field(name="Updated",
+                            value=f"<t:{updatedAt}:R>", inline=True)
         if len(tags) != 0:
             e.add_field(name="Tags", value=tags, inline=False)
         if modThumb is not None:
@@ -147,11 +162,24 @@ class modding(commands.Cog, name="Modding"):
                 e.set_image(url=img.url)
             elif "str" in ty:
                 e.set_image(url=img)
-        await chan.send(embed=e)
+        try:
+            await chan.send(embed=e)
+        except Exception:
+            log.exception("Mod Preview")
+        else:
+            log.debug(f"Mod Preview Sent {globalPreview=}")
         if globalPreview is True:
-            log.debug("GlobalModPreviewSent")
-            gnmp = await self.bot.fetch_channel(self.globalPreviewChan)
-            await gnmp.send(embed=e)
+            try:
+                globalPreviewChan = getChan(
+                    guild=geConfig.guildListName[
+                        "TPFGuild"], chan="NewModPreview"
+                )
+                gnmp = await self.bot.fetch_channel(globalPreviewChan)
+                await gnmp.send(embed=e)
+            except Exception:
+                log.exception("Global Mod Preview")
+                return
+            log.debug("Global Mod Preview Sent")
 
     async def modRelease(
         self,
@@ -159,6 +187,7 @@ class modding(commands.Cog, name="Modding"):
         chan,
         globalPreview: bool = False,
     ):
+        """Parse URLs from the new mod release channels and gather the required info to pass to modPreview"""
         if len(ctx.attachments) != 0:
             attach = ctx.attachments[0]
             if attach.content_type.startswith("image"):
@@ -182,55 +211,76 @@ class modding(commands.Cog, name="Modding"):
                     if isinstance(dets, int):
                         err = err + str(dets)
                         log.error(f"steamWS | {dets}")
-                        await ctx.channel.send(err)
+                        try:
+                            await ctx.channel.send(err)
+                        except Exception:
+                            log.exception(f"MR ERR Steam WS")
                         return
                     usrID = int(dets["creator"])
                     author = steamUsrGet(usrID)
                     if isinstance(author, int):
                         err = err + str(author)
                         log.error(f"steamUsr | {dets}")
-                        await ctx.channel.send(err)
+                        try:
+                            await ctx.channel.send(err)
+                        except Exception:
+                            log.exception(f"MR ERR Steam Usr")
                         return
                     dets = dets | author
-                    await modding.modPreview(
-                        self=self,
-                        dets=dets,
-                        chan=chan,
-                        platform=plat,
-                        img=img,
-                        globalPreview=globalPreview,
-                    )
+                    try:
+                        await modding.modPreview(
+                            self=self,
+                            dets=dets,
+                            chan=chan,
+                            platform=plat,
+                            img=img,
+                            globalPreview=globalPreview,
+                        )
+                    except Exception:
+                        log.exception(f"MR MP Send Steam")
                 if plat == "nexus":
                     dets = nexusModGet(game, ID)
                     if isinstance(dets, int):
                         err = err + str(dets)
                         log.error(f"nexus | {dets}")
-                        await ctx.channel.send(err)
+                        try:
+                            await ctx.channel.send(err)
+                        except Exception:
+                            log.exception(f"MR ERR Nexus")
                         return
-                    await modding.modPreview(
-                        dets=dets,
-                        chan=chan,
-                        platform=plat,
-                        img=img,
-                        globalPreview=globalPreview,
-                    )
+                    try:
+                        await modding.modPreview(
+                            dets=dets,
+                            chan=chan,
+                            platform=plat,
+                            img=img,
+                            globalPreview=globalPreview,
+                        )
+                    except Exception:
+                        log.exception(f"MR MP Send nexus")
                 if plat == "tpfnet":  # not supported at present.
                     if not re.search(r"filebase", cont):
                         continue
                     dets = tpfnetModGet(ID)
                     # if isinstance(dets, int):
-                    # 	err = err+str(dets)
-                    # 	log.error(f"tpfnet | {dets}")
-                    # 	await ctx.channel.send(err)
-                    # 	return
+                    #    err = err+str(dets)
+                    #    log.error(f"tpfnet | {dets}")
+                    #    try:
+                    #      await ctx.channel.send(err)
+                    #    except Exception:
+                    #        log.exception(f"MR ERR TpF")
+                    #    return
                     dets = {"ID": ID, "name": game}
-                    await modding.modPreview(
-                        dets=dets,
-                        chan=chan,
-                        platform=plat,
-                        img=img,
-                        globalPreview=globalPreview,
-                    )
+                    try:
+                        await modding.modPreview(
+                            dets=dets,
+                            chan=chan,
+                            platform=plat,
+                            img=img,
+                            globalPreview=globalPreview,
+                        )
+                    except Exception:
+                        log.exception(f"MR MP Send TpF")
                     log.debug("ModPreviewSent")
                 await asyncio.sleep(0.1)
         print("NMR Done")

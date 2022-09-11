@@ -1,323 +1,352 @@
-print("CogGeneral")
-import asyncio
 import logging
 import random
 import time
 
-from config import dataObject, genericConfig
-import nextcord
-import pint
-from nextcord import Embed, Interaction, SlashOption, slash_command
-from nextcord.ext import application_checks, commands
-from nextcord.ext.commands.cooldowns import BucketType
+from config import botInformation as botInfo
+from config import bytesToHuman
+from config import generalEventConfig as geConfig
+from config import genericConfig as gxConfig
+from util.fileUtil import readJSON
+from util.genUtil import _ping, blacklistCheck, getCol, hoursFromSeconds
+from util.views import factSubmit
+
+print("CogGeneral")
 
 log = logging.getLogger("discordGeneral")
-from util.fileUtil import readJSON
-from util.genUtil import blacklistCheck, getCol
+try:
+    log.debug("TRY GENERAL IMPORT MODUELS")
+    import nextcord
+    import pint
+    import psutil
+    from nextcord import Embed, Interaction, SlashOption, slash_command
+    from nextcord.ext import commands
+except Exception:
+    log.exception("GENERAL IMPORT MODUELS")
 
 
 class general(commands.Cog, name="General"):
+    """Class containing commands that aren't for bot management or inherently related to TpF"""
+
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
     @commands.Cog.listener()
     async def on_ready(self):
-        log.debug("Ready")
+        log.debug(f"{self.__cog_name__} Ready")
 
-    async def fact(self):
-        e = f"""I'm sorry, I lost the fact I was getting for you.
-'An error occurred' Alert <@{genericConfig.ownerID}>"""
+    @slash_command(
+        name="submitfact",
+        guild_ids=gxConfig.slashServers,
+        # default_member_permissions=Permissions(manage_messages=True),
+    )
+    async def factAdd(self, interaction: nextcord.Interaction):
+        """Submit a fact related to transportation, Transport Fever, or Urban Games."""
         try:
-            facts = open("randomFact.txt").read().splitlines()
-            if len(facts) == 0:
-                return e
-            factfull = random.choice(facts)
-            factsplit = factfull.split(";")
-            log.debug(f"factSplit {len(factsplit)}")
-            index = str(factsplit[0])
-            fact = str(factsplit[1].removeprefix(" "))
-            source = str(factsplit[2].removeprefix(" "))
-            if not source:
-                source = "Someone forgot the source."
-            if (source == "NotPublic") or (source == "Someone forgot the source."):
-                e = nextcord.Embed(title=index, description=fact, colour=getCol("fact"))
-            else:
-                e = nextcord.Embed(
-                    title=index, description=fact, colour=getCol("fact"), url=source
-                )
-            e.set_footer(text=source)
-            log.debug(f"f1:{index}, f2:{fact}, f3:{source}")
-        except:
-            pass
-        return e
+            await interaction.response.send_modal(modal=factSubmit())
+        except Exception:
+            log.exception(f"Fact Submit Modal")
+
+    async def factGet(self, index: int = -1, metadata: bool = False) -> str | nextcord.Embed:
+        """Retrieves a fact from the facts JSON file."""
+        log.debug(f"run| {index=}| {metadata=}")
+        data = f"'An error occurred' Alert <@{gxConfig.ownerID}>"
+        if facts := readJSON(filename=gxConfig.factsJSON):
+            keys = list(facts.keys())
+        else:
+            return data
+
+        index = str(index)
+        if index == "-1":
+            index = str(random.choice(keys))
+        elif (len(index) != 3) and index.isdigit():
+            index = index.zfill(3)
+            if index not in keys:
+                index = str(random.choice(keys))
+        factDic = facts[index]
+        log.debug(str(factDic))
+        ID = f"Fact #{index}"
+        content = factDic["content"]
+        source = factDic["source"]
+        sourceLink = factDic["sourceLink"]
+        extraLinks = factDic["extraLinks"]
+        initialAdd = factDic["initialAdd"]
+        lastUpdate = factDic["lastUpdate"]
+        providerID = factDic["providerID"]
+        if providerID == None:
+            providerID = "*Not avaliable*"
+        providerName = factDic["providerName"]
+        if providerName == None:
+            providerName = "*Not avaliable*"
+        if source == None and sourceLink == None:
+            source = "Someone forgot the source."
+        if sourceLink == None:
+            data = nextcord.Embed(
+                title=ID, description=content, colour=getCol("fact"))
+        else:
+            data = nextcord.Embed(
+                title=ID, description=content, colour=getCol("fact"), url=sourceLink)
+        if source and sourceLink:
+            source = f"Source;\n{source}\n{sourceLink}"
+        elif sourceLink and not source:
+            source = "Source;\n" + sourceLink
+        data.set_footer(text=source)
+        if len(extraLinks) > 0:
+            extraLinks = "\n".join(extraLinks)
+            data.add_field(name="Extra Links", value=extraLinks, inline=False)
+        if metadata:
+            data.add_field(
+                name="Metadata", value=f"Provider Name|ID: {providerName} | {providerID}\nDate Added|Updated: {initialAdd} | {lastUpdate}")
+        return data
 
     @commands.command(name="fact", aliases=["randomFact"])
     @commands.cooldown(1, 1, commands.BucketType.user)
-    async def factCommand(self, ctx):
-        """Serves Random facts"""
+    async def factCommand(self, ctx, index: int = -1, metadata: bool = False):
+        """Serves Random Facts"""
         log.debug("factCommand")
         async with ctx.typing():
-            fact = await self.fact()
-            if isinstance(fact, Embed):
-                await ctx.send(embed=fact)
-            else:
-                await ctx.send(fact)
+            fact = await self.factGet(index=index, metadata=metadata)
+            try:
+                if isinstance(fact, Embed):
+                    await ctx.send(embed=fact)
+                else:
+                    await ctx.send(fact)
+            except Exception:
+                log.exception("factCOMM")
             log.info(f"Fact: {ctx.author.id},{ctx.author.display_name}")
 
-    @slash_command(name="fact", guild_ids=genericConfig.slashServers)
+    @slash_command(name="fact")
     @commands.cooldown(1, 1, commands.BucketType.user)
-    async def factSlash(self, interaction: Interaction):
-        """Serves Random facts"""
+    async def factSlash(self, interaction: Interaction, index: int = SlashOption(
+            name="index", required=False, default=-1,
+            description="When looking for a specific fact. If in an invalid index is given, one will be picked at random"),
+            metadata: bool = SlashOption(name="metadata", required=False, default=bool(False),
+                                         description="Whether to show addition information such as who submitted a fact and when.")):
+        """Serves Random Facts"""
         if not await blacklistCheck(ctx=interaction, blklstType="gen"):
             return
         log.debug("factSlash")
-        fact = await self.fact()
-        if isinstance(fact, Embed):
-            await interaction.response.send_message(embed=fact)
+        fact = await self.factGet(index=index, metadata=metadata)
+        try:
+            if isinstance(fact, Embed):
+                await interaction.response.send_message(embed=fact)
+            else:
+                await interaction.response.send_message(fact)
+        except Exception:
+            log.exception("factSLASH")
+        log.info(
+            f"Fact: {interaction.user.id},{interaction.user.display_name}")
+
+    async def pingDo(self, ctx, api: bool, testNum: int):
+        """Sends a formated string containing the latency"""
+        log.debug("run")
+        tests = await _ping(self, api=api, testNum=testNum)
+        if api:
+            txt = f"Gateway: {tests[0]}ms   API: {tests[1]}ms"
         else:
-            await interaction.response.send_message(fact)
-        log.info(f"Fact: {interaction.user.id},{interaction.user.display_name}")
+            txt = f"I'm ping ponging at {tests[0]}ms"
+        log.debug(txt)
+        try:
+            await ctx.send(txt)
+        except Exception:
+            log.exception(f"PingSend")
 
     @commands.command(name="ping")
     @commands.cooldown(1, 2.5, commands.BucketType.user)
-    async def ping(self, ctx: commands.Context, api: str = None):
-        """Gives ping to server in Melbourne, Australia"""
-        log.debug("pingCommand")
-        if api is not None:
-            async with ctx.typing():
-                せ = time.perf_counter()
-                mess = await ctx.send("Ponging...")
-                え = time.perf_counter()
-                await asyncio.sleep(0.25)
-                await mess.edit(
-                    content=f"Gateway: {round(self.bot.latency * 1000)}ms\nAPI: {round((え - せ) * 1000)}ms"
-                )
-        else:
-            await ctx.send(f"Ponging at {round(self.bot.latency * 1000)}ms")
-        log.info(f"Ping: {ctx.author.id},{ctx.author.display_name}")
+    async def ping(self, ctx: commands.Context, testNum: int = 1, api: str = None):
+        """Gives ping to server the bot is running on"""
+        if testNum > 5:
+            testNum = 5
+        if api == None:
+            api = False
+        log.debug(f"pingCommand {testNum=} | {api=}")
+        await self.pingDo(ctx=ctx, api=api, testNum=testNum)
+        log.info(f"Ping: {ctx.author.id=},{ctx.author.display_name=}")
 
-    @slash_command(name="ping", guild_ids=genericConfig.slashServers)
+    @slash_command(name="ping")
     async def pingSlash(
-        self,
-        interaction: Interaction,
-        api: str = SlashOption(
-            name="api", description="Do you want to check API ping?", required=False
-        ),
+            self,
+            interaction: Interaction,
+            api: bool = SlashOption(
+                name="api", description="Do you want to check API latency?", required=False, default=bool(False)
+            ),
+            testNum: int = SlashOption(
+                name="test-count", description="How many tests to do?", default=1, max_value=5)
     ):
-        """Gives ping to server in Melbourne, Australia"""
+        """Gives ping to server the bot is running on"""
         log.debug(interaction.user.id)
         BL = await blacklistCheck(ctx=interaction, blklstType="gen")
         if BL is False:
             return
-        if api is not None:
-            せ = time.perf_counter()
-            await interaction.response.send_message("Ponging...")
-            え = time.perf_counter()
-            await asyncio.sleep(0.25)
-            await interaction.edit_original_message(
-                content=f"Gateway: {round(self.bot.latency * 1000)}ms\nAPI: {round((え - せ) * 1000)}ms"
-            )
-        else:
-            await interaction.response.send_message(
-                f"Ponging at {round(self.bot.latency * 1000)}ms"
-            )
-        log.info(f"Ping: {interaction.user.id},{interaction.user.display_name}")
+        if api == None:
+            api = False
+        log.debug(f"pingCommand {testNum=} | {api=}")
+        await self.pingDo(ctx=interaction, api=api, testNum=testNum)
+        log.info(
+            f"Ping: {interaction.user.id=},{interaction.user.display_name=}")
 
-    @commands.command(name="info")
-    @commands.cooldown(1, 1, commands.BucketType.user)
-    async def info(self, ctx: commands.Context, ver=None):
-        """Gives information about the bot"""
-        log.debug(ctx.author.id)
-        configGen = readJSON(filename="config")["General"]
-        mV = configGen["verMajor"]
-        sV = configGen["VerMinor"]
-        pV = configGen["verPoint"]
-        Vn = configGen["verName"]
-        if ver is None:
-            if genericConfig.botName == "SSCBot":
-                txt1 = "Hi, I'm **SSCBot**"
+    @slash_command(name="info", guild_ids=gxConfig.slashServers)
+    async def info(self, interaction: Interaction,
+                   category: str = SlashOption(name="category", required=True, choices=["Bot", "Server", "Member"],
+                                               description="What sort of info are you looking for?"),):
+        """Get info about the bot or current server."""
+        guildID = str(interaction.guild_id)
+        if category == "Bot":
+            strBot = readJSON(filename="strings")["en"]["Bot"]
+            # generate description
+            if gxConfig.botName == "SSCBot":
+                desc = strBot["InfoNameSame"]
             else:
-                txt1 = f"Hi, I'm **{genericConfig.botName}**, formally known as **SSCBot**."
-            txt2 = f"""
-			Created by **APasz**
-			I'm written in Python and my code is freely avaliable on **[GitHub](https://github.com/APasz/SSCBot)**
-			My functions include: Reacting to things, Welcoming new users, Giving users the roles, random facts, and conversions they seek, logging, and more.
-			You can use **{genericConfig.BOT_PREFIX}help** to see a list of commands.
-			A select few commands are also avaliable as slash commands.
-			"""
-            text = nextcord.Embed(
-                description=txt1 + txt2, colour=getCol("neutral_Dark")
-            )
-            text.set_footer(text=f"Version: {mV}.{sV}")
-        else:
-            text = nextcord.Embed(
-                title="Current version",
-                description=f"{mV}.{sV}.{pV}\n{Vn}",
-                colour=getCol("neutral_Dark"),
-            )
-        await ctx.send(embed=text)
-        log.info(f"Info: {ctx.author.id},{ctx.author.display_name}")
-        return
+                try:
+                    desc = '\n'.join(
+                        [strBot["InfoNameDiff"], strBot["InfoDesc"]])
+                    desc = desc.format(name=gxConfig.botName,
+                                       prefix=gxConfig.BOT_PREFIX)
+                except Exception:
+                    log.exception("InfoComand_desc")
+            embd = nextcord.Embed(title="Bot Info", description=desc,
+                                  colour=getCol(col="botInfo"))
+            # generate memory info
+            try:
+                processBot = psutil.Process(botInfo.processPID)
+                memB = processBot.memory_info().rss
+                memMiB = bytesToHuman(byteNum=memB, magnitude="M")
+            except Exception:
+                log.exception("InfoCommand_mem")
+            # generate time since sys boot
+            try:
+                bootTime = int(psutil.boot_time())
+                utc = int(time.time())
+                sinceBoot = hoursFromSeconds(
+                    seconds=(utc - bootTime), asStr=True, strDays=True, strMinutes=False, strSeconds=False)
+            except Exception:
+                log.exception("InfoCommand_boot")
+            # generate latency string
+            latency = await _ping(self=self, api=True)
+            latencyTxt = f"Gateway: {latency[0]}ms, API: {latency[1]}ms"
+            # add field to embed
+            embd.add_field(name="Host System",
+                           value=f"""Hostname: {botInfo.hostname} | OS: {botInfo.hostOS}
+RAM; Host: {botInfo.hostRAM} | Used: {psutil.virtual_memory().percent}% | Process: {memMiB}
+CPU; Cores: {botInfo.hostCores} | Frequency: {round(psutil.cpu_freq()[0])}Mhz | Sys Usage: {psutil.cpu_percent()}%
+Uptime: {sinceBoot} | Latency; {latencyTxt}
+Python: {botInfo.hostPython} | Nextcord: {botInfo.nextcordVer} | Bot: {botInfo.base}
+Guilds: {botInfo.guildCount}""")
+        elif category == "Server":
+            try:
+                strServ = readJSON(filename="strings")["en"]["Server"]
+                desc = strServ[geConfig.guildListID[guildID]]["Description"]
+            except Exception:
+                log.exception("InfoCommand_desc")
+                desc = f"There is no description for this server yet.\nPlease contact {gxConfig.ownerName}"
+            embd = nextcord.Embed(title="Server Info", description=desc,
+                                  colour=getCol(col="neutral_Light"))
+            embd.add_field(name="Stats",
+                           value=f"""Member Count: {interaction.user.guild.member_count}\n *WIP*""")
+        elif category == "Member":
+            await self.profile(interaction=interaction, usr=interaction.user)
+            return
+        try:
+            await interaction.send(embed=embd)
+        except Exception:
+            log.exception(f"SendInfo_embed {category=}")
 
     @commands.command(name="MemberCount", aliases=["GuildCount", "UserCount"])
     @commands.cooldown(1, 1, commands.BucketType.user)
     async def memberCount(self, ctx: commands.Context):
         """Gives number of members current guild has"""
-        log.info(f"{ctx.author.id},{ctx.author.display_name}")
-        await ctx.send(f"**Member Count**: {ctx.guild.member_count}")
+        log.info(f"{ctx.author.id=},{ctx.author.display_name=}")
+        try:
+            await ctx.send(f"**Member Count**: {ctx.guild.member_count}")
+        except Exception:
+            log.exception(f"Member Count")
 
-    @slash_command(name="membercount", guild_ids=genericConfig.slashServers)
+    @slash_command(name="membercount", guild_ids=gxConfig.slashServers)
     @commands.cooldown(1, 1, commands.BucketType.user)
     async def memberCountSlash(self, interaction: Interaction):
         """Gives number of members current guild has"""
         log.info(f"{interaction.user.id},{interaction.user.display_name}")
         if not await blacklistCheck(ctx=interaction, blklstType="gen"):
             return
-        await interaction.send(interaction.user.guild.member_count)
+        try:
+            await interaction.send(interaction.user.guild.member_count)
+        except Exception:
+            log.exception(f"Member Count /")
 
-    @commands.command(name="react", aliases=["emoji"])
-    @commands.cooldown(1, 1, commands.BucketType.user)
-    @commands.has_permissions(manage_messages=True)
-    async def react(self, ctx):
-        print(ctx.message.content)
-        rawItems = ctx.message.content.split(" ")[1:]
-        messIDs = []
-        emojiSet = set()
-        for item in rawItems:
-            if item[0].isdigit():
-                messIDs.append(int(item))
-            elif item[0].startswith("<"):
-                emojiSet.add(item)
-            else:
-                emojiSet.add(item)
-        messOBJs = []
-        print(messIDs)
-        print(emojiSet)
-        for item in messIDs:
-            messOBJs.append(await ctx.fetch_message(item))
-        if len(emojiSet) == 0:
-            emojiSet = ["⭐"]
-        badEmoji = set()
-        for item in messOBJs:
-            for element in emojiSet:
-                try:
-                    await item.add_reaction(element)
-                except Exception as xcp:
-                    print(xcp)
-                    if "Unknown Emoji" in str(xcp):
-                        badEmoji.add(element)
-        if len(badEmoji) != 0:
-            await ctx.send(f"Some emoji aren't accessible: {', '.join(badEmoji)}")
-        log.info(f"{messIDs}, {emojiSet}")
-        await ctx.message.delete()
-
-    metricUnits = {
-        "Micrometre": "micrometre",
-        "Millimetre": "millimetre",
-        "Centimetre": "centimetre",
-        "Metre": "metre",
-        "Kilometre": "kilometre",
-        "Microgram": "microgram",
-        "Miligram": "miligram",
-        "Gram": "gram",
-        "Kilogram": "kilogram",
-        "Tonne": "tonne",
-    }
-
-    imperialUnits = {
-        "Inch": "inch",
-        "Feet": "feet",
-        "Yard": "yard",
-        "Mile": "mile",
-        "Teaspoon": "teaspoon",
-        "Tablespoon": "tablespoon",
-        "Fluid ounce": "fluid ounce",
-        "Cup": "cup",
-        "Pint": "pint",
-        "Quart": "quart",
-        "Gallon": "gallon",
-        "Ounce": "ounce",
-        "Pound": "pound",
-        "Ton": "ton",
-    }
-
-    timeUnits = {
-        "Seconds": "seconds",
-        "Minute": "minute",
-        "Hour": "hour",
-        "Day": "day",
-        "Week": "week",
-        "Year": "year",
-    }
-
-    @slash_command(name="convert", guild_ids=genericConfig.slashServers)
+    @slash_command(name="convert")
     async def convert(
-        self,
-        interaction: Interaction,
-        value: float = SlashOption(
-            name="value", description="What is it we are converting?", required=True
-        ),
-        fromMetric: str = SlashOption(
-            name="original-metric",
-            description="What Metric unit are we converting from?",
-            required=False,
-            choices=metricUnits,
-        ),
-        fromImperialUS: str = SlashOption(
-            name="original-imperial-us",
-            description="What Imperial/US unit are we converting from?",
-            required=False,
-            choices=imperialUnits,
-        ),
-        fromTime: str = SlashOption(
-            name="original-time",
-            description="If a original-unit is also given, original-unit/original-time",
-            required=False,
-            choices=timeUnits,
-        ),
-        toMetric: str = SlashOption(
-            name="new-metric",
-            description="What unit are we converting to?",
-            required=False,
-            choices=metricUnits,
-        ),
-        toImperialUS: str = SlashOption(
-            name="new-imperial-us",
-            description="What unit are we converting to?",
-            required=False,
-            choices=imperialUnits,
-        ),
-        toTime: str = SlashOption(
-            name="new-time",
-            description="If a new-unit is also given, new-unit/original-time",
-            required=False,
-            choices=timeUnits,
-        ),
+            self,
+            interaction: Interaction,
+            value: float = SlashOption(
+                name="value", description="What is it we are converting?", required=True
+            ),
+            fromMetric: str = SlashOption(
+                name="original-metric",
+                description="What Metric unit are we converting from?",
+                required=False,
+                choices=gxConfig.metricUnits,
+            ),
+            fromImperialUS: str = SlashOption(
+                name="original-imperial-us",
+                description="What Imperial/US unit are we converting from?",
+                required=False,
+                choices=gxConfig.imperialUnits,
+            ),
+            fromTime: str = SlashOption(
+                name="original-time",
+                description="If a original-unit is also given, original-unit/original-time",
+                required=False,
+                choices=gxConfig.timeUnits,
+            ),
+            toMetric: str = SlashOption(
+                name="new-metric",
+                description="What unit are we converting to?",
+                required=False,
+                choices=gxConfig.metricUnits,
+            ),
+            toImperialUS: str = SlashOption(
+                name="new-imperial-us",
+                description="What unit are we converting to?",
+                required=False,
+                choices=gxConfig.imperialUnits,
+            ),
+            toTime: str = SlashOption(
+                name="new-time",
+                description="If a new-unit is also given, new-unit/original-time",
+                required=False,
+                choices=gxConfig.timeUnits,
+            ),
     ):
         """Converts between units using pint."""
         if not await blacklistCheck(ctx=interaction):
             return
         if fromMetric and fromImperialUS:
-            await interaction.send(
-                f"Conflicting `originalUnit` arguments. {fromMetric.title()} {fromImperialUS.title()}",
-                ephemeral=True,
-            )
+            try:
+                await interaction.send(
+                    f"Conflicting `originalUnit` arguments. {fromMetric.title()} {fromImperialUS.title()}",
+                    ephemeral=True,
+                )
+            except Exception:
+                log.exception(f"Convert /Command Conflict Orig")
             return
         if toMetric and toImperialUS:
-            await interaction.send(
-                f"Conflicting `toUnit` arguments. {toMetric.title()} {toImperialUS.title()}",
-                ephemeral=True,
-            )
-            return
-        if (fromTime is not None and toTime is None) or (
-            toTime is not None and fromTime is None
-        ):
-            await interaction.send(
-                "Must have both `original` and `to` time units.", ephemeral=True
-            )
+            try:
+                await interaction.send(
+                    f"Conflicting `toUnit` arguments. {toMetric.title()} {toImperialUS.title()}",
+                    ephemeral=True,
+                )
+            except Exception:
+                log.exception(f"Convert /Command Conflict To")
             return
         fromUnit = "".join(filter(None, [fromMetric, fromImperialUS]))
         toUnit = "".join(filter(None, [toMetric, toImperialUS]))
+        if len(fromUnit) == 0 or len(toUnit) == 0:
+            try:
+                await interaction.send(
+                    "Must have both `original` and `to` units.", ephemeral=True
+                )
+            except Exception:
+                log.exception(f"Convert Orig|To")
+            return
         if fromUnit and fromTime is not None:
             fromTime = "/" + fromTime
         if toUnit and toTime is not None:
@@ -326,32 +355,41 @@ class general(commands.Cog, name="General"):
         Q = u.Quantity
         try:
             orig = Q(value, ("".join(filter(None, [fromUnit, fromTime]))))
-            new = round(orig.to("".join(filter(None, [toUnit, toTime]))), 5)
+            new = round(orig.to("".join(filter(None, [toUnit, toTime]))), 3)
         except Exception as xcp:
             if "cannot convert" in str(xcp).casefold():
-                await interaction.send(
-                    f"Conflicting units: {fromUnit.title()} {toUnit.title()}",
-                    ephemeral=True,
-                )
+                try:
+                    await interaction.send(
+                        f"Conflicting units: {fromUnit.title()} {toUnit.title()}",
+                        ephemeral=True,
+                    )
+                except Exception:
+                    log.exception(f"Conflicting")
             else:
-                await interaction.send(xcp)
+                log.exception("Convert")
+                await interaction.send(f"An Error Occured!\n{xcp}")
             return
-        ebed = nextcord.Embed(
-            title="Conversion",
-            colour=getCol("neutral_Light"),
-            description=f"{str(orig).replace('meter', 'metre')}\n{str(new).replace('meter', 'metre')}",
-        )
-        await interaction.send(embed=ebed)
+        orig = str(orig)
+        new = str(new)
+        orig = orig.replace('meter', 'metre').replace('_', ' ').title()
+        orig = orig.replace('Uk', 'UK').replace('Us', 'US')
+        new = new.replace('meter', 'metre').replace('_', ' ').title()
+        new = new.replace('Uk', 'UK').replace('Us', 'US')
+        text = f"Conversion;\n{orig} -> {new}"
+        try:
+            await interaction.send(text)
+        except Exception:
+            log.exception(f"Convert /Command")
 
-    @slash_command(name="changelog", guild_ids=genericConfig.slashServers)
+    @slash_command(name="changelog")
     async def changelog(
-        self,
-        interaction: Interaction,
-        ver=SlashOption(
-            name="version",
-            required=False,
-            description="If looking for specific version; x.x.x or list",
-        ),
+            self,
+            interaction: Interaction,
+            ver=SlashOption(
+                name="version",
+                required=False,
+                description="If looking for specific version; x.x.x or list",
+            ),
     ):
         """Provides the changelog"""
         BL = await blacklistCheck(ctx=interaction, blklstType="gen")
@@ -383,11 +421,17 @@ class general(commands.Cog, name="General"):
         txt = "Undefinded"
         if "list" in ver.casefold():
             txt = " | ".join(list(keys))
-            await sendMess(version=ver, content=txt)
+            try:
+                await sendMess(version=ver, content=txt)
+            except Exception:
+                log.exception(f"Changelog /Command")
             return
         elif ver not in keys:
             txt = "Version not in changelog."
-            await sendMess(version=ver, content=txt)
+            try:
+                await sendMess(version=ver, content=txt)
+            except Exception:
+                log.exception(f"Changelog /Command")
             return
         else:
             verNameDate = str(data[f"{ver}"][0]).split("::")
@@ -420,15 +464,18 @@ class general(commands.Cog, name="General"):
                 toSend = (
                     f"Version {version}      Items: {len(changeList)} ```\n{txt}\n```"
                 )
-            await interaction.send(content=toSend)
+            try:
+                await interaction.send(content=toSend)
+            except Exception:
+                log.exception(f"Send Changelog")
 
-    @slash_command(name="profile", guild_ids=genericConfig.slashServers)
+    @slash_command(name="profile", guild_ids=gxConfig.slashServers)
     async def profile(
-        self,
-        interaction: Interaction,
-        usr: nextcord.Member = SlashOption(
-            name="member", description="If looking for member", required=False
-        ),
+            self,
+            interaction: Interaction,
+            usr: nextcord.Member = SlashOption(
+                name="member", description="If looking for member", required=False
+            ),
     ):
         """Provides an embed with information about a user."""
         if not await blacklistCheck(ctx=interaction, blklstType="gen"):
@@ -438,7 +485,10 @@ class general(commands.Cog, name="General"):
         )
         if usr is None:
             usr = interaction.user
-        fetched = await self.bot.fetch_user(usr.id)  # cause Discord is stupid.
+        try:
+            fetched = await self.bot.fetch_user(usr.id)
+        except Exception:
+            log.exception(f"Profile")  # cause Discord is stupid.
         if fetched.accent_colour is not None:
             usrCol = fetched.accent_colour  # 18191c
         else:
@@ -456,7 +506,8 @@ class general(commands.Cog, name="General"):
         permsList2 = []
         if "member" in str(type(usr)):
             joined = int(round(usr.joined_at.timestamp()))
-            e.add_field(name="Last Joined;", value=f"<t:{joined}:R>", inline=True)
+            e.add_field(name="Last Joined;",
+                        value=f"<t:{joined}:R>", inline=True)
             if usr.premium_since is not None:
                 premium = int(round(usr.premium_since.timestamp()))
                 e.add_field(
@@ -485,9 +536,9 @@ class general(commands.Cog, name="General"):
                 "timeout",
             ]
             for (
-                perm
+                    perm
             ) in (
-                usr.guild_permissions
+                    usr.guild_permissions
             ):  # put all permissions into a list only if the user has it.
                 alpha, bravo = perm
                 if bravo is True:
@@ -517,7 +568,10 @@ class general(commands.Cog, name="General"):
             e.add_field(name="Attributes", value=attris)
         if usr.bot is True:
             e.set_footer(text="Is Bot")
-        await interaction.send(embed=e)
+        try:
+            await interaction.send(embed=e)
+        except Exception:
+            log.exception(f"SendProfile")
 
 
 def setup(bot: commands.Bot):

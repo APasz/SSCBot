@@ -1,0 +1,822 @@
+{
+    "000": {
+        "content": "I'm written in Python, use /info to learn more. My code is freely available on GitHub.",
+        "extraLinks": [],
+        "initialAdd": "20201005",
+        "lastUpdate": "20201005",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://github.com/APasz/SSCBot",
+        "source": null
+    },
+    "001": {
+        "content": "Flinders St station in Melbourne Australia, has the longest raised platform in the country.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/Flinders_Street_railway_station#cite_note-6",
+        "source": "Wikipedia"
+    },
+    "002": {
+        "content": "The Moscow to Pyongyang train line is the longest in the world at 10267km/6380mi, and takes ~9 days.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/Trans-Siberian_Railway#Trans-Siberian_line",
+        "source": "Wikipedia"
+    },
+    "003": {
+        "content": "The longest straight section of track is 478km/297mi.\nIt's located along the Trans-Australian Railway and can be seen from space.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/Trans-Australian_Railway",
+        "source": "Wikipedia"
+    },
+    "004": {
+        "content": "BHP Australia with 682 ore cars and 8 AC6000CW locos holds the record for the heaviest train at 99,732metric-Tons/98,159ton.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://www.guinnessworldrecords.com/world-records/62967-heaviest-freight-train",
+        "source": "Gunness World Records"
+    },
+    "005": {
+        "content": "The Skinkansen is one of the very few high speed railways that have a spotless record.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/Shinkansen#Safety_record",
+        "source": "Wikipedia"
+    },
+    "006": {
+        "content": "Shinjuku is the busiest station in the world.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/Shinjuku_Station",
+        "source": "Wikipedia"
+    },
+    "007": {
+        "content": "\"Horsepower\" was originally used as a marketing tool by James Watt.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/Horsepower",
+        "source": "Wikipedia"
+    },
+    "008": {
+        "content": "The London Underground has a unique mosquito species.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/London_Underground_mosquito",
+        "source": "Wikipedia"
+    },
+    "009": {
+        "content": "The first Electrified High-Speed railway was the Tokyo-Osaka Shinkansen in 1964.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/Shinkansen#History",
+        "source": "Wikipedia"
+    },
+    "010": {
+        "content": "Currently high-speed rail systems (250km/h+ | 155mi/h+) can be found in Belgium, China, France, Germany, Italy, Japan, Netherlands, South Korea, Scandinavia, Spain, Taiwan, and the UK.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/High-speed_rail",
+        "source": "Wikipedia"
+    },
+    "011": {
+        "content": "Currently high-speed rail services (200km/h+ | 125mi/h+) can be found in Austria, Belgium, China, France, Germany, Greece, Italy, Japan, Morocco, Netherlands, Norway, Poland, Portugal, Russia, Saudi Arabia, South Korea, Spain, Sweden, Switzerland, Taiwan, Turkey, the United Kingdom, the United States and Uzbekistan.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/High-speed_rail",
+        "source": "Wikipedia"
+    },
+    "012": {
+        "content": "The vast majority of high-speed rail is standard gauge.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/High-speed_rail",
+        "source": "Wikipedia"
+    },
+    "013": {
+        "content": "Narrow gauge track makes up a combined 17.5% of railways around the world. As of 2020.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/Track_gauge#Dominant_railway_gauges",
+        "source": "Wikipedia"
+    },
+    "014": {
+        "content": "Standard gauge track makes up a combined ~60% of railways around the world. As of 2020.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/Track_gauge#Dominant_railway_gauges",
+        "source": "Wikipedia"
+    },
+    "015": {
+        "content": "Broad gauge track makes up a combined ~22% of railways around the world. As of 2020.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/Track_gauge#Dominant_railway_gauges",
+        "source": "Wikipedia"
+    },
+    "016": {
+        "content": "Australian track gauges are weird.\nQueensland, the 2nd largest and flattest state, uses 1067mm/3\"6'.\nNew South Wales, the 5th largest, uses 1435mm/4\"8.5'.\nAnd Victoria, the 3rd smallest and hilliest, uses 1600mm/5\"3'.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/Rail_transport_in_Australia",
+        "source": "Wikipedia"
+    },
+    "017": {
+        "content": "Planes are the safest form of transportation. With Buses 2nd, Trains 3rd, Boats 4th, and finally cars",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://journalistsresourceLink.org/economics/comparing-fatality-risks-united-states-transportation-across-modes-time/",
+        "source": null
+    },
+    "022": {
+        "content": "The Union Pacific GTEL 'Big Blow' is the most powerful gas-turbine-electric locomotives ever used in revenue service.\nIt had 6315kW/8500HP of power with 944kN/212klbf of tractive.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/Union_Pacific_GTELs",
+        "source": "Wikipedia"
+    },
+    "023": {
+        "content": "The British developed multiple GTLs, one of which was called the GT3.\nIt had 2,050kW/2750HP of power with 169kN/38klbf of tractive.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/British_Rail_GT3",
+        "source": "Wikipedia"
+    },
+    "024": {
+        "content": "The LNER A4 4468 'Mallard' holds the world speed record for steam trains.\nIt clocked 203km/126mi per hour on 1938-07-03 on Stoke bank, south of Grantham.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/LNER_Class_A4_4468_Mallard",
+        "source": "Wikipedia"
+    },
+    "025": {
+        "content": "The fastest wheeled train is the French TGV POS [Paris-Ostfrankreich-S\u00fcddeutschland] at 574.85km/357.2mi per hour.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/SNCF_TGV_POS",
+        "source": "Wikipedia"
+    },
+    "026": {
+        "content": "The fastest Maglev train is the Japanese L0 series at 603.5km/375mi per hour.\nIt is not in revenue service.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/L0_Series",
+        "source": "Wikipedia"
+    },
+    "027": {
+        "content": "Flying Scotsman toured the USA and Canada between 1969 and 1973. Then Australia in 1988/1989.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/LNER_Class_A3_4472_Flying_Scotsman",
+        "source": "Wikipedia"
+    },
+    "028": {
+        "content": "The Flying Scotsman has been consistently voted the most famous steam locomotive.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/LNER_Class_A3_4472_Flying_Scotsman",
+        "source": "Wikipedia"
+    },
+    "029": {
+        "content": "The Flying Scotsman was built in 1923 at Doncaster Works and designed by Sir Nigel Gresley.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/LNER_Class_A3_4472_Flying_Scotsman",
+        "source": "Wikipedia"
+    },
+    "030": {
+        "content": "The 3801 is Australia's fastest and most famous steam locomotive.\nAs of 2021-03-13 3801 has been running tours across NSW.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/3801",
+        "source": "Wikipedia"
+    },
+    "031": {
+        "content": "The George Washington Bridge is the most used in the USA.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/George_Washington_Bridge",
+        "source": "Wikipedia"
+    },
+    "032": {
+        "content": "The world's first speeding ticket was issued to a Walter Arnold in 1896 in Paddock Wood, Kent, UK.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://www.historic-uk.com/HistoryUK/HistoryofBritain/Walter-Arnold-Worlds-First-Speeding-Ticket/",
+        "source": "Historic UK"
+    },
+    "033": {
+        "content": "A unique feature of the Melbourne, Australia tram network is that it has 3 still in use electrified tram-train crossings.\nThe trains and trams use different voltages, 1500VDC and 600VDC respectively and is switched to 1500VDC when required.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20220904",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/Trams_in_Melbourne#Tram%E2%80%93train_level_crossings",
+        "source": "Wikipedia"
+    },
+    "034": {
+        "content": "America's only official high-speed service goes from Boston to Washington along the Northeast Corridor at an average of 135km/83mi per hour.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/High-speed_rail_in_the_United_States",
+        "source": "Wikipedia"
+    },
+    "035": {
+        "content": "British Railways/Rail was founded on 1948-01-01. It officially became defunct 1997-11-20",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/British_Rail",
+        "source": "Wikipedia"
+    },
+    "036": {
+        "content": "Great British Railways (GBR) is a planned state-owned public body that will oversee rail transport in Great Britain from 2023.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/Great_British_Railways",
+        "source": "Wikipedia"
+    },
+    "037": {
+        "content": "The Big Four British railway companies were, Great Western Railway (GWR), London, Midland and Scottish Railway (LMS), London and North Eastern Railway (LNER), and Southern Railway (SR).",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/Big_Four_(British_railway_companies)",
+        "source": "Wikipedia"
+    },
+    "038": {
+        "content": "BNSF is the largest freight railroad in the USA with 52300km/32500mi of track and more than 8000 locomotives.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/BNSF_Railway",
+        "source": "Wikipedia"
+    },
+    "039": {
+        "content": "Union Pacific is the second largest railroad in the USA with 51800km/32200mi of track, ~8300 locomotives, and ~72300 freight cars",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/BNSF_Railway",
+        "source": "Wikipedia"
+    },
+    "040": {
+        "content": "On 1996-12-31 the Santa Fe and Burlington Northern railroads merged to become BNSF.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/BNSF_Railway",
+        "source": "Wikipedia"
+    },
+    "041": {
+        "content": "BNSF hauls enough coal to fulfil 25% of America's energy needs.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/BNSF_Railway",
+        "source": "Wikipedia"
+    },
+    "042": {
+        "content": "As of January 2021, Kathryn Farmer officially became the first female chief executive of an American Class I railroad (BNSF).",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/BNSF_Railway",
+        "source": "Wikipedia"
+    },
+    "043": {
+        "content": "CSX has 34000km/21000mi of track.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/CSX_Transportation",
+        "source": "Wikipedia"
+    },
+    "044": {
+        "content": "Norfolk Southern has 34600km/21500mi of track.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/Norfolk_Southern_Railway",
+        "source": "Wikipedia"
+    },
+    "045": {
+        "content": "High-speed is considered to be 200km/125mi per hour+ for existing track, and 250km/155mi per hour+ for new track.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/High-speed_rail",
+        "source": "Wikipedia"
+    },
+    "046": {
+        "content": "The Channel Tunnel is 50.46km/31.35mi long and connects Folkestone [~11km WSW of Dover] to Coquelles [Western side of Calais].",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/Channel_Tunnel",
+        "source": "Wikipedia"
+    },
+    "047": {
+        "content": "The Channel Tunnel goes down to 75m/250ft below the sea bed, or 115m/380ft below sea level.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/Channel_Tunnel",
+        "source": "Wikipedia"
+    },
+    "048": {
+        "content": "The Channel Tunnel is the longest underwater tunnel in the world. And the third longest railway tunnel.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/Channel_Tunnel",
+        "source": "Wikipedia"
+    },
+    "049": {
+        "content": "Plans to build a cross-channel can be found as far back as 1802. Construction finally began in 1988 and completed in 1994.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/Channel_Tunnel",
+        "source": "Wikipedia"
+    },
+    "050": {
+        "content": "The Channel Tunnel is designed for speeds up to 200km/124mi per hour but is currently limited to 160km/99mi per hour.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/Channel_Tunnel",
+        "source": "Wikipedia"
+    },
+    "051": {
+        "content": "In 2017, 10.3m passengers and 1.22t tonnes of cargo passed though the Channel Tunnel by train.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/Channel_Tunnel",
+        "source": "Wikipedia"
+    },
+    "052": {
+        "content": "The Channel Tunnel ended up costing \u00a39b in 1994 or equivalent to \u00a316b in 2019.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/Channel_Tunnel",
+        "source": "Wikipedia"
+    },
+    "059": {
+        "content": "The Queensland Rail Tilt Train is the fastest narrow gauge (3\"6'/1067mm) train. Achieving 215km/130mi during testing. During service it's limited to 160km/99mi.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/Tilt_Train",
+        "source": "Wikipedia"
+    },
+    "060": {
+        "content": "In 1919 Melbourne, Australia was the first network in the country to start electrifying suburban tracks using 1500VDC.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/Rail_transport_in_Australia",
+        "source": "Wikipedia"
+    },
+    "061": {
+        "content": "In 1926 Sydney, Australia started electrifying it's suburban tracks using the same system as Victoria.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/Rail_transport_in_Australia",
+        "source": "Wikipedia"
+    },
+    "062": {
+        "content": "Brisbane, Australia didn't start electrifying it's suburban network until 1979. During the 1980's some coal routes were also electrified.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/Rail_transport_in_Australia",
+        "source": "Wikipedia"
+    },
+    "063": {
+        "content": "Perth, Australia didn't start electrifying it's suburban network until 1992.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/Rail_transport_in_Australia",
+        "source": "Wikipedia"
+    },
+    "064": {
+        "content": "Adelaide, Australia didn't start electrifying it's suburban network until 2014.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/Rail_transport_in_Australia",
+        "source": "Wikipedia"
+    },
+    "065": {
+        "content": "Melbourne, Australia is home to the most extensive tram network in the world at 250km/155mi.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 792857784508219404,
+        "providerName": "AiviA",
+        "sourceLink": "https://en.wikipedia.org/wiki/Trams_in_Melbourne",
+        "source": "Wikipedia"
+    },
+    "066": {
+        "content": "Moscow, Russia is home to the second largest tram network in the world at 209km/130mi.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 792857784508219404,
+        "providerName": "AiviA",
+        "sourceLink": "https://en.wikipedia.org/wiki/Trams_in_Moscow",
+        "source": "Wikipedia"
+    },
+    "067": {
+        "content": "The Lausanne Metro is the only metro in Switzerland.",
+        "extraLinks": [],
+        "initialAdd": "20210521",
+        "lastUpdate": "20210521",
+        "providerID": 592466705058496514,
+        "providerName": "MKH1020",
+        "sourceLink": "https://en.wikipedia.org/wiki/Lausanne_M%C3%A9tro",
+        "source": "Wikipedia"
+    },
+    "068": {
+        "content": "The Lausanne Metro line M1 is the only standard guage tram/light rail line in Switzerland.",
+        "extraLinks": [],
+        "initialAdd": "20210521",
+        "lastUpdate": "20210521",
+        "providerID": 592466705058496514,
+        "providerName": "MKH1020",
+        "sourceLink": "https://en.wikipedia.org/wiki/Lausanne_M%C3%A9tro",
+        "source": "Wikipedia"
+    },
+    "069": {
+        "content": "The Lausanne Trolleybus system is the largest in Switzerland.",
+        "extraLinks": [],
+        "initialAdd": "20210521",
+        "lastUpdate": "20210521",
+        "providerID": 592466705058496514,
+        "providerName": "MKH1020",
+        "sourceLink": "https://en.wikipedia.org/wiki/Trolleybuses_in_Lausanne",
+        "source": "Wikipedia"
+    },
+    "070": {
+        "content": "Queensland, Australia was first in the world to adopt a narrow gauge as its mainline gauge. They use 1067mm/3\"6' gauge.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/Rail_transport_in_Queensland",
+        "source": "Wikipedia"
+    },
+    "071": {
+        "content": "Charles Dickens came close to death in a train derailment on a viaduct 1865-06-09.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/Staplehurst_rail_crash",
+        "source": "Wikipedia"
+    },
+    "072": {
+        "content": "The UK has 15,811km/9,824mi of track, of which 5,374/3,339mi is electrified.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/Rail_transport_in_Great_Britain",
+        "source": "Wikipedia"
+    },
+    "073": {
+        "content": "Australia has 36,064km/22,409mi of track. Of which 14,814km/9,205mi is standard gauge 1435mm/4\"8.5', 15,625km/9,709mi is broad/Irish gauge 1600mm/5\"3', and 4,225km/2,625mi is narrow gauge 1067mm/3\"6'.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/Rail_transport_in_Australia",
+        "source": "Wikipedia"
+    },
+    "098": {
+        "content": "The longest ship still in service is the Barzan at 400m/1312ft.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/MV_Barzan",
+        "source": "Wikipedia"
+    },
+    "099": {
+        "content": "The longest ship ever produced is the Seawise Giant at 458m/1504ft.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/Seawise_Giant",
+        "source": "Wikipedia"
+    },
+    "100": {
+        "content": "Train Fever was released 2014-09-04 on Windows, with MacOS, and Linux released a week later.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "http://www.train-fever.com/forums/topic/release-notes/",
+        "source": "TF Changelog"
+    },
+    "101": {
+        "content": "Transport Fever was released 2016-11-08 on Windows, MacOS, and Linux.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/Transport_Fever_(video_game)",
+        "source": "Wikipedia"
+    },
+    "102": {
+        "content": "Transport Fever 2 was released 2019-12-11 on Windows, and Linux with MacOS released 2021-02-23.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/Transport_Fever_2",
+        "source": "Wikipedia"
+    },
+    "105": {
+        "content": "Train Fever originally didn't have cargo, overhead wires for trams, or procedurally generated terrain.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/Train_Fever",
+        "source": "Wikipedia"
+    },
+    "108": {
+        "content": "Train Fever originally only covered Europe. Free USA DLC was later introduced.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://youtu.be/E0XqtFl3k3U",
+        "source": null
+    },
+    "109": {
+        "content": "The Weber brothers, Basil and Urban are the creators of Train Fever which would become the Transport Fever series.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/Train_Fever",
+        "source": "Wikipedia"
+    },
+    "111": {
+        "content": "Train Fever, Transport Fever 1 and 2 are available on Windows, MacOS, and Linux.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/Transport_Fever",
+        "source": "Wikipedia"
+    },
+    "112": {
+        "content": "The soundtrack for the first three games was composed by Admiral James T.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://youtube.com/playlist?list=PLH4vmczEzQ8viOhC9xebAcDUo3IQcQkKO",
+        "source": null
+    },
+    "113": {
+        "content": "Double slip switches were added in a TpF1 update, build 12737.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://steamcommunity.com/app/446800/discussions/1/224446432325393106/",
+        "source": "TpF Changelog"
+    },
+    "114": {
+        "content": "Urban Games is based in Schaffhausen, Switzerland.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://urbangames.com/",
+        "source": "Urban Games"
+    },
+    "115": {
+        "content": "Urban Games was founded in 2013 by Basil and Urban Weber.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "http://www.transportfever.com/about/urban-games/",
+        "source": "Urban Games"
+    },
+    "116": {
+        "content": "The largest map size possible in Train Fever is ~256km\u00b2/99mi\u00b2.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/Train_Fever#Development",
+        "source": "Wikipedia"
+    },
+    "117": {
+        "content": "The largest map size possible in Transport Fever 1/2 is ~576km\u00b2/222mi\u00b2.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://www.transportfever2.com/wiki/doku.php?id=gamemanual:mapsizes",
+        "source": "TpF2 wiki"
+    },
+    "118": {
+        "content": "As of May 2021, Urban Games 16 employees, 8 of which are programmers and 3 are artists.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": null,
+		"source": "Yoshi"
+    },
+    "150": {
+        "content": "OpenTTD was released 2004-03-06.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 375547210760454145,
+        "providerName": "APasz",
+        "sourceLink": "https://en.wikipedia.org/wiki/OpenTTD",
+		"source": "Wikipedia"
+    },
+    "200": {
+        "content": "The Transport Fever global EN server a.k.a the Reddit server was created on 2016-10-11 by .Patchi.",
+        "extraLinks": [],
+        "initialAdd": "20210514",
+        "lastUpdate": "20210514",
+        "providerID": 98706583223042048,
+        "providerName": ".Patchi",
+        "sourceLink": null,
+		"source": "The global server (246190532949180417)"
+    }
+}

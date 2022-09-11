@@ -1,37 +1,45 @@
-print("UtilGen")
-import os
+import asyncio
+import logging
 import time
-import nextcord
-from nextcord import Role
 
-from util.fileUtil import readJSON, writeJSON, parentDir
-from config import genericConfig
+from config import genericConfig as gxConfig
+
+from util.fileUtil import readJSON
+
+print("UtilGen")
+
+log = logging.getLogger("discordGeneral")
+try:
+    log.debug("TRY UTIL_GEN IMPORT MODUELS")
+    import nextcord
+    from nextcord import Role
+except Exception:
+    log.exception("UTIL_GEN IMPORT MODUELS")
 
 configuration = readJSON(filename="config")
 configGen = configuration["General"]
-import logging
-
-log = logging.getLogger("discordGeneral")
 
 
-def getCol(col: str):
+def getCol(col: str) -> nextcord.Color:
     """Gets the colour RGB list from config and returns colour object"""
-    log.debug(col)
+    log.debug(f"{col=}")
     red, green, blue = configGen["EmbedColours"][col]
     colour = nextcord.Colour.from_rgb(red, green, blue)
     return colour
 
 
-def hasRole(role: Role, userRoles):
-    """Checks if user has role object"""
-    log.debug(role)
+def hasRole(role: Role, userRoles) -> bool:
+    """Checks if user has role object
+    role = Discord role object
+    :param arg2: roles object of a user"""
+    log.debug(f"{role=} | {userRoles=}")
     if role in userRoles:
         return True
     else:
         return False
 
 
-def getUserID(obj):
+def getUserID(obj) -> str:
     """Gets the user id from either ctx or interaction types"""
     # log.debug(obj)
     if hasattr(obj, "author"):
@@ -41,8 +49,10 @@ def getUserID(obj):
 
 
 def getChan(guild: str | int, chan: str, admin: bool = False, self=None):
-    """Gets from config a channel id using the guild id."""
+    """Gets from config a channel id or object using the guild id."""
+    log.debug(f"{guild=}, {chan=}, {admin=}, self={type(self)}")
     guild = str(guild)
+    chan = str(chan)
     if admin is True:
         admin = "Channels_Admin"
     else:
@@ -51,41 +61,80 @@ def getChan(guild: str | int, chan: str, admin: bool = False, self=None):
         chanID = readJSON(filename="config")[guild][admin][chan]
     except KeyError:
         return None
+    except Exception:
+        log.exception("Get Chan")
     if self is not None:
         return self.bot.get_channel(chanID)
     else:
         return chanID
 
 
+def getRole(guild: str | int, role: str):
+    """Gets from config a channel id or object using the guild id."""
+    log.debug(f"{guild=}, {role=}")
+    guild = str(guild)
+    role = str(role)
+    try:
+        roleID = readJSON(filename="config")[guild]["Roles"][role]
+    except KeyError:
+        return None
+    except Exception:
+        log.exception("Get Role")
+    return roleID
+
+
 def hoursFromSeconds(
-    seconds: int | str,
-    asStr: bool = False,
-) -> tuple | str:
-    """Returns hours, minutes, and seconds as tuple or string(# H, ) from an int/str of seconds."""
+        seconds: int | str,
+        asStr: bool = False,
+        strSeconds: bool = True,
+        strMinutes: bool = True,
+        strHours: bool = True,
+        strDays: bool = False,
+        strWeeks: bool = False
+):
+    """Returns (weeks, days,) hours, minutes, and seconds as tuple or string from an int/str of seconds."""
+    log.debug(f"{seconds=}, {asStr=}")
     seconds = int(seconds)
     minute, second = divmod(seconds, 60)
     hour, minute = divmod(minute, 60)
-
+    day, hour = divmod(hour, 24)
+    week, day = divmod(day, 7)
     if not asStr:
-        return (hour, minute, second)
+        return (week, day, hour, minute, second)
     timeList = []
-    if hour != 0:
-        timeList.append(f"{hour} Hour")
-        if hour > 1:
-            timeList[-1] = timeList[-1] + "s"
-    if minute != 0:
-        timeList.append(f"{minute} Min")
-        if minute > 1:
-            timeList[-1] = timeList[-1] + "s"
-    if second != 0:
-        timeList.append(f"{second} Sec")
-        if second > 1:
-            timeList[-1] = timeList[-1] + "s"
-    return ", ".join(timeList)
+    if strWeeks:
+        if week != 0:
+            timeList.append(f"{week} Week")
+            if week > 1:
+                timeList[-1] = timeList[-1] + "s"
+    if strDays:
+        if day != 0:
+            timeList.append(f"{day} Day")
+            if day > 1:
+                timeList[-1] = timeList[-1] + "s"
+    if strHours:
+        if hour != 0:
+            timeList.append(f"{hour} Hour")
+            if hour > 1:
+                timeList[-1] = timeList[-1] + "s"
+    if strMinutes:
+        if minute != 0:
+            timeList.append(f"{minute} Min")
+            if minute > 1:
+                timeList[-1] = timeList[-1] + "s"
+    if strSeconds:
+        if second != 0:
+            timeList.append(f"{second} Sec")
+            if second > 1:
+                timeList[-1] = timeList[-1] + "s"
+    retrn = ", ".join(timeList)
+    log.debug(f"{retrn=}")
+    return retrn
 
 
 def getGuildID(obj) -> str | None:
     """Gets guild id from a guild object"""
+    log.debug("run")
     if hasattr(obj, "guild_id"):
         return str(obj.guild_id)
     elif hasattr(obj, "guild"):
@@ -95,9 +144,9 @@ def getGuildID(obj) -> str | None:
         return None
 
 
-async def blacklistCheck(ctx, blklstType: str = "gen"):
+async def blacklistCheck(ctx, blklstType: str = "gen") -> bool:
     """Checks if user in the blacklist"""
-    # log.debug(ctx)
+    log.debug(f"{blklstType=}")
 
     def check():
         if blklstType == "gen":
@@ -106,88 +155,90 @@ async def blacklistCheck(ctx, blklstType: str = "gen"):
             filename = "SSCBlacklist"
         return readJSON(filename=filename, directory=["secrets"])
 
-    userID = None
     userID = getUserID(obj=ctx)
-    log.debug(userID)
-    if userID == genericConfig.ownerID:
+    log.debug(f"{userID=}")
+    if userID == gxConfig.ownerID:
         return True
     if userID == ctx.guild.owner.id:
         return True
     BL = check()
     if not bool(BL.get(userID)):
         return True
-    txt = f"""You're blacklisted from using **{genericConfig.botName}**.
+    txt = f"""You're blacklisted from using **{gxConfig.botName}**.
 If you believe this to be error, please contact a server Admin/Moderator."""
-    if "inter" in str(type(ctx)):
-        await ctx.response.send_message(txt, ephemeral=True)
-    elif "user" in str(type(ctx)):
-        await ctx.send(txt)
-    elif "member" in str(type(ctx)):
-        await ctx.send(txt)
-    log.info(f"BLCheck: {userID} | {blklstType}")
+    try:
+        if "inter" in str(type(ctx)):
+            await ctx.response.send_message(txt, ephemeral=True)
+        elif "user" in str(type(ctx)):
+            await ctx.send(txt)
+        elif "member" in str(type(ctx)):
+            await ctx.send(txt)
+    except Exception:
+        log.exception(f"/Blacklist Check")
+    log.info(f"BLCheck: {userID=} | {blklstType=}")
     return False
 
 
-def getGlobalEventConfig(listAll: bool = False):
-    """Gets list of either all or only globally disabled events"""
-    globalEvents = set()
-    configuration = readJSON(filename="config")
-    for itemKey, itemVal in configuration["General"]["Events"].items():
-        if listAll is True:
-            globalEvents.add(itemKey)
-            continue
-        elif itemVal == False:
-            globalEvents.add(itemKey)
-    return globalEvents
+async def _ping(self, api: bool = False, testNum: int = 1) -> list[int]:
+    """Get latency to Discord"""
+    log.debug(f"_ping {api=} | {testNum=}")
+    testNumGate = testNumAPI = testNum
 
-
-def getEventConfig(by: str = "id"):
-    """Returns list of events allowed per server by either ID or config name."""
-    print("getEventConfigRead")
-    configuration = readJSON(filename="config")
-    globalEvents = getGlobalEventConfig()
-    events = {}
-    for item in configuration:
-        if by == "name":
-            try:
-                nameID = configuration[item]["Config_Name"]
-            except:
-                pass
-        elif by == "id":
-            try:
-                configuration[item]["Config_Name"]
-                nameID = item
-            except:
-                pass
-        eventList = []
+    async def apiPing(chan) -> int:
+        se = time.perf_counter()
         try:
-            for elementKey, elementVal in configuration[item]["Events"].items():
-                if (elementKey not in globalEvents) and (elementVal == True):
-                    eventList.append(elementKey)
-                events[nameID] = eventList
-        except:
-            pass
-    return events
+            await chan.send("Ponging...")
+        except Exception:
+            log.exception(f"Pong")
+        en = time.perf_counter()
+        ping = int(round((en - se) * 1000))
+        log.debug(ping)
+        return ping
 
+    def gatePing() -> int:
+        try:
+            test = self.bot.latency
+            ping = int(round(test * 1000))
+        except Exception:
+            log.exception(f"bot Latency")
+        else:
+            log.debug(ping)
+            return ping
+        return False
 
-def getGuilds(includeGlobal: bool = False, by: str = "id"):
-    """Returns dict(ID|ConfigName) of all guilds and their ids"""
-    configuration = readJSON(filename="config")
-    IDs = {}
-    for item in configuration:
-        if by == "id":
-            try:
-                IDs[item] = configuration[item]["Config_Name"]
-            except:
-                pass
-        if by == "name":
-            try:
-                IDs[configuration[item]["Config_Name"]] = item
-            except:
-                pass
-    if includeGlobal:
-        IDs["Global"] = "General"
-    return IDs
+    testsGate = []
+    while testNumGate > 0:
+        log.debug(f"While {testNumGate=}")
+        testNumGate = testNumGate - 1
+        try:
+            test = gatePing()
+            testsGate.append(test)
+            await asyncio.sleep(0.05)
+        except Exception:
+            log.exception(f"Ping Gate")
+    testsGate = int(sum(testsGate) / len(testsGate))
 
+    testsAPI = None
+    if api:
+        try:
+            chan = await self.bot.fetch_channel(gxConfig.pingingChan)
+        except Exception:
+            chan = False
+            log.exception(f"pinging Chan")
+        else:
+            testsAPI = []
+            while testNumAPI > 0:
+                log.debug(f"While {testNumAPI=}")
+                testNumAPI = testNumAPI - 1
+                try:
+                    test = await apiPing(chan=chan)
+                    testsAPI.append(test)
+                    await asyncio.sleep(0.05)
+                except Exception:
+                    log.exception(f"Ping API")
+        testsAPI = int(sum(testsAPI) / len(testsAPI))
+    testsBoth = [testsGate, testsAPI]
+    log.debug(f"{testsBoth=}")
+    return testsBoth
 
 # MIT APasz

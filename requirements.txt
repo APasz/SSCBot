@@ -1,7 +1,7 @@
-nextcord
-emoji
-python-dateutil
-netifaces
-pint
-gitpython
-gspread
+nextcord~=2.2.0
+gspread~=5.4.0
+Pint~=0.19.2
+emoji~=1.7.0
+packaging~=21.3
+python-dateutil~=2.8.2
+psutil~=5.9.1

@@ -1,23 +1,28 @@
 #!/usr/bin/env python3
+
+import asyncio
+import logging
 import os
+import platform
 import sys
+from logging import handlers
+
+from config import botInformation as botInfo
+from config import generalEventConfig as geConfig
+from config import genericConfig as gxConfig
+from config import verifyConfigJSON
+from util.fileUtil import readJSON
+from util.genUtil import blacklistCheck
 
 PID = os.getpid()
-print(f"\n***Starting*** PID'{PID}'")
+print(f"\n***Starting*** {PID=}")
 
 
-from util.fileUtil import newFile, readFile, readJSON, writeJSON
-
-configuration = readJSON(filename="config")
-configGen = configuration["General"]
-
-import logging
-
+logging.addLevelName(logging.DEBUG, "DBUG")
 log = logging.getLogger("discordGeneral")
 logMess = logging.getLogger("discordMessages")
 
-log.setLevel(configGen["logLevel"].upper())
-logMess.setLevel(configGen["logLevel"].upper())
+log.setLevel("DEBUG")
 
 handleConsole = logging.StreamHandler(sys.stdout)
 handleConsole.setFormatter(
@@ -25,27 +30,39 @@ handleConsole.setFormatter(
 )
 log.addHandler(handleConsole)
 
-handleFile = logging.FileHandler(
-    filename=f"logs{os.sep}discordGeneral.log", encoding="utf-8", mode="a"
-)
+curDir = os.path.dirname(os.path.realpath(__file__))
+logDir = os.path.join(curDir, "logs")
+
+if not os.path.exists(logDir):
+    log.debug("mk logDir")
+    os.mkdir(logDir)
+
+# handleFile = logging.FileHandler(
+#    filename=os.path.join(logDir, "discordGeneral.log"), encoding="utf-8", mode="a"
+# )
+
+handleFile = handlers.TimedRotatingFileHandler(
+    os.path.join(logDir, "discordGeneral.log"), when="W6", utc=True)
+
 handleFile.setFormatter(
     logging.Formatter(
-        "%(asctime)s:%(created)f |:| %(levelname)s:%(module)s; %(funcName)s | %(message)s",
-    )
+        "%(asctime)s_%(created).2f | %(levelname).4s |:| %(module)s: %(funcName)s | %(message)s",
+        "%Y-%m-%d_%H:%M:%S")
 )
 log.addHandler(handleFile)
 
 messHandler = logging.FileHandler(
-    filename=f"logs{os.sep}discordMessages.log", encoding="utf-8", mode="a"
+    filename=os.path.join(logDir, "discordMessages.log"), encoding="utf-8", mode="a"
 )
 messHandler.setFormatter(
-    logging.Formatter("%(asctime)s:%(created)f |:| %(module)s; %(message)s")
+    logging.Formatter(
+        "%(asctime).19s_%(created).2f |:| %(message)s")
 )
 logMess.addHandler(messHandler)
 
-log.critical(f"\n***Starting*** PID'{PID}'")
+log.critical(f"\n***Starting*** {PID=}")
 
-critFiles = ["config.json", "config.py", "randomFact.txt", "missing.png"]
+critFiles = ["config.json", "config.py"]
 configErr = False
 for element in critFiles:
     if not os.path.exists(element):
@@ -53,107 +70,109 @@ for element in critFiles:
         configErr = True
 
 if configErr:
-    log.critical(f"files missing!")
+    log.critical(f"Files missing!")
     sys.exit(78)
 
-import asyncio
+try:
+    log.debug(f"Python {platform.python_version()} | TRY IMPORT MODULES")
+    import nextcord
+    from nextcord import ext
+    from nextcord.ext import commands
+    from nextcord.ext.commands import CommandNotFound
+except Exception:
+    log.exception("MAIN IMPORT MODULES")
+    sys.exit()
 
-import nextcord
-from nextcord import ext
-from nextcord.ext import commands
-from nextcord.ext.commands import CommandNotFound
 
-from config import genericConfig
-from util.genUtil import blacklistCheck, getGuilds
+if not verifyConfigJSON():
+    log.critical("Bad Config")
+else:
+    log.info("Good Config")
 
-log.info(f"SlashComm Guilds: {genericConfig.slashServers}")
+configuration = readJSON(filename="config")
+
+LOGLEVEL = (configuration["General"]["logLevel"]).upper()
+log.debug(f"{LOGLEVEL=}")
+log.setLevel(LOGLEVEL)
+logMess.setLevel(LOGLEVEL)
+
+
+log.info(f"{gxConfig.slashServers=}")
 
 
 def main():
     intents = nextcord.Intents.default()
     intents.members = True
     intents.message_content = True
-
-    data = readJSON(filename="changelog")
-    ver = list(data.keys())[-1]
-    verMajor, verMinor, verPoint = ver.split(".")
-    verName, verDate = list(data[f"{ver}"])[0].split("::")
+    intents.presences = False
 
     activity = nextcord.Activity(
         type=nextcord.ActivityType.listening,
-        name=f"{genericConfig.BOT_PREFIX} and / | v{verMajor}.{verMinor}",
+        name=f"{gxConfig.BOT_PREFIX} and / | v{botInfo.major}.{botInfo.minor}",
     )
 
     bot = commands.Bot(
-        commands.when_mentioned_or(genericConfig.BOT_PREFIX),
+        commands.when_mentioned_or(gxConfig.BOT_PREFIX),
         intents=intents,
         activity=activity,
         case_insensitive=True,
     )
-    curDir = os.path.dirname(os.path.realpath(__file__))
     cogsDir = os.path.join(curDir, "cogs")
+
+    def botSevers(bot):
+        """Get info about the servers the bot is in"""
+
+        botGuilds = bot.guilds
+        botInfo.guildCount = len(botGuilds)
 
     @bot.event
     async def on_ready():
         log.critical("\n***Started*** 'Hello World, or whatever'")
-        txt = f"""**v{verMajor}.{verMinor}.{verPoint} | {verName}**
-Nextcord v{nextcord.__version__} **Ready**\nUse /changelog to see changes"""
+        #log.debug("on_ready wait_ready")
+        botSevers(bot)
+        # await bot.wait_until_ready()
+        stringsBot = readJSON(filename="strings")["en"]["Bot"]
+        txt = (stringsBot["Ready"]).format(base=botInfo.base, name=botInfo.name,
+                                           ncVer=botInfo.nextcordVer)
         configuration = readJSON(filename="config")
-        configGen = configuration["General"]
-        oldVerMajor = configGen["verMajor"]
-        oldVerMinor = configGen["VerMinor"]
-        oldVerPoint = configGen["verPoint"]
-        if (
-            oldVerMajor != verMajor
-            or oldVerMinor != verMinor
-            or oldVerPoint != verPoint
-        ):
-            configGen["verMajor"] = verMajor
-            configGen["VerMinor"] = verMinor
-            configGen["verPoint"] = verPoint
-            configGen["verName"] = verName
-            writeJSON(data=configuration, filename="config")
-        globalReady = configGen["Events"]["ReadyMessage"]
-        log.debug(f"globalReady: {globalReady}")
-        if globalReady is True:
-            guilds = getGuilds().keys()
+        globalReady = configuration["General"]["Events"]["ReadyMessage"]
+        log.info(f"Config {globalReady=} | {txt=}")
+        if globalReady == True:
+            guilds = list((geConfig.guildListID).keys())
             sendReady = []
             for item in guilds:
+                item = str(item)
                 try:
                     event = configuration[item]["Events"]["ReadyMessage"]
-                    if event is True:
-                        sendReady.append(
-                            configuration[item]["Channels"]["ReadyMessage"]
-                        )
                 except KeyError:
-                    pass
+                    log.exception(f"KeyErr {item=}")
+                    continue
+                except Exception:
+                    log.exception(f"ReadyMess: {item=}")
+                if event == True:
+                    sendReady.append(
+                        configuration[item]["Channels"]["ReadyMessage"])
+            log.debug(f"{sendReady=}")
             for element in sendReady:
                 try:
                     chan = await bot.fetch_channel(element)
+                except Exception:
+                    log.exception(f"ReadyGet {element=}")
+                try:
                     await chan.send(txt)
-                except Exception as xcp:
-                    if "Missing Access" in str(xcp):
-                        log.error(f"Missing Access: {element}")
-                        pass
-        messFile = os.path.join(curDir, "messID.txt")
-        if os.path.exists(messFile):
-            messIDs = readFile(directory=curDir, filename="messID")
-            os.remove(os.path.join(curDir, "messID.txt"))
-            log.debug(messIDs)
-            if len(messIDs) <= 2:
-                return
-            messID, chanID = messIDs.split("|")
-            chan = await bot.fetch_channel(int(chanID))
-            mess = await chan.fetch_message(int(messID))
-            await mess.edit(content="Reboot Successful!")
+                    log.info(f"Ready Sent: {element=}")
+                except Exception:
+                    log.exception(f"ReadySend {element=}")
+        log.critical("Bot Ready")
 
     @bot.check
     async def blacklistedUser(ctx):
+        """All prefix commands run this check"""
         if ctx.command is None:
-            print("ctxCommand")
+            log.debug("ctxCommand")
             return False
         if "private" in str(ctx.channel.type).lower():
-            print("ctxChannelType")
+            log.debug("ctxChannelType")
             return False
         log.debug("blacklistedUserCheck")
         if await blacklistCheck(ctx=ctx, blklstType="gen") is True:
@@ -163,143 +182,99 @@ Nextcord v{nextcord.__version__} **Ready**\nUse /changelog to see changes"""
 
     @bot.event
     async def on_command_error(ctx, error):
-        auth = f"{ctx.author.id}, {ctx.author.display_name}"
+        """When a command encounters and error on Discords side."""
+        auth = f"{ctx.author.id=}, {ctx.author.display_name=}"
         if isinstance(error, (commands.MissingPermissions)):
-            await ctx.message.delete()
-            await ctx.send(
-                "You don't have the correct permissions.",
-                delete_after=configuration["General"]["delTime"],
-            )
-            log.error(f"MissingPermission. {auth}")
+            try:
+                await ctx.message.delete()
+                await ctx.send(
+                    f"You don't have the correct permissions.\n{error.missing_permissions=}",
+                    delete_after=configuration["General"]["delTime"],
+                )
+            except Exception:
+                log.exception(f"UserMissingPerm {error.missing_permissions=}")
+            log.error(
+                f"UserMissingPermission. {auth} | {error.missing_permissions=}")
+
         if isinstance(error, (commands.MissingRole)):
-            await ctx.message.delete()
-            await ctx.send(
-                "You don't have the correct role.",
-                delete_after=configuration["General"]["delTime"],
-            )
-            log.error(f"MissingRole. {auth}")
+            try:
+                await ctx.message.delete()
+                await ctx.send(
+                    f"You don't have the correct role.\n{error.missing_role=}",
+                    delete_after=configuration["General"]["delTime"],
+                )
+            except Exception:
+                log.exception(f"UserMissingRole {error.missing_role=}")
+            log.error(f"MissingRole. {auth} | {error.missing_role=}")
+
         if isinstance(error, (commands.MissingRequiredArgument)):
-            await ctx.send("Missing Argument/s")
-            log.error(f"MissingRole. {auth}")
+            try:
+                await ctx.send("Missing Argument/s")
+            except Exception:
+                log.exception(
+                    f"Missing Argument {error.args=} | {error.param=}")
+            log.error(
+                f"MissingArgument. {auth} | {error.args=} | {error.param=}")
+
         if isinstance(error, (commands.CommandNotFound)):
             if ctx.message.content.startswith(
-                f"{genericConfig.BOT_PREFIX}{genericConfig.BOT_PREFIX}"
+                f"{gxConfig.BOT_PREFIX}{gxConfig.BOT_PREFIX}"
             ):
                 return
-            await ctx.send(
-                f"Command not found.\nPlease check with {genericConfig.BOT_PREFIX}help"
-            )
-            log.error(f"CommandNotFound. {auth}")
+            try:
+                await ctx.send(
+                    f"Command not found.\nPlease check with {gxConfig.BOT_PREFIX}help"
+                )
+            except Exception:
+                log.exception(f"Command not Found {error.command_name=}")
+            log.error(f"CommandNotFound. {auth} | {error.command_name=}")
+
         if isinstance(error, (commands.DisabledCommand)):
-            await ctx.send(f"Command currently **Disabled**")
-            log.error(f"CommandDisabled. {auth}")
+            try:
+                await ctx.send(f"Command currently **Disabled**")
+            except Exception:
+                log.exception(
+                    f"Disabled Command {error.args=} | {error.with_traceback=}")
+            log.error(
+                f"CommandDisabled. {auth} | {error.args=} | {error.with_traceback=}")
+
         if isinstance(error, commands.CommandOnCooldown):
-            await ctx.send(
-                f"Command cooldown in effect: {round(error.retry_after, 3)}s"
-            )
+            try:
+                await ctx.send(
+                    f"Command cooldown in effect: {round(error.retry_after, 3)}s"
+                )
+            except Exception:
+                log.exception(
+                    f"Command Cooldown {round(error.retry_after, 3)}")
             log.error(f"CommandCooldown. {auth}")
+
         if isinstance(error, commands.ExtensionNotFound):
-            await ctx.send(f"Cog not found.")
+            try:
+                await ctx.send(f"Cog not found.")
+            except Exception:
+                log.exception(f"")
             log.error(f"ExtensionNotFound. {auth}")
+
         if isinstance(error, asyncio.TimeoutError):
-            await ctx.send(f"asyncio 408. Response not received in time.")
+            try:
+                await ctx.send(f"asyncio 408. Response not received in time.")
+            except Exception:
+                log.exception("asyncio 408")
             log.error(f"asyncio 408 {auth}")
-
-    @bot.command(name="toggle")
-    @commands.has_permissions(administrator=True)
-    async def toggle(ctx, comm=None):
-        """Toggles a command. Must be Admin"""
-        log.debug(ctx.author.id)
-        if comm != None:
-            command = bot.get_command(comm)
-            log.info(f"{comm}: {command.enabled} | {ctx.author.id}")
-            if command.enabled == True:
-                command.enabled = False
-                log.warning(command.enabled)
-            elif command.enabled == False:
-                command.enabled = True
-                log.warning(command.enabled)
-            log.info(f"{comm}: {command.enabled}")
-            await ctx.send(f"{comm.title()} command toggled")
-        else:
-            await ctx.send(
-                "Command not found"
-            )  # this should probably check the list of commands...
-
-    @bot.command(name="memory", hidden=True)
-    @commands.is_owner()
-    async def memory(ctx):
-        """Fetches the current amount of memory used by the bot process"""
-        log.debug(ctx.author.id)
-        import platform
-        import resource
-
-        memKB = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-        memMB = int(memKB) / 10**3
-        totalMemoryMB, usedMemoryMB, freeMemoryMB = map(
-            int, os.popen("free -t -m").readlines()[-1].split()[1:]
-        )
-        percent = round((usedMemoryMB / totalMemoryMB) * 100, 2)
-        if usedMemoryMB > 4096:
-            usedMemory = f"{int(usedMemoryMB) / 10**3}GB"
-        else:
-            usedMemory = f"{usedMemoryMB}MB"
-        await ctx.send(
-            f"{platform.node()}\nProcess: {memMB}MB\nSystem: {usedMemory} {percent}%"
-        )
-
-    async def botRestartCheck(ctx, currentDirectory: str):
-        log.critical(ctx.author)
-        mess = await ctx.send("Commencing restart squence...")
-
-        def check(m):
-            if m.author == ctx.author and m.channel == ctx.channel:
-                return True
-
-        try:
-            reply = await bot.wait_for("message", check=check, timeout=15.0)
-        except asyncio.TimeoutError as xcp:
-            await mess.edit(content="Timeout. Restart Aborted")
-            log.error(f"timeout, {xcp}")
-            return False
-        except Exception as xcp:
-            await mess.edit(content=f"xcp: {xcp}")
-        await reply.delete()
-        await mess.edit(content="Confirmed. Restartig momentarily")
-        IDs = f"{mess.id}|{mess.channel.id}"
-        file = os.path.join(currentDirectory, "messID.txt")
-        if os.path.exists(file):
-            log.debug("File found")
-            os.remove(file)
-        if not newFile(IDs, directory=currentDirectory, filename="messID"):
-            ctx.send("Restart Halted: Error noting message ID\nContinue anyway?")
-            if not await bot.wait_for("message", check=check, timeout=10.0):
-                return False
-        return True
-
-    def systemRestart(system: bool):
-        log.critical(f"Rebooting | System: {system}")
-        if system is True:
-            sys.exit(194)
-        else:
-            sys.exit(0)
-
-    @bot.command(name="botRestart", hidden=True)
-    @commands.is_owner()
-    async def botRestart(ctx, system=True):
-        """Exits the Discord Bot script. By default it's automatically restarted by the trigger script"""
-        if await botRestartCheck(ctx, currentDirectory=curDir) is False:
-            return
-        systemRestart(system)
 
     for filename in os.listdir(cogsDir):
         if filename.endswith(".py") and filename != "__init__.py":
-            bot.load_extension(f"cogs.{filename[:-3]}")
+            try:
+                bot.load_extension(f"cogs.{filename[:-3]}")
+            except Exception:
+                log.exception(f"Autoload Cog {filename=}")
 
     log.critical("Conecting to Discord")
-    from config import DISTOKEN
-
-    bot.run(DISTOKEN)
+    try:
+        from config import DISTOKEN
+        bot.run(DISTOKEN)
+    except Exception:
+        log.exception(f"Bot Run")
 
 
 if __name__ == "__main__":

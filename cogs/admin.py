@@ -1,58 +1,55 @@
-print("CogAdmin")
 import asyncio
 import logging
 import os
-from sre_parse import State
 
-import nextcord
-from discord import Permissions, SlashApplicationSubcommand
-from nextcord import Embed, Interaction, SlashOption, slash_command
-from nextcord.ext import application_checks, commands
-from nextcord.ext.commands.bot import Bot
-from nextcord.ext.commands.cooldowns import BucketType
-
-log = logging.getLogger("discordGeneral")
-
-from config import dataObject as dataObject, genericConfig
-from cogs.generalEvent import generalEvent
-from util.fileUtil import readJSON, uploadfile, writeJSON
-from util.genUtil import (
-    blacklistCheck,
-    getCol,
-    getGuilds,
-    getGlobalEventConfig,
-    getChan,
-    getEventConfig,
-)
+from config import generalEventConfig as geConfig
+from config import genericConfig as gxConfig
+from util.fileUtil import readJSON, writeJSON
+from util.genUtil import blacklistCheck, getChan, getCol
 from util.views import nixroles, nixrolesCOL, tpfroles
 
 from cogs.auditLog import auditLogger
 
+print("CogAdmin")
 
-def auditChanGet(guildID):
+log = logging.getLogger("discordGeneral")
+try:
+    log.debug("TRY ADMIN IMPORT MODULES")
+    import nextcord
+    from discord import Permissions
+    from nextcord import Interaction, SlashOption, slash_command
+    from nextcord.ext import commands
+except Exception:
+    log.exception("ADMIN IMPORT MODULES")
+
+
+def auditChanGet(guildID) -> int:
+    """With the ID of a server, returns either it's auditlog channel or if it has none specified, the owner server auditlog channel"""
     log.debug("auditGet")
-    audit = genericConfig.auditChan
+    audit = gxConfig.auditChan
     if str(guildID) in audit.keys():
-        return audit[f"{guildID}"]
+        return int(audit[f"{guildID}"])
     else:
-        return genericConfig.ownerAuditChan
+        return int(gxConfig.ownerAuditChan)
 
 
 class admin(commands.Cog, name="Admin"):
+    """Class containing commands and functions related to administration of servers (not bot config)"""
+
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.guilds = getGuilds()
 
     @commands.Cog.listener()
     async def on_ready(self):
         self.bot.add_view(tpfroles())
         self.bot.add_view(nixroles())
         self.bot.add_view(nixrolesCOL())
-        log.debug("Ready")
+        log.debug(f"{self.__cog_name__} Ready")
 
-    async def purge(self, ctx, limit: int):
+    async def purge(self, ctx, limit: int) -> bool:
+        """Purges a number of messages from the channel the command was invoked from"""
         if not await blacklistCheck(ctx=ctx):
-            return
+            return False
         if hasattr(ctx, "author"):
             usr = ctx.author
             limit2 = limit + 1
@@ -63,7 +60,8 @@ class admin(commands.Cog, name="Admin"):
         max = readJSON(filename="config")["General"]["purgeLimit"]
         if limit <= max:
             await asyncio.sleep(0.5)
-            dataObject.type = "CommandPurge"
+            from config import dataObject
+            dataObject.TYPE = "CommandPurge"
             dataObject.userObject = usr
             dataObject.limit = limit
             dataObject.auditChan = getChan(
@@ -71,6 +69,7 @@ class admin(commands.Cog, name="Admin"):
             )
             await auditLogger.logEmbed(self, dataObject)
             await ctx.channel.purge(limit=limit2)
+            del dataObject
             return True
         return False
 
@@ -78,18 +77,20 @@ class admin(commands.Cog, name="Admin"):
     @commands.cooldown(2, 7.5, commands.BucketType.user)
     @commands.has_permissions(manage_messages=True)
     async def purgeComm(self, ctx, limit: int):
-        """Purges a number of messages. Manage Messages Only."""
+        """Purges a number of messages (has max to advoid user client desync). Manage Messages Only."""
         if not await self.purge(ctx=ctx, limit=limit):
             await ctx.message.delete()
             delTime = readJSON(filename="config")["General"]["delTime"]
-            await ctx.send(
-                f"{limit} is more than {max}.\n{delTime}sec *self-destruct*",
-                delete_after=delTime,
-            )
+            try:
+                await ctx.send(
+                    f"{limit} is more than {max}.\n{delTime}sec *self-destruct*",
+                    delete_after=delTime,
+                )
+            except Exception:
+                log.exception(f"Purge Command {ctx.author.id=}")
 
     @slash_command(
         name="purge",
-        guild_ids=genericConfig.slashServers,
         default_member_permissions=Permissions(manage_messages=True),
     )
     async def purgeSlash(
@@ -103,22 +104,28 @@ class admin(commands.Cog, name="Admin"):
         ),
     ):
         """Purges a number of messages. Manage Messages Only."""
-        if await self.purge(ctx=interaction, limit=limit):
-            await interaction.send(f"Messages purged.", ephemeral=True)
-        else:
-            await interaction.send(f"{limit} is more than {max}.", ephemeral=True)
+        try:
+            if await self.purge(ctx=interaction, limit=limit):
+                await interaction.send(f"Messages purged.", ephemeral=True)
+            else:
+                await interaction.send(f"{limit} is more than {max}.", ephemeral=True)
+        except Exception:
+            log.exception(f"Purge /Command {interaction.user.id=}")
 
     @commands.command(name="blacklist", aliases=["SSCblacklist"])
     @commands.cooldown(1, 1, commands.BucketType.user)
     @commands.has_permissions(ban_members=True)
-    async def blacklist(self, ctx, usr, reason="No reason given"):
+    async def blacklist(self, ctx, usr: str, reason: str = "No reason given"):
         await self.bot.wait_until_ready()
-        """"Blacklist users from certain parts or all of the bot."""
+        """"Blacklist users from certain parts of the bot."""
         if not await blacklistCheck(ctx=ctx):
             return
         delTime = readJSON(filename="config")["General"]["delTime"]
         if str(ctx.author.id) in usr:
-            await ctx.send("You can't blacklist yourself.", delete_after=delTime)
+            try:
+                await ctx.send("You can't blacklist yourself.", delete_after=delTime)
+            except Exception:
+                log.exception(f"Blacklist Self {ctx.author.id=}")
         if "sscblacklist" in ctx.invoked_with:
             blklstType = "SSCBlacklist"
             cat = "SSC"
@@ -135,31 +142,44 @@ class admin(commands.Cog, name="Admin"):
             for k in data.keys():
                 keyList.append(k)
                 joined = "\n".join([str(e) for e in keyList])
-            if joined is None:
-                await ctx.send("The blacklist is empty")
-            else:
-                await ctx.send(f"Here are all ID's in the blacklist:\n{joined}")
-            return
+            try:
+                if joined is None:
+                    await ctx.send("The blacklist is empty")
+                else:
+                    await ctx.send(f"Here are all ID's in the blacklist:\n{joined}")
+                return
+            except Exception:
+                log.exception(f"Blacklist Add")
         elif "read" == usr:
             usr = reason
             reason = data.get(usr)
-            await ctx.send(f"User: {usr}\n``` {reason} ```")
+            try:
+                await ctx.send(f"User: {usr}\n``` {reason} ```")
+            except Exception:
+                log.exception(f"Blacklist Read")
             return
         if ctx.message.mentions:
             usr = str(ctx.message.mentions[0].id)
         else:
             usr = str(usr)
-        if int(usr) == genericConfig.ownerID:
-            await ctx.send("You can't blacklist bot owner.", delete_after=delTime)
+        if int(usr) == gxConfig.ownerID:
+            try:
+                await ctx.send("You can't blacklist bot owner.", delete_after=delTime)
+            except Exception:
+                log.exception(f"Blacklist Bot Owner")
         if usr in data:
             reason = data.get(usr)
-            await ctx.send(f"User already blacklisted:``` {reason} ```")
+            try:
+                await ctx.send(f"User already blacklisted:``` {reason} ```")
+            except Exception:
+                log.exception(f"Blacklist Already")
         else:
             id = int(usr)
             data[f"{id}"] = reason
             check = writeJSON(data, filename=blklstType, directory=["secrets"])
             if check == True:
-                dataObject.type = "BlacklistAdd"
+                from config import dataObject
+                dataObject.TYPE = "BlacklistAdd"
                 dataObject.userObject = ctx.author
                 dataObject.commandArg1 = await self.bot.fetch_user(id)
                 dataObject.reason = reason
@@ -168,14 +188,22 @@ class admin(commands.Cog, name="Admin"):
                     self=self, guild=ctx.guild.id, chan="Audit", admin=True
                 )
                 await auditLogger.logEmbed(self, dataObject)
-                await ctx.send(f"{usr.id} has been added")
+                try:
+                    await ctx.send(f"{usr.id} has been added")
+                except Exception:
+                    log.exception(f"Blacklisted User")
+                del dataObject
             else:
-                await ctx.send("Error occured during write", delete_after=delTime)
+                try:
+                    await ctx.send("Error occured during write", delete_after=delTime)
+                except Exception:
+                    log.exception(f"Write Error")
 
     @commands.command(name="blacklistRemove", aliases=["SSCblacklistRemove"])
     @commands.cooldown(1, 1, commands.BucketType.user)
     @commands.has_permissions(ban_members=True)
-    async def blacklistRemove(self, ctx, usr):
+    async def blacklistRemove(self, ctx, usr: str):
+        """Remove a user from one of the bot's blacklists"""
         await self.bot.wait_until_ready()
         if not await blacklistCheck(ctx=ctx):
             return
@@ -193,7 +221,8 @@ class admin(commands.Cog, name="Admin"):
             del data[f"{usr}"]
             check = writeJSON(data, filename=blklstType, directory=["secrets"])
             if check == True:
-                dataObject.type = "BlacklistRemove"
+                from config import dataObject
+                dataObject.TYPE = "BlacklistRemove"
                 dataObject.userObject = ctx.author
                 dataObject.commandArg1 = await self.bot.fetch_user(id)
                 dataObject.category = cat
@@ -201,12 +230,22 @@ class admin(commands.Cog, name="Admin"):
                     self=self, guild=ctx.guild.id, chan="Audit", admin=True
                 )
                 await auditLogger.logEmbed(self, dataObject)
-                await ctx.send(f"{usr.id}: User removed from blacklist.")
+                try:
+                    await ctx.send(f"{usr.id}: User removed from blacklist.")
+                except Exception:
+                    log.exception(f"Blackedlisted Removed")
+                del dataObject
             else:
                 delTime = readJSON(filename="config")["General"]["delTime"]
-                await ctx.send("Error occured during write", delete_after=delTime)
+                try:
+                    await ctx.send("Error occured during write", delete_after=delTime)
+                except Exception:
+                    log.exception(f"Write Error")
         else:
-            await ctx.send("User not in blacklist.")
+            try:
+                await ctx.send("User not in blacklist.")
+            except Exception:
+                log.exception(f"Blacklist Not")
 
     @commands.command(
         name="listFile", aliases=["auditList", "fileList", "listFolder", "folderList"]
@@ -224,15 +263,18 @@ class admin(commands.Cog, name="Admin"):
         else:
             folder = f"./{foldername}"
         exts = (".py", ".json", ".txt")
-        for filename in os.listdir(f"{folder}"):
-            if filename.endswith(exts):
-                fileList.add(f"{filename}")
-            elif os.path.isdir(filename) and not (
-                filename.startswith("__") or filename.startswith(".")
-            ):
-                foldList.add(f"{filename}")
-            else:
-                continue
+        try:
+            for filename in os.listdir(f"{folder}"):
+                if filename.endswith(exts):
+                    fileList.add(f"{filename}")
+                elif os.path.isdir(filename) and not (
+                    filename.startswith("__") or filename.startswith(".")
+                ):
+                    foldList.add(f"{filename}")
+                else:
+                    continue
+        except Exception:
+            log.exception(f"compile filenames {filename=}")
         fileList = "\n".join(fileList)
         foldList = "\n".join(foldList)
         print(len(foldList))
@@ -243,7 +285,10 @@ class admin(commands.Cog, name="Admin"):
             e.add_field(name="Files", value=f"{fileList}", inline=True)
         if len(foldList) > 0:
             e.add_field(name="Folders", value=f"{foldList}", inline=True)
-        await ctx.send(embed=e)
+        try:
+            await ctx.send(embed=e)
+        except Exception:
+            log.exception(f"AuditList")
 
     @commands.command(name="getFile", aliases=["auditGet", "fileGet"])
     @commands.cooldown(1, 30, commands.BucketType.default)
@@ -257,80 +302,51 @@ class admin(commands.Cog, name="Admin"):
             if (
                 ("secret" not in filename)
                 or ("log" not in filename)
-                or (ctx.author.id == genericConfig.ownerID)
+                or ("dump" not in filename)
+                or (ctx.author.id == gxConfig.ownerID)
             ):
-                dataObject.type = "CommandAuditGet"
+                from config import dataObject
+                dataObject.TYPE = "CommandAuditGet"
                 dataObject.userObject = ctx.author
                 dataObject.filename = filename
-                dataObject.auditID = getChan(
+                dataObject.auditID = int(getChan(
                     guild=ctx.guild.id, chan="Audit", admin=True
-                )
+                ))
+                log.debug("send auditlog")
                 await auditLogger.logEmbed(self, dataObject)
+                log.debug("make file")
                 file = nextcord.File(fName)
-                await ctx.send(file=file)
+                log.debug(f"send file {fName=}")
+                try:
+                    await ctx.send(file=file)
+                except Exception:
+                    log.exception(f"AuditGet {fName=}")
+                del dataObject
             else:
-                await ctx.send("File contains sensitive infomation.")
+                try:
+                    await ctx.send("File contains sensitive infomation.")
+                except Exception:
+                    log.exception(f"AuditGet Sensitive")
 
         else:
-            await ctx.send(
-                """File not found. Please include the extension.
-If in a folder please include the foldername followed by a slash. eg [ foldername/filename ]"""
-            )
-
-    ## Roll into a more modular file management thing.
-    # @commands.command(name="getLog", aliases=["logGet"])
-    # @commands.has_permissions(administrator=True)
-    # async def getLog(self, ctx, log:str="list"):
-    # 	"""Gets the bot logs. Administrator Only."""
-    # 	log = log.casefold()
-    # 	botDir = parentDir()
-    # 	botLogFold = os.path.join(botDir, "logs")
-    # 	print(botLogFold)
-    # 	if not os.path.exists(botLogFold):
-    # 		print("not")
-    # 		return
-    # 	else: print("yes")
-    # 	triggerFold = os.path.abspath(os.path.join(botDir, os.pardir))
-    # 	logList = {}
-    # 	print("getLog")
-    # 	for directory in [botLogFold, triggerFold]:
-    # 		if os.path.exists(directory): print("yes", directory)
-    # 		else: continue
-    # 		for filename in os.listdir(directory):
-    # 			if os.path.exists(filename): print("yes2", filename)
-    # 			else: continue
-    # 			if filename.endswith('log'):
-    # 				print("yes3", "Log")
-    # 				logList[filename] = directory
-    # 	files = logList.keys()
-    # 	print(files)
-    # 	if "list" in log:
-    # 		await ctx.send(', '.join(files))
-    # 		return
-    # 	if len(files) > 0:
-    # 		for item in files:
-    # 			print(log, item.casefold())
-    # 			if log in item.casefold():
-    # 				filePath = os.path.join(logList[item], item)
-    # 				print(filePath)
-    # 				fileDir=nextcord.File("./logs/discordGeneral.log")
-    # 				if fileDir is not None:
-    # 					print(fileDir, type(fileDir))
-    # 					await ctx.send(file=fileDir)
-    # 				else:
-    # 					log.error("File Empty")
-    # 				return
-    # 	await ctx.send("Can't find the log.")
+            try:
+                await ctx.send(
+                    """File not found. Please include the extension.
+  If in a folder please include the foldername followed by a slash. eg [ foldername/filename ]"""
+                )
+            except Exception:
+                log.exception(f"AuditGet No File")
 
     @commands.command()
     @commands.has_permissions(manage_messages=True)
     async def rolebuttons(self, ctx):
+        """Trigger the role button messages for the server the command was invoked from."""
         if not await blacklistCheck(ctx=ctx):
             return
         guildID = str(ctx.guild.id)
         await ctx.message.delete()
         nix = False
-        guilds = getGuilds()
+        guilds = geConfig.guildListID
         print(guilds)
         if "TPFGuild" == guilds[guildID]:
             e = nextcord.Embed(
@@ -352,50 +368,18 @@ Modder intern gives access to special channels full of useful info.""",
         else:
             ctx.send("This guild does not have any buttons.")
             return
-        await ctx.send(embed=e, view=view)
-        if nix == True:
-            await ctx.send(view=view2)
-        await view.wait()
-
-    @slash_command(name="uploadfile", guild_ids=genericConfig.slashServers)
-    @application_checks.is_owner()
-    async def uploadfileCOMM(
-        self,
-        interaction: Interaction,
-        newfile: nextcord.Attachment = SlashOption(
-            name="newfile",
-            required=True,
-            description="A file, ensure filename is correct.",
-        ),
-        filepath: str = SlashOption(
-            name="filepath",
-            required=False,
-            description="Path of file, subfolders separated by spaces",
-        ),
-    ):
-        log.info(interaction.user.id)
-        if filepath is not None:
-            filepath = filepath.split(" ")
-        if await uploadfile(directory=filepath, newfile=newfile, bak=True):
-            await interaction.send("Done!", ephemeral=True)
-        else:
-            await interaction.send("Error!", ephemeral=True)
-
-    def userFriendlyConfigGroups():
-        groups = readJSON(filename="config")
-        configList = {}
-        for itemKey, itemVal in groups.items():
-            if itemKey != itemVal:
-                groups.pop(itemKey)
-            elif itemKey == itemVal:
-
-                configList[itemKey.replace("_", " ")] = itemKey
-        return configList
+        try:
+            await ctx.send(embed=e, view=view)
+            if nix == True:
+                await ctx.send(view=view2)
+            await view.wait()
+        except Exception:
+            log.exception(f"Views {ctx.guild.id}")
 
     @slash_command(
         name="configuration",
         default_member_permissions=Permissions(administrator=True),
-        guild_ids=genericConfig.slashServers,
+        guild_ids=gxConfig.slashServers,
     )
     async def configurationCOMM(
         self,
@@ -423,7 +407,10 @@ Modder intern gives access to special channels full of useful info.""",
         elif value.isdigit():
             value = int(value)
         else:
-            await interaction.send(f"ValueError")
+            try:
+                await interaction.send(f"ValueError")
+            except Exception:
+                log.exception(f"config /command ValueError")
         configuration = readJSON(filename="config")
         try:
             oldValue = str(configuration[guildID][group][option])
@@ -433,11 +420,14 @@ Modder intern gives access to special channels full of useful info.""",
             elif option in str(xcp):
                 err = option
             await interaction.send(f"KeyError: {err}", ephemeral=True)
+        except Exception:
+            log.exception("Config /Command")
         configuration[guildID][group][option] = value
         log.info(
-            f"ConfigUpdated: {self.guilds[guildID]}, {interaction.user.id}, {group}-{option}:{oldValue} | {value}"
+            f"ConfigUpdated: {geConfig.guildListID[guildID]}, {interaction.user.id}, {group}-{option}:{oldValue} | {value}"
         )
-        dataObject.type = "CommandGuildConfiguration"
+        from config import dataObject
+        dataObject.TYPE = "CommandGuildConfiguration"
         dataObject.auditChan = getChan(
             guild=guildID, chan="Audit", admin=True, self=self
         )
@@ -448,18 +438,26 @@ Modder intern gives access to special channels full of useful info.""",
         dataObject.userObject = interaction.user
         await auditLogger.logEmbed(self, auditInfo=dataObject)
         if writeJSON(filename="config", data=configuration):
-            await interaction.send(
-                f"Config updated: {group}-{option}\n{oldValue} -> {value}"
-            )
+            try:
+                await interaction.send(
+                    f"Config updated: {group}-{option}\n{oldValue} -> {value}"
+                )
+            except Exception:
+                log.exception(f"Config Update")
         else:
-            await interaction.send("Config not updated!", ephemeral=True)
+            try:
+                await interaction.send("Config not updated!", ephemeral=True)
+            except Exception:
+                log.exception(f"No Config Change")
+        del dataObject
 
     @configurationCOMM.on_autocomplete("group")
     async def configurationGroup(self, interaction: Interaction, group):
+        """Autocomplete function for use with the configuration command 'group' arg"""
         guildID = str(interaction.guild_id)
         groups = readJSON(filename="config")[guildID]
         configList = []
-        groupWhiteList = genericConfig.configCommGroupWhitelist
+        groupWhiteList = gxConfig.configCommGroupWhitelist
         for itemKey, itemVal in groups.items():
             if "dict" in str(type(itemVal)):
                 if str(itemKey) in groupWhiteList:
@@ -468,6 +466,7 @@ Modder intern gives access to special channels full of useful info.""",
 
     @configurationCOMM.on_autocomplete("option")
     async def configurationOption(self, interaction: Interaction, option, group):
+        """Autocomplete function for use with the configuration command 'option' and 'group' args"""
         if group is None:
             return
         optionsList = ["undefined"]
@@ -490,6 +489,7 @@ Modder intern gives access to special channels full of useful info.""",
 
     @configurationCOMM.on_autocomplete("value")
     async def configurationValue(self, interaction: Interaction, value, group, option):
+        """Autocomplete function for use with the configuration command 'value', 'group', and 'option' args"""
         if (group or option) is None:
             return
         print(group, option)
@@ -503,11 +503,52 @@ Modder intern gives access to special channels full of useful info.""",
             configItem.append(item)
         except KeyError:
             configItem.append("Undefined Key")
+        except Exception:
+            log.exception("Config Command Autocomplete")
         if len(configItem) == 0:
             configItem.append("Undefined Error")
         if len(value) >= 1:
             configItem.append(value)
         await interaction.response.send_autocomplete(configItem)
+
+    @commands.command(name="react", aliases=["emoji"])
+    @commands.cooldown(1, 1, commands.BucketType.user)
+    @commands.has_permissions(manage_messages=True)
+    async def react(self, ctx):
+        print(ctx.message.content)
+        rawItems = ctx.message.content.split(" ")[1:]
+        messIDs = []
+        emojiSet = set()
+        for item in rawItems:
+            if item[0].isdigit():
+                messIDs.append(int(item))
+            elif item[0].startswith("<"):
+                emojiSet.add(item)
+            else:
+                emojiSet.add(item)
+        messOBJs = []
+        print(messIDs)
+        print(emojiSet)
+        for item in messIDs:
+            messOBJs.append(await ctx.fetch_message(item))
+        if len(emojiSet) == 0:
+            emojiSet = ["⭐"]
+        badEmoji = set()
+        for item in messOBJs:
+            for element in emojiSet:
+                try:
+                    await item.add_reaction(element)
+                except Exception as xcp:
+                    log.exception("Unknown Emoji")
+                    if "Unknown Emoji" in str(xcp):
+                        badEmoji.add(element)
+        if len(badEmoji) != 0:
+            try:
+                await ctx.send(f"Some emoji aren't accessible: {', '.join(badEmoji)}")
+            except Exception:
+                log.exception(f"Inaccessible Emoji {badEmoji=}")
+        log.info(f"{messIDs}, {emojiSet}")
+        await ctx.message.delete()
 
 
 def setup(bot: commands.Bot):
