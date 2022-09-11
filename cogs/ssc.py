@@ -17,7 +17,7 @@ try:
     import datetime
 
     import nextcord
-    import nextcord.ext
+    import nextcord.ext.commands  # import Context
     from discord import Permissions
     from nextcord import Interaction, SlashOption, slash_command
     from nextcord.ext import application_checks, commands, tasks
@@ -564,15 +564,16 @@ class ssc(commands.Cog, name="SSC"):
                 log.exception(f"Themevote Send")
 
     @ commands.Cog.listener()
-    async def on_message(self, ctx):
+    async def on_message(self, ctx: nextcord.ext.commands.Context):
         """Check if message has attachment or link, if 1 add reaction, if not 1 delete and inform user, set/check prize round state, ignore SSCmanager,"""
         if ctx.content.startswith(f"{gxConfig.BOT_PREFIX}"):
             return
-        if ctx.channel.id != sscConfig.sscChan:
+        log.debug(
+            f"SSC listener {int(ctx.channel.id)} | {int(sscConfig.sscChan)}")
+        if int(ctx.channel.id) != int(sscConfig.sscChan):
             return
-        log.debug("SSC listener")
         if ctx.author.bot:
-            if ctx.author.id == gxConfig.botID:
+            if int(ctx.author.id) == int(gxConfig.botID):
                 return
             else:
                 log.info("A bot did something")
@@ -607,7 +608,6 @@ class ssc(commands.Cog, name="SSC"):
                 log.exception("SSC Bad Submission")
                 return False
         idName = f"{ctx.author.id},{ctx.author.display_name}"
-        configSSC = readJSON(filename="config")["General"]["SSC_Data"]
         delTime = sscConfig.delTime
         if len(ctx.attachments) == 0 and h == "n":
             content = f"""Either no image or link detected. Please submit an image.
@@ -629,14 +629,13 @@ class ssc(commands.Cog, name="SSC"):
             except Exception:
                 log.exception(f"SSC on_message")
         if len(ctx.attachments) == 1 or h == "y":
-            if configSSC["ignoreWinner"]:
+            if sscConfig.ignoreWinner == True:
                 try:
                     await ctx.add_reaction(gxConfig.emoStar)
                 except Exception:
                     log.exception(f"SSC add_reaction")
                 return
-            prize = configSSC["isPrize"]
-            if prize is True:
+            if sscConfig.isPrize == True:
                 if ctx.author.get_role(int(sscConfig.winnerPrize)):
                     content = f"""You're a SSC Prize Winner, so can't participate in this round.\n{delTime}sec *self-destruct*"""
                     try:
@@ -656,7 +655,7 @@ class ssc(commands.Cog, name="SSC"):
                     except Exception:
                         log.exception(f"SSC add_reaction")
                     return
-            elif prize is False:
+            elif sscConfig.isPrize == False:
                 if ctx.author.get_role(int(sscConfig.winner)) or ctx.author.get_role(
                         int(sscConfig.runnerUp)
                 ):

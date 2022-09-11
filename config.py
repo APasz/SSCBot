@@ -20,11 +20,9 @@ except Exception:
     log.exception("CONFIG IMPORT MODULES")
 
 
-configuration = readJSON(filename="config")
-
-
-def slashList() -> set:
+def slashList() -> set[int]:
     """Gets guild IDs of all servers it's allowed for + owner guild"""
+    configuration = readJSON(filename="config")
     slashes = set()
     for item in configuration:
         try:
@@ -35,12 +33,6 @@ def slashList() -> set:
             slashes.add(int(item))
     slashes.add(int(431272247001612309))
     return slashes
-
-
-if 246190532949180417 in slashList():
-    emoNotifi = "<:notified:427470234463502336>"
-else:
-    emoNotifi = "🙃"
 
 
 class _singleton_(type):
@@ -61,9 +53,17 @@ class genericConfig(metaclass=_singleton_):
         "Reassign default class attributes from their source"
         cls.slashServers = slashList()
         "Servers which the bot has a config for and thus can use slash commands"
+        if 246190532949180417 in cls.slashServers:
+            cls.emoNotifi = "<:notified:427470234463502336>"
+        else:
+            cls.emoNotifi = "🙃"
+        if 246190532949180417 in cls.slashServers:
+            cls.botID = 762054632510849064
+        else:
+            cls.botID = 764270771350142976
         return True
 
-    emoNotifi = emoNotifi
+    emoNotifi = None
     emoHeart = "❤️"
     emoStar = "⭐"
     emoTmbUp = "👍"
@@ -90,8 +90,7 @@ class genericConfig(metaclass=_singleton_):
     "Prefix the bot listens to"
     botName = "Katoku"
     "Name of the bot user"
-    botID = 762054632510849064
-    "ID of the bot user"
+    botID = None
 
     configCommGroupWhitelist = ["Channels", "Channels_Admin", "Roles", "MISC"]
     "Groups of the config JSON that are accessible by the configuration command"
@@ -287,8 +286,9 @@ class screenShotCompConfig(metaclass=_singleton_):
         cls.tpfID = int(getGuilds(by="name")["TPFGuild"])
         "ID of the TPF|Gloabal server"
         _configuration = readJSON(filename="config")
+        _sscConifg = _configuration["General"]["SSC_Data"]
         _tpfConfig = _configuration[str(cls.tpfID)]
-        cls.curTheme = _configuration["General"]["SSC_Data"]["theme"]
+        cls.curTheme = _sscConifg["theme"]
         "The current theme of the competition"
         cls.sscmanager = str(_tpfConfig["Roles"]["SSC_Manager"])
         "ID of the SSCManager role"
@@ -306,8 +306,12 @@ class screenShotCompConfig(metaclass=_singleton_):
         "Channel where TpF screenshots should go "
         cls.OGssChan = str(_tpfConfig["Channels"]["ScreenshotsGames"])
         "Channel where non-TpF screenshots should go"
-        cls.themesDict = _configuration["General"]["SSC_Data"]["allThemes"]
+        cls.themesDict = _sscConifg["allThemes"]
         "Dict of all themes and their notes"
+        cls.ignoreWinner = _sscConifg["ignoreWinner"]
+        "Flag if to ignore the fact a user has one of the winner roles"
+        cls.isPrize = _sscConifg["isPrize"]
+        "Flag to indicate if the current round has a prize"
 
         _genCF = readJSON(filename="config")["General"]
         "General block of config"
@@ -524,10 +528,12 @@ def verifyConfigJSON() -> bool:
             except KeyError:
                 configuration[item]["SlashCommands"] = True
 
-    genCF["EmbedColours"]["botInfo"] = [250, 0, 0]
-    genCF["EmbedColours"]["ssc"] = [190, 0, 70]
-
-    return writeJSON(data=configuration, filename="config.json")
+    writeJSON(data=configuration, filename="config.json")
+    genericConfig.update()
+    screenShotCompConfig.update()
+    generalEventConfig.update()
+    botInformation.update()
+    return
 
 
 # secrets

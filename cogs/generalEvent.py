@@ -431,12 +431,12 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
             event = True
         if "ModPreview" in geConfig.eventConfigID[guildID]:
             nmrChan = getChan(guildID, "NewModRelease")
-            nmpChan = getChan(guildID, "NewModPreview")
-            globalnmpChan = getChan(
-                geConfig.guildListName["TPFGuild"], "NewModPreview")
-            log.debug(f"{nmrChan=} | {nmpChan=} | {globalnmpChan=}")
+            log.debug(f"{nmrChan=}")
             if (ctx.channel.id == nmrChan) and (ctx.author.bot is False):
-                log.debug("NMR listener")
+                nmpChan = getChan(guildID, "NewModPreview")
+                globalnmpChan = getChan(
+                    geConfig.guildListName["TPFGuild"], "NewModPreview")
+                log.debug(f"NMR listener | {nmpChan=} | {globalnmpChan=}")
                 try:
                     nmp = await self.bot.fetch_channel(nmpChan)
                 except Exception:

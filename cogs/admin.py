@@ -439,6 +439,7 @@ Modder intern gives access to special channels full of useful info.""",
         await auditLogger.logEmbed(self, auditInfo=dataObject)
         if writeJSON(filename="config", data=configuration):
             try:
+                geConfig.update()
                 await interaction.send(
                     f"Config updated: {group}-{option}\n{oldValue} -> {value}"
                 )
@@ -515,6 +516,7 @@ Modder intern gives access to special channels full of useful info.""",
     @commands.cooldown(1, 1, commands.BucketType.user)
     @commands.has_permissions(manage_messages=True)
     async def react(self, ctx):
+        """Takes message IDs and emoji and reacts to the messages with the emoji"""
         print(ctx.message.content)
         rawItems = ctx.message.content.split(" ")[1:]
         messIDs = []

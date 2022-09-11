@@ -154,5 +154,9 @@
 		"-Fixed; generalEvent: modPreview now actually gets the global nmp channel. #22",
         "-Fixed; ssc: The themevote command now defers the interaction response if the update option is True.",
         "-Cleanup: Removing unused code and imports, adding docstrings, better more consistent logging, general organisation, and so many try excepts I now have a keybind for them."
-	]
+	],
+    "2.6.1": ["Backend::20220912",
+        "-Fixed; generalEvent: configuration command actually updates the config class.",
+        "-Fixed; ssc: Not recognising any messages in ssc channel."
+    ]
 }
