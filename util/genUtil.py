@@ -12,7 +12,7 @@ log = logging.getLogger("discordGeneral")
 try:
     log.debug("TRY UTIL_GEN IMPORT MODUELS")
     import nextcord
-    from nextcord import Role
+    from nextcord import Role, Guild as ncGuild
 except Exception:
     log.exception("UTIL_GEN IMPORT MODUELS")
 
@@ -69,18 +69,30 @@ def getChan(guild: str | int, chan: str, admin: bool = False, self=None):
         return chanID
 
 
-def getRole(guild: str | int, role: str):
+def getRole(guild: str | int | ncGuild, role: str):
     """Gets from config a channel id or object using the guild id."""
-    log.debug(f"{guild=}, {role=}")
-    guild = str(guild)
+    log.debug(f"{type(guild)=} | {guild=} | {role=}")
     role = str(role)
-    try:
-        roleID = readJSON(filename="config")[guild]["Roles"][role]
-    except KeyError:
-        return None
-    except Exception:
-        log.exception("Get Role")
-    return roleID
+
+    def fromConfig(g: str, r: str):
+        try:
+            return readJSON(filename="config")[g]["Roles"][r]
+        except KeyError:
+            log.exception("getRole KeyErr")
+        except Exception:
+            log.exception("Get Role id")
+
+    if isinstance(guild, int | str):
+        roleRtn = fromConfig(g=str(guild), r=str(role))
+    else:
+        roleID = fromConfig(g=str(guild.id), r=str(role))
+        try:
+            roleRtn = guild.get_role(int(roleID))
+        except Exception:
+            log.exception(f"getRole obj")
+            roleRtn = None
+    log.debug(f"{type(roleRtn)=} | {roleRtn=}")
+    return roleRtn
 
 
 def hoursFromSeconds(

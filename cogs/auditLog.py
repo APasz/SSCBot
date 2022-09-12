@@ -341,7 +341,7 @@ class auditLogger(commands.Cog, name="AuditLogging"):
 
         else:
             log.debug(TYPE)
-            title = f"Unknown Event {TYPE}"
+            title = f"Unknown Event: {TYPE}"
             e = nextcord.Embed(title=title, colour=getCol("neutral_Black"))
 
         if fValue0 is not None:

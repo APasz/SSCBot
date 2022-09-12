@@ -218,7 +218,7 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
                 dataObject.count = after.guild.member_count
                 await auditLogger.logEmbed(self, dataObject)
             if "MemberWelcome" in geConfig.eventConfigID[guildID]:
-                log.info(f"MemberVerifiedRole: {logMess}")
+                log.info(f"MemberWelcome: {logMess}")
                 guild = after.guild
                 if guild.system_channel is None:
                     return
@@ -233,9 +233,9 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
                 else:
                     ruleChan = int(ruleChan)
                 if isinstance(ruleChan, int):
-                    welcome = '\n'.join(welcome, rules)
+                    welcomeMess = '\n'.join([welcome, rules])
 
-                toSend = welcome.format(
+                toSend = welcomeMess.format(
                     user=after.mention, guild=after.guild.name, rules=f"<#{ruleChan}>")
                 try:
                     await guild.system_channel.send(toSend)
@@ -243,9 +243,12 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
                     log.exception(f"Send Guild Welcome")
             if "MemberVerifiedRole" in geConfig.eventConfigID[guildID]:
                 log.info(f"MemberVerifiedRole: {logMess}")
-                role = nextcord.utils.get(
-                    before.guild.roles, id=getRole(guild=guildID, role="Verified"),)
-                await after.add_roles(role, atomic=True)
+                role = getRole(guild=after.guild, role="Verified")
+                if role != None:
+                    try:
+                        await after.add_roles(role, reason="Passed Membership Screen.", atomic=True)
+                    except Exception:
+                        log.exception(f"Add Verified")
 
         elif before.display_name != after.display_name:
             if "MemberNameChange" in geConfig.eventConfigID[guildID]:
@@ -272,6 +275,7 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
         if "MemberLeave" in geConfig.eventConfigID[guildID]:
             geConfig.onMemberFired = True
             from config import dataObject
+            dataObject.TYPE = "MemberLeave"
             dataObject.userObject = member
             dataObject.auditChan = getChan(
                 self=self, guild=guildID, chan="Audit", admin=True
@@ -331,6 +335,7 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
                 f"MemberBan: {geConfig.guildListID[guildID]}, {usr.id=}, {usr.display_name=}"
             )
             from config import dataObject
+            dataObject.TYPE = "MemberBan"
             dataObject.userObject = usr
             dataObject.guildObject = guild
             dataObject.auditChan = getChan(

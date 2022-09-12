@@ -158,5 +158,10 @@
     "2.6.1": ["Backend::20220912",
         "-Fixed; generalEvent: configuration command actually updates the config class.",
         "-Fixed; ssc: Not recognising any messages in ssc channel."
+    ],
+    "2.6.2": ["Backend::20220912",
+        "-Changed; genUtil: getRole function now accepts a guild object. If passed it will return a role object instead of an ID",
+        "-Fixed; generalEvent: Verified role actually gets applied. Why oh why do a select few Nextcord functions only take an int when everything else accepts str as well.",
+        "-Fixed; generalEvent: For some reason the type assignments for memberLeave and memberBan dissappeared. ¯|_(ツ)_|¯"
     ]
 }
