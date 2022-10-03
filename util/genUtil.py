@@ -1,8 +1,12 @@
 import asyncio
+from collections import namedtuple
 import logging
 import time
+from dataclasses import dataclass
+import inspect
 
 from config import genericConfig as gxConfig
+from config import botInformation as botInfo
 
 from util.fileUtil import readJSON
 
@@ -12,7 +16,8 @@ log = logging.getLogger("discordGeneral")
 try:
     log.debug("TRY UTIL_GEN IMPORT MODUELS")
     import nextcord
-    from nextcord import Role, Guild as ncGuild
+    from nextcord import Guild as ncGuild
+    from nextcord import Role
 except Exception:
     log.exception("UTIL_GEN IMPORT MODUELS")
 
@@ -22,7 +27,9 @@ configGen = configuration["General"]
 
 def getCol(col: str) -> nextcord.Color:
     """Gets the colour RGB list from config and returns colour object"""
-    log.debug(f"{col=}")
+    func = inspect.stack()[1][3]
+    log.debug(f"{func=} | {col=}")
+
     red, green, blue = configGen["EmbedColours"][col]
     colour = nextcord.Colour.from_rgb(red, green, blue)
     return colour
@@ -32,33 +39,61 @@ def hasRole(role: Role, userRoles) -> bool:
     """Checks if user has role object
     role = Discord role object
     :param arg2: roles object of a user"""
-    log.debug(f"{role=} | {userRoles=}")
-    if role in userRoles:
-        return True
-    else:
-        return False
+    func = inspect.stack()[1][3]
+    log.debug(f"{func=} | {role=} | {userRoles=}")
+
+    return role in userRoles
 
 
-def getUserID(obj) -> str:
+def getUserID(obj) -> str | int:
     """Gets the user id from either ctx or interaction types"""
-    # log.debug(obj)
+    func = inspect.stack()[1][3]
+    log.debug(f"{func=} | {type(obj)}")
+
     if hasattr(obj, "author"):
-        return str(obj.author.id)
+        return obj.author.id
     if hasattr(obj, "user"):
-        return str(obj.user.id)
+        return obj.user.id
+
+
+def getChannelID(obj) -> str | int:
+    """Gets the channel id from either ctx or interaction types"""
+    func = inspect.stack()[1][3]
+    log.debug(f"{func=} | {type(obj)}")
+
+    if hasattr(obj, "channel"):
+        return obj.channel.id
+    if hasattr(obj, "channel_id"):
+        return obj.channel_id
+
+
+def getGuildID(obj) -> str | None:
+    """Gets guild id from a guild object"""
+    func = inspect.stack()[1][3]
+    log.debug(f"{func=} | {type(obj)}")
+
+    if hasattr(obj, "guild_id"):
+        return str(obj.guild_id)
+    elif hasattr(obj, "guild"):
+        if hasattr(obj.guild, "id"):
+            return str(obj.guild.id)
+    else:
+        return None
 
 
 def getChan(guild: str | int, chan: str, admin: bool = False, self=None):
     """Gets from config a channel id or object using the guild id."""
-    log.debug(f"{guild=}, {chan=}, {admin=}, self={type(self)}")
+    func = inspect.stack()[1][3]
     guild = str(guild)
     chan = str(chan)
+    log.debug(f"{func=} | {guild=}, {chan=}, {admin=}, self={type(self)}")
+
     if admin is True:
         admin = "Channels_Admin"
     else:
         admin = "Channels"
     try:
-        chanID = readJSON(filename="config")[guild][admin][chan]
+        chanID = int(readJSON(filename="config")[guild][admin][chan])
     except KeyError:
         return None
     except Exception:
@@ -71,8 +106,9 @@ def getChan(guild: str | int, chan: str, admin: bool = False, self=None):
 
 def getRole(guild: str | int | ncGuild, role: str):
     """Gets from config a channel id or object using the guild id."""
-    log.debug(f"{type(guild)=} | {guild=} | {role=}")
+    func = inspect.stack()[1][3]
     role = str(role)
+    log.debug(f"{func=} | {type(guild)=} | {guild=} | {role=}")
 
     def fromConfig(g: str, r: str):
         try:
@@ -95,70 +131,68 @@ def getRole(guild: str | int | ncGuild, role: str):
     return roleRtn
 
 
-def hoursFromSeconds(
-        seconds: int | str,
-        asStr: bool = False,
-        strSeconds: bool = True,
-        strMinutes: bool = True,
-        strHours: bool = True,
-        strDays: bool = False,
-        strWeeks: bool = False
-):
-    """Returns (weeks, days,) hours, minutes, and seconds as tuple or string from an int/str of seconds."""
-    log.debug(f"{seconds=}, {asStr=}")
-    seconds = int(seconds)
-    minute, second = divmod(seconds, 60)
-    hour, minute = divmod(minute, 60)
-    day, hour = divmod(hour, 24)
-    week, day = divmod(day, 7)
-    if not asStr:
-        return (week, day, hour, minute, second)
-    timeList = []
-    if strWeeks:
-        if week != 0:
-            timeList.append(f"{week} Week")
-            if week > 1:
-                timeList[-1] = timeList[-1] + "s"
-    if strDays:
-        if day != 0:
-            timeList.append(f"{day} Day")
-            if day > 1:
-                timeList[-1] = timeList[-1] + "s"
-    if strHours:
-        if hour != 0:
-            timeList.append(f"{hour} Hour")
-            if hour > 1:
-                timeList[-1] = timeList[-1] + "s"
-    if strMinutes:
-        if minute != 0:
-            timeList.append(f"{minute} Min")
-            if minute > 1:
-                timeList[-1] = timeList[-1] + "s"
-    if strSeconds:
-        if second != 0:
-            timeList.append(f"{second} Sec")
-            if second > 1:
-                timeList[-1] = timeList[-1] + "s"
-    retrn = ", ".join(timeList)
-    log.debug(f"{retrn=}")
-    return retrn
+class formatTime:
+    """Turn seconds into more human readable"""
+    func = inspect.stack()[1][3]
+    log.debug(f"{func=}")
 
+    def _strPluralise(num: int, word: str) -> str:
+        num = int(num)
+        x = f"{num} {word}"
+        if num > 1:
+            x = x + "s"
+        return x
 
-def getGuildID(obj) -> str | None:
-    """Gets guild id from a guild object"""
-    log.debug("run")
-    if hasattr(obj, "guild_id"):
-        return str(obj.guild_id)
-    elif hasattr(obj, "guild"):
-        if hasattr(obj.guild, "id"):
-            return str(obj.guild.id)
-    else:
-        return None
+    def _breakdown(num: int):
+        @dataclass(slots=True)
+        class _totals():
+            total_second: int
+            seconds: int
+            total_minute: int
+            minutes: int
+            total_hour: int
+            hours: int
+            total_day: int
+            days: int
+            weeks: int
+
+        _totals.t_minute, _totals.seconds = divmod(num, 60)
+        _totals.t_hour, _totals.minutes = divmod(_totals.t_minute, 60)
+        _totals.t_day, _totals.hours = divmod(_totals.t_hour, 24)
+        _totals.weeks, _totals.days = divmod(_totals.t_day, 7)
+
+        return _totals
+
+    def time_format(total):
+        log.debug(total)
+        k = formatTime._breakdown(total)
+        strTime = []
+
+        if k.seconds > 0:
+            i = formatTime._strPluralise(k.seconds, "Sec")
+            strTime.append(i)
+        if k.minutes > 0:
+            i = formatTime._strPluralise(k.minutes, "Min")
+            strTime.append(i)
+        if k.hours > 0:
+            i = formatTime._strPluralise(k.hours, "Hour")
+            strTime.append(i)
+        if k.days > 0:
+            i = formatTime._strPluralise(k.days, "Day")
+            strTime.append(i)
+        if k.weeks > 0:
+            i = formatTime._strPluralise(k.weeks, "Week")
+            strTime.append(i)
+
+        strTime.reverse()
+        log.debug(strTime)
+        return ', '.join(strTime)
 
 
 async def blacklistCheck(ctx, blklstType: str = "gen") -> bool:
     """Checks if user in the blacklist"""
-    log.debug(f"{blklstType=}")
+    func = inspect.stack()[1][3]
+    log.debug(f"{func=} | {blklstType=}")
 
     def check():
         if blklstType == "gen":
@@ -167,16 +201,16 @@ async def blacklistCheck(ctx, blklstType: str = "gen") -> bool:
             filename = "SSCBlacklist"
         return readJSON(filename=filename, directory=["secrets"])
 
-    userID = getUserID(obj=ctx)
+    userID = int(getUserID(obj=ctx))
     log.debug(f"{userID=}")
-    if userID == gxConfig.ownerID:
+    if userID == int(gxConfig.ownerID):
         return True
-    if userID == ctx.guild.owner.id:
+    if userID == int(ctx.guild.owner.id):
         return True
     BL = check()
     if not bool(BL.get(userID)):
         return True
-    txt = f"""You're blacklisted from using **{gxConfig.botName}**.
+    txt = f"""You're blacklisted from using **{botInfo.botName}**.
 If you believe this to be error, please contact a server Admin/Moderator."""
     try:
         if "inter" in str(type(ctx)):
@@ -233,7 +267,7 @@ async def _ping(self, api: bool = False, testNum: int = 1) -> list[int]:
     testsAPI = None
     if api:
         try:
-            chan = await self.bot.fetch_channel(gxConfig.pingingChan)
+            chan = await self.bot.fetch_channel(int(gxConfig.pingingChan))
         except Exception:
             chan = False
             log.exception(f"pinging Chan")
@@ -252,5 +286,88 @@ async def _ping(self, api: bool = False, testNum: int = 1) -> list[int]:
     testsBoth = [testsGate, testsAPI]
     log.debug(f"{testsBoth=}")
     return testsBoth
+
+
+def isEmojiCustom(emoji: str, guildEmos: tuple = None) -> str | list:
+    """If a emoji is custom, a tuple of it's name and id is returned
+    if only a name is given, a guild emoji tuple must also be provided, in order to get the id
+    else the emoji is returned"""
+    func = inspect.stack()[1][3]
+    log.debug(f"{func=} | {type(emoji)} | {emoji=} | {guildEmos=})")
+
+    if isinstance(emoji, str):
+        if emoji.startswith('<'):
+            log.debug("Is special")
+            name, ID = (emoji[2:-1]).split(':')
+            return [name, ID]
+        elif emoji.startswith(':'):
+            log.debug("Is name")
+            if guildEmos:
+                emoName = emoji[1:-1]
+                for item in guildEmos:
+                    log.debug(f"{type(item)} | {item}")
+                    if emoName in str(item):
+                        return [item.name, item.id]
+            else:
+                log.error("guildEmos not provided")
+                return False
+
+        else:
+            log.debug("Likely normal")
+            return emoji
+    else:
+        log.debug(f"Not str {type(emoji)=}")
+        return False
+
+
+def toStr(k: list, sep: str = ' '):
+    "Converts a list to string"
+    func = inspect.stack()[1][3]
+    log.debug(f"{func=} | {k=} | {type(k)}")
+    if isinstance(k, list):
+        return sep.join(k)
+    else:
+        return k
+
+
+def emoToStr(e: list, sep: str = ' '):
+    func = inspect.stack()[1][3]
+    log.debug(f"{func=} | {e=} | {type(e)}")
+    if isinstance(e, list):
+        emoList = []
+        for item in e:
+            if isinstance(item, str):
+                emoList.append(item)
+            elif isinstance(item, list):
+                print(item[0], type(item[0]))
+                emoList.append(item[0])
+        return sep.join(emoList)
+    else:
+        return e
+
+
+def toList(k: str | int, sep: str = ' '):
+    func = inspect.stack()[1][3]
+    log.debug(f"{func=} | {k=} | {type(k)} | {sep=}")
+    if isinstance(k, str | int):
+        k = str(k)
+        return k.split(str(sep))
+    else:
+        return k
+
+
+def emoToList(e: str, guildEmos: tuple, sep: str = ' '):
+    func = inspect.stack()[1][3]
+    log.debug(f"{func=} | {e=} | {type(e)} | {sep=} | {guildEmos=}")
+    if isinstance(e, str):
+        eList = e.split(str(sep))
+    else:
+        return e
+    emoList = []
+    for item in eList:
+        if len(item) > 0:
+            emoList.append(isEmojiCustom(
+                emoji=item, guildEmos=guildEmos))
+    return emoList
 
 # MIT APasz

@@ -5,14 +5,9 @@ import logging
 import os
 import platform
 import sys
+import logging
 from logging import handlers
 
-from config import botInformation as botInfo
-from config import generalEventConfig as geConfig
-from config import genericConfig as gxConfig
-from config import verifyConfigJSON
-from util.fileUtil import readJSON
-from util.genUtil import blacklistCheck
 
 PID = os.getpid()
 print(f"\n***Starting*** {PID=}")
@@ -26,7 +21,8 @@ log.setLevel("DEBUG")
 
 handleConsole = logging.StreamHandler(sys.stdout)
 handleConsole.setFormatter(
-    logging.Formatter("%(asctime)s |:| %(module)s | %(message)s", "%H:%M:%S")
+    logging.Formatter(
+        "%(asctime)s |:| %(module)s: %(funcName)s | %(message)s", "%H:%M:%S")
 )
 log.addHandler(handleConsole)
 
@@ -72,6 +68,18 @@ for element in critFiles:
 if configErr:
     log.critical(f"Files missing!")
     sys.exit(78)
+
+try:
+    log.debug("TRY MAIN IMPORT CONFIG")
+    from config import botInformation as botInfo
+    from config import generalEventConfig as geConfig
+    from config import genericConfig as gxConfig
+    from config import verifyConfigJSON
+    from util.fileUtil import readJSON
+    from util.genUtil import blacklistCheck
+except Exception:
+    log.exception(f"MAIN IMPORT CONFIG")
+    sys.exit()
 
 try:
     log.debug(f"Python {platform.python_version()} | TRY IMPORT MODULES")
@@ -155,7 +163,7 @@ def main():
             log.debug(f"{sendReady=}")
             for element in sendReady:
                 try:
-                    chan = await bot.fetch_channel(element)
+                    chan = await bot.fetch_channel(int(element))
                 except Exception:
                     log.exception(f"ReadyGet {element=}")
                 try:

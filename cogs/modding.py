@@ -174,7 +174,7 @@ class modding(commands.Cog, name="Modding"):
                     guild=geConfig.guildListName[
                         "TPFGuild"], chan="NewModPreview"
                 )
-                gnmp = await self.bot.fetch_channel(globalPreviewChan)
+                gnmp = await self.bot.fetch_channel(int(globalPreviewChan))
                 await gnmp.send(embed=e)
             except Exception:
                 log.exception("Global Mod Preview")

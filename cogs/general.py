@@ -7,7 +7,7 @@ from config import bytesToHuman
 from config import generalEventConfig as geConfig
 from config import genericConfig as gxConfig
 from util.fileUtil import readJSON
-from util.genUtil import _ping, blacklistCheck, getCol, hoursFromSeconds
+from util.genUtil import _ping, blacklistCheck, getCol, formatTime
 from util.views import factSubmit
 
 print("CogGeneral")
@@ -152,7 +152,7 @@ class general(commands.Cog, name="General"):
 
     @commands.command(name="ping")
     @commands.cooldown(1, 2.5, commands.BucketType.user)
-    async def ping(self, ctx: commands.Context, testNum: int = 1, api: str = None):
+    async def ping(self, ctx: commands.Context, testNum: int = 1, api: str = False):
         """Gives ping to server the bot is running on"""
         if testNum > 5:
             testNum = 5
@@ -180,6 +180,7 @@ class general(commands.Cog, name="General"):
         if api == None:
             api = False
         log.debug(f"pingCommand {testNum=} | {api=}")
+        await interaction.response.defer()
         await self.pingDo(ctx=interaction, api=api, testNum=testNum)
         log.info(
             f"Ping: {interaction.user.id=},{interaction.user.display_name=}")
@@ -190,16 +191,17 @@ class general(commands.Cog, name="General"):
                                                description="What sort of info are you looking for?"),):
         """Get info about the bot or current server."""
         guildID = str(interaction.guild_id)
+        await interaction.response.defer()
         if category == "Bot":
             strBot = readJSON(filename="strings")["en"]["Bot"]
             # generate description
-            if gxConfig.botName == "SSCBot":
+            if botInfo.botName == "SSCBot":
                 desc = strBot["InfoNameSame"]
             else:
                 try:
                     desc = '\n'.join(
                         [strBot["InfoNameDiff"], strBot["InfoDesc"]])
-                    desc = desc.format(name=gxConfig.botName,
+                    desc = desc.format(name=botInfo.botName,
                                        prefix=gxConfig.BOT_PREFIX)
                 except Exception:
                     log.exception("InfoComand_desc")
@@ -212,24 +214,28 @@ class general(commands.Cog, name="General"):
                 memMiB = bytesToHuman(byteNum=memB, magnitude="M")
             except Exception:
                 log.exception("InfoCommand_mem")
+                memMiB = "*undefined*"
             # generate time since sys boot
             try:
                 bootTime = int(psutil.boot_time())
-                utc = int(time.time())
-                sinceBoot = hoursFromSeconds(
-                    seconds=(utc - bootTime), asStr=True, strDays=True, strMinutes=False, strSeconds=False)
             except Exception:
                 log.exception("InfoCommand_boot")
+                sinceBoot = "*undefined*"
+            else:
+                utc = int(time.time())
+                sinceBoot = formatTime.time_format(total=(utc - bootTime))
             # generate latency string
             latency = await _ping(self=self, api=True)
             latencyTxt = f"Gateway: {latency[0]}ms, API: {latency[1]}ms"
             # add field to embed
             embd.add_field(name="Host System",
-                           value=f"""Hostname: {botInfo.hostname} | OS: {botInfo.hostOS}
-RAM; Host: {botInfo.hostRAM} | Used: {psutil.virtual_memory().percent}% | Process: {memMiB}
+                           value=f"""Hostname: {botInfo.hostname} | OS: {botInfo.hostOS} | Host: {botInfo.hostProvider} {botInfo.hostLocation}
+RAM; Total: {botInfo.hostRAM} | Used: {psutil.virtual_memory().percent}% | Process: {memMiB}
 CPU; Cores: {botInfo.hostCores} | Frequency: {round(psutil.cpu_freq()[0])}Mhz | Sys Usage: {psutil.cpu_percent()}%
-Uptime: {sinceBoot} | Latency; {latencyTxt}
+Uptime: {sinceBoot}
+Latency; {latencyTxt}
 Python: {botInfo.hostPython} | Nextcord: {botInfo.nextcordVer} | Bot: {botInfo.base}
+Line Count; Python: ~{botInfo.linePyCount} | JSON: ~{botInfo.lineJSONCount}
 Guilds: {botInfo.guildCount}""")
         elif category == "Server":
             try:

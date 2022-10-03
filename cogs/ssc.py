@@ -241,10 +241,11 @@ class ssc(commands.Cog, name="SSC"):
         log.debug(
             f"{interaction.user.id=}, {banner.filename=}, {note=}, {prize=}, {prizeUser=}"
         )
+        await interaction.response.defer()
         configuration = readJSON(filename="config")
         configSSC = configuration["General"]["SSC_Data"]
+        sscConfig.ignoreWinner = ignoreWinner
         configSSC["remindSent"] = False
-        configSSC["ignoreWinner"] = ignoreWinner
         if not await timestampset():
             try:
                 interaction.send("timeStampSet Failed", ephemeral=True)
@@ -264,6 +265,7 @@ class ssc(commands.Cog, name="SSC"):
         ebed = nextcord.Embed(title=txt_CompStart, colour=getCol("ssc"))
         if prize:
             configuration["General"]["SSC_Data"]["isPrize"] = True
+            sscConfig.isPrize = True
             if prizeUser:
                 giver = f" provided by {prizeUser.mention}"
             else:
@@ -272,6 +274,7 @@ class ssc(commands.Cog, name="SSC"):
                            value=f"{prize}{giver}", inline=False)
         else:
             configuration["General"]["SSC_Data"]["isPrize"] = False
+            sscConfig.isPrize = False
         ebed.add_field(name=txt_CompTheme, value=f"{theme}", inline=True)
         ebed.add_field(name=txt_CompEnd,
                        value=f"<t:{nextstamp}:f>", inline=True)
@@ -342,7 +345,7 @@ class ssc(commands.Cog, name="SSC"):
                 await alert.add_reaction(element)
         log.info("Competition Start")
         bannerFullAll = [bannerFull1, bannerFull2, bannerFull4, bannerFull8]
-        ssChan = self.bot.get_channel(sscConfig.TPFssChan)
+        ssChan = self.bot.get_channel(int(sscConfig.TPFssChan))
 
         async def sendSS(chan, ss):
             ebed = nextcord.Embed(title=f"{theme} theme", colour=getCol("ssc"))
@@ -354,7 +357,7 @@ class ssc(commands.Cog, name="SSC"):
                 await sendSS(ssChan, item)
         bannerFullAllOG = [bannerFull1OG,
                            bannerFull2OG, bannerFull4OG, bannerFull8OG]
-        ogChan = self.bot.get_channel(sscConfig.OGssChan)
+        ogChan = self.bot.get_channel(int(sscConfig.OGssChan))
         for item in bannerFullAllOG:
             if item is not None:
                 await sendSS(ogChan, item)
@@ -430,7 +433,7 @@ class ssc(commands.Cog, name="SSC"):
         text = "\n".join(filter(None, txt))
         log.info(f"{interaction.user.id=}, {messID=}, {text=}")
         mess = await interaction.channel.fetch_message(messID)
-        usr = await self.bot.fetch_user(mess.author.id)
+        usr = await self.bot.fetch_user(int(mess.author.id))
         if usr.bot:
             await interaction.send("Author is bot, unable to send DM", ephemeral=True)
         elif usr:
@@ -568,10 +571,10 @@ class ssc(commands.Cog, name="SSC"):
         """Check if message has attachment or link, if 1 add reaction, if not 1 delete and inform user, set/check prize round state, ignore SSCmanager,"""
         if ctx.content.startswith(f"{gxConfig.BOT_PREFIX}"):
             return
-        log.debug(
-            f"SSC listener {int(ctx.channel.id)} | {int(sscConfig.sscChan)}")
         if int(ctx.channel.id) != int(sscConfig.sscChan):
             return
+        log.debug(
+            f"SSC listener {int(ctx.channel.id)} | {int(sscConfig.sscChan)}")
         if ctx.author.bot:
             if int(ctx.author.id) == int(gxConfig.botID):
                 return
@@ -660,7 +663,6 @@ class ssc(commands.Cog, name="SSC"):
                         int(sscConfig.runnerUp)
                 ):
                     log.debug("w")
-                    hasRole(role=ctx.author.roles)
                     content = f"""You're a SSC Winner/Runner Up, so can't participate in this round.\n{delTime}sec *self-destruct*"""
                     try:
                         await ctx.reply(content, delete_after=delTime)

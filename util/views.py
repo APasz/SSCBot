@@ -1,17 +1,18 @@
 import logging
 import time
 
-from config import generalEventConfig as geConfig
-from config import genericConfig as gxConfig
-
-from util.fileUtil import readJSON, writeJSON
-from util.genUtil import hasRole
 
 print("UtilViews")
 
 log = logging.getLogger("discordGeneral")
 try:
     log.debug("TRY VIEWS IMPORT MODULES")
+    from config import generalEventConfig as geConfig
+    from config import genericConfig as gxConfig
+
+    from util.fileUtil import readJSON, writeJSON
+    from util.genUtil import hasRole, getChan
+    from cogs.auditLog import auditLogger
     import nextcord
     from nextcord import Interaction
 except Exception:
@@ -387,6 +388,61 @@ class factSubmit(nextcord.ui.Modal):
             await inter.send("Fact submitted. Once reviewed, you'll recieve a DM.")
         except Exception:
             log.exception(f"Fact Submit Final")
+
+
+class reactorModal(nextcord.ui.Modal):
+    """reactor modal"""
+
+    def __init__(self, reactor, reactorDict):
+        super().__init__(
+            title=f"Configure {reactor}",
+            timeout=10 * 60,)
+        from util.genUtil import toStr, emoToStr
+        self.reactorName = reactor
+        self.channels = toStr(reactorDict["Channel"])
+        self.contains = toStr(reactorDict["Contains"])
+        self.emoji = emoToStr(reactorDict["Emoji"])
+        self.match = reactorDict["isExactMatch"]
+
+        if not isinstance(self.match, bool):
+            self.match = False
+
+        self.channelText = nextcord.ui.TextInput(
+            label="Channels IDs this reactor applies to",
+            placeholder=self.channels,
+            required=True,
+            min_length=9,
+            max_length=50,)
+        self.add_item(self.channelText)
+
+        self.containText = nextcord.ui.TextInput(
+            label="The words or emoji that must be contained",
+            placeholder=self.contains,
+            required=True,
+            min_length=1,
+            max_length=100,)
+        self.add_item(self.containText)
+
+        self.emojiText = nextcord.ui.TextInput(
+            label="The emoji that'll be added.",
+            placeholder=f"{self.emoji}  Only default and custom of current server",
+            required=True,
+            min_length=1,
+            max_length=20,)
+        self.add_item(self.emojiText)
+
+        self.isExactText = nextcord.ui.TextInput(
+            label="Should case matter?",
+            placeholder=f"{self.match}  If left blank, false is assumed",
+            required=False,
+            max_length=5,)
+        self.add_item(self.isExactText)
+
+    async def callback(self, interaction: nextcord.Interaction):
+        await interaction.send(f"{self.reactorName} Updating! See auditlog for more details.")
+        log.debug(
+            f"Reactor={self.reactorName} | Channel={self.channelText.value} | Contain={self.containText.value} | Emoji={self.emojiText.value} | Match={self.isExactText.value}")
+        self.stop()
 
 
 # MIT APasz

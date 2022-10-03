@@ -33,7 +33,7 @@ class botManage(commands.Cog, name="BotManagement"):
 
     @commands.command(name="reload", aliases=["rl"], hidden=True)
     @commands.is_owner()
-    async def reload(self, ctx, extension):
+    async def reload(self, ctx: commands.Context, extension):
         """Reloads a specific cog"""
         log.debug(ctx.author.id)
         try:
@@ -49,7 +49,7 @@ class botManage(commands.Cog, name="BotManagement"):
 
     @commands.command(name="load", hidden=True)
     @commands.is_owner()
-    async def load(self, ctx, extension):
+    async def load(self, ctx: commands.Context, extension):
         """Loads a specific cog"""
         log.debug(ctx.author.id)
         if extension.lower() == "config":
@@ -69,7 +69,7 @@ class botManage(commands.Cog, name="BotManagement"):
 
     @commands.command(name="unload", hidden=True)
     @commands.is_owner()
-    async def unload(self, ctx, extension):
+    async def unload(self, ctx: commands.Context, extension):
         """Unloads a specific cog"""
         log.debug(ctx.author.id)
         try:
@@ -85,7 +85,7 @@ class botManage(commands.Cog, name="BotManagement"):
 
     @commands.command(name="reloadAll", hidden=True)
     @commands.is_owner()
-    async def reloadAll(self, ctx):
+    async def reloadAll(self, ctx: commands.Context):
         """Reloads all cogs"""
         log.debug(ctx.author.id)
         cogsDir = os.path.join(parentDir(), "cogs")
@@ -108,7 +108,7 @@ class botManage(commands.Cog, name="BotManagement"):
 
     @commands.command(name="toggle")
     @commands.has_permissions(administrator=True)
-    async def toggle(self, ctx, comm=None):
+    async def toggle(self, ctx: commands.Context, comm=None):
         """Toggles a command. Must be Admin"""
         if not await blacklistCheck(ctx=ctx, blklstType="gen"):
             return
@@ -129,11 +129,11 @@ class botManage(commands.Cog, name="BotManagement"):
                 await ctx.send("Command not found")
             except Exception:
                 # this should probably check the list of commands...
-                log.exception(f"Toggle Command Missing")
+                log.exception(f"Toggle: Command Missing")
 
     @commands.command(hidden=True)
     @commands.is_owner()
-    async def _config(self, ctx, dump: str = None):
+    async def _config(self, ctx: commands.Context, dump: str = None):
         log.debug(f"{dump=}")
         err = False
         if "-c" in dump:

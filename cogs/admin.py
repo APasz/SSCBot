@@ -1,12 +1,13 @@
 import asyncio
+from distutils.command.config import config
 import logging
 import os
 
 from config import generalEventConfig as geConfig
 from config import genericConfig as gxConfig
 from util.fileUtil import readJSON, writeJSON
-from util.genUtil import blacklistCheck, getChan, getCol
-from util.views import nixroles, nixrolesCOL, tpfroles
+from util.genUtil import blacklistCheck, getChan, getCol, getChannelID, isEmojiCustom
+from util.views import nixroles, nixrolesCOL, tpfroles, reactorModal
 
 from cogs.auditLog import auditLogger
 
@@ -46,7 +47,7 @@ class admin(commands.Cog, name="Admin"):
         self.bot.add_view(nixrolesCOL())
         log.debug(f"{self.__cog_name__} Ready")
 
-    async def purge(self, ctx, limit: int) -> bool:
+    async def purge(self, ctx: commands.Context, limit: int) -> bool:
         """Purges a number of messages from the channel the command was invoked from"""
         if not await blacklistCheck(ctx=ctx):
             return False
@@ -65,8 +66,8 @@ class admin(commands.Cog, name="Admin"):
             dataObject.userObject = usr
             dataObject.limit = limit
             dataObject.auditChan = getChan(
-                self=self, guild=ctx.guild.id, chan="Audit", admin=True
-            )
+                self=self, guild=ctx.guild.id, chan="Audit", admin=True)
+            dataObject.channelID = int(getChannelID(ctx))
             await auditLogger.logEmbed(self, dataObject)
             await ctx.channel.purge(limit=limit2)
             del dataObject
@@ -76,7 +77,7 @@ class admin(commands.Cog, name="Admin"):
     @commands.command(name="purge")
     @commands.cooldown(2, 7.5, commands.BucketType.user)
     @commands.has_permissions(manage_messages=True)
-    async def purgeComm(self, ctx, limit: int):
+    async def purgeComm(self, ctx: commands.Context, limit: int):
         """Purges a number of messages (has max to advoid user client desync). Manage Messages Only."""
         if not await self.purge(ctx=ctx, limit=limit):
             await ctx.message.delete()
@@ -115,7 +116,7 @@ class admin(commands.Cog, name="Admin"):
     @commands.command(name="blacklist", aliases=["SSCblacklist"])
     @commands.cooldown(1, 1, commands.BucketType.user)
     @commands.has_permissions(ban_members=True)
-    async def blacklist(self, ctx, usr: str, reason: str = "No reason given"):
+    async def blacklist(self, ctx: commands.Context, usr: str, reason: str = "No reason given"):
         await self.bot.wait_until_ready()
         """"Blacklist users from certain parts of the bot."""
         if not await blacklistCheck(ctx=ctx):
@@ -202,7 +203,7 @@ class admin(commands.Cog, name="Admin"):
     @commands.command(name="blacklistRemove", aliases=["SSCblacklistRemove"])
     @commands.cooldown(1, 1, commands.BucketType.user)
     @commands.has_permissions(ban_members=True)
-    async def blacklistRemove(self, ctx, usr: str):
+    async def blacklistRemove(self, ctx: commands.Context, usr: str):
         """Remove a user from one of the bot's blacklists"""
         await self.bot.wait_until_ready()
         if not await blacklistCheck(ctx=ctx):
@@ -221,6 +222,7 @@ class admin(commands.Cog, name="Admin"):
             del data[f"{usr}"]
             check = writeJSON(data, filename=blklstType, directory=["secrets"])
             if check == True:
+                id = int(usr)
                 from config import dataObject
                 dataObject.TYPE = "BlacklistRemove"
                 dataObject.userObject = ctx.author
@@ -251,7 +253,7 @@ class admin(commands.Cog, name="Admin"):
         name="listFile", aliases=["auditList", "fileList", "listFolder", "folderList"]
     )
     @commands.cooldown(1, 10, commands.BucketType.default)
-    async def auditList(self, ctx, foldername=None):
+    async def auditList(self, ctx: commands.Context, foldername=None):
         """For auditing: Lists files and folders in root directory of bot."""
         if not await blacklistCheck(ctx=ctx):
             return
@@ -292,7 +294,7 @@ class admin(commands.Cog, name="Admin"):
 
     @commands.command(name="getFile", aliases=["auditGet", "fileGet"])
     @commands.cooldown(1, 30, commands.BucketType.default)
-    async def auditGet(self, ctx, filename: str):
+    async def auditGet(self, ctx: commands.Context, filename: str):
         """For auditing: Gets a file and uploads it."""
         if not await blacklistCheck(ctx=ctx):
             return
@@ -339,7 +341,7 @@ class admin(commands.Cog, name="Admin"):
 
     @commands.command()
     @commands.has_permissions(manage_messages=True)
-    async def rolebuttons(self, ctx):
+    async def rolebuttons(self, ctx: commands.Context):
         """Trigger the role button messages for the server the command was invoked from."""
         if not await blacklistCheck(ctx=ctx):
             return
@@ -380,6 +382,13 @@ Modder intern gives access to special channels full of useful info.""",
         name="configuration",
         default_member_permissions=Permissions(administrator=True),
         guild_ids=gxConfig.slashServers,
+    )
+    async def configurationBASE():
+        log.debug(f"configurationBASE {Interaction.user.id}")
+
+    @configurationBASE.subcommand(
+        name="server",
+        description="Server configurator for server admins"
     )
     async def configurationCOMM(
         self,
@@ -460,7 +469,7 @@ Modder intern gives access to special channels full of useful info.""",
         configList = []
         groupWhiteList = gxConfig.configCommGroupWhitelist
         for itemKey, itemVal in groups.items():
-            if "dict" in str(type(itemVal)):
+            if isinstance(itemVal, dict):
                 if str(itemKey) in groupWhiteList:
                     configList.append(itemKey)
         await interaction.response.send_autocomplete(configList)
@@ -468,7 +477,7 @@ Modder intern gives access to special channels full of useful info.""",
     @configurationCOMM.on_autocomplete("option")
     async def configurationOption(self, interaction: Interaction, option, group):
         """Autocomplete function for use with the configuration command 'option' and 'group' args"""
-        if group is None:
+        if group == None:
             return
         optionsList = ["undefined"]
         guildID = str(interaction.guild_id)
@@ -491,7 +500,7 @@ Modder intern gives access to special channels full of useful info.""",
     @configurationCOMM.on_autocomplete("value")
     async def configurationValue(self, interaction: Interaction, value, group, option):
         """Autocomplete function for use with the configuration command 'value', 'group', and 'option' args"""
-        if (group or option) is None:
+        if group == None or option == None:
             return
         print(group, option)
         guildID = str(interaction.guild_id)
@@ -512,10 +521,93 @@ Modder intern gives access to special channels full of useful info.""",
             configItem.append(value)
         await interaction.response.send_autocomplete(configItem)
 
+    @configurationBASE.subcommand(name="autoreact", description="Add or configure AutoReacts.")
+    async def configurationAutoReact(self, interaction: Interaction, reactor=SlashOption(
+            description="Supports multiple channels, matches, and emoji (Please copy the emoji you wish to use).")):
+        guildID = str(interaction.guild_id)
+        log.debug(f"Subcommand {reactor=} {guildID=}")
+        reactors = geConfig.autoReacts[guildID]
+        if reactor in reactors:
+            reactorDict = reactors[reactor]
+        else:
+            reactorDict = {}
+            reactorDict["Channel"] = None
+            reactorDict["Contains"] = None
+            reactorDict["Emoji"] = None
+            reactorDict["isExactMatch"] = False
+        log.debug(f"{reactorDict=}")
+        reactModal = reactorModal(
+            reactor=reactor, reactorDict=reactorDict)
+        await interaction.response.send_modal(reactModal)
+        log.debug("AutoReact Config Modal Sent")
+        await reactModal.wait()
+        log.debug(f"AutoReact Config Modal Received")
+        # Update AutoReact
+
+        from util.genUtil import toStr, emoToStr, toList, emoToList
+        from config import dataObject as dat
+        dat.TYPE = "CommandAutoReact"
+        dat.auditID = getChan(self=self, guild=guildID,
+                              chan="Audit", admin=True)
+        dat.userObject = interaction.user
+
+        oldChannel = reactorDict["Channel"]
+        dat.channelExtra = toStr(oldChannel)
+        newChannel = toList(reactModal.channelText.value)
+        dat.channelList = newChannel
+
+        oldContain = reactorDict["Contains"]
+        dat.messageExtra = toStr(oldContain)
+        newContain = toList(reactModal.containText.value)
+        dat.messageContent = newContain
+
+        oldEmoji = reactorDict["Emoji"]
+        dat.emojiExtra = emoToStr(oldEmoji)
+        newEmoji = emoToList(reactModal.emojiText.value,
+                             interaction.guild.emojis)
+        dat.emojiList = reactModal.emojiText.value
+
+        oldMatch = reactorDict["isExactMatch"]
+        dat.flag0 = oldMatch
+        newMatch = reactModal.isExactText.value
+        if len(newMatch) > 0:
+            newMatch = True
+        else:
+            newMatch = False
+        dat.flagA = newMatch
+
+        newReactorDict = {
+            "Channel": newChannel,
+            "Contains": newContain,
+            "Emoji": newEmoji,
+            "isExactMatch": newMatch
+        }
+        log.debug(f"{newReactorDict=}")
+        configuration = readJSON("config")
+        configuration[guildID]["AutoReact"][reactModal.reactorName] = newReactorDict
+        if writeJSON(data=configuration, filename="config"):
+            await auditLogger.logEmbed(self, auditInfo=dat)
+            del dat
+            geConfig.update()
+        reactModal.stop()
+        return
+
+    @configurationAutoReact.on_autocomplete("reactor")
+    async def configurationARGetReactor(self, interaction: Interaction, reactor):
+        guildID = str(interaction.guild_id)
+        reactors = geConfig.autoReacts[guildID]
+        reactorList = []
+        for itemKey, itemVal in reactors.items():
+            if isinstance(itemVal, dict):
+                reactorList.append(itemKey)
+        if len(reactor) >= 1:
+            reactorList.append(reactor)
+        await interaction.response.send_autocomplete(reactorList)
+
     @commands.command(name="react", aliases=["emoji"])
     @commands.cooldown(1, 1, commands.BucketType.user)
     @commands.has_permissions(manage_messages=True)
-    async def react(self, ctx):
+    async def react(self, ctx: commands.Context):
         """Takes message IDs and emoji and reacts to the messages with the emoji"""
         print(ctx.message.content)
         rawItems = ctx.message.content.split(" ")[1:]

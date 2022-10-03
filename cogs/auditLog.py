@@ -1,11 +1,12 @@
 import asyncio
+from email import message
 import logging
 import textwrap
 import time
 
 from config import dataObject
 from config import genericConfig as gxConfig
-from util.genUtil import getCol, hoursFromSeconds
+from util.genUtil import getCol, formatTime
 
 print("CogAuditLog")
 
@@ -38,7 +39,7 @@ class auditLogger(commands.Cog, name="AuditLogging"):
         dataObj = data
         log.info(
             f"MemberRemove: {data.userObject.id}: {data.userObject.display_name}")
-        dataObj.type = "MemberLeave"
+        dataObj.TYPE = "MemberLeave"
         dataObject.count = data.guildObject.member_count
         await auditLogger.logEmbed(self, dataObj)
         await asyncio.sleep(0.05)
@@ -48,7 +49,8 @@ class auditLogger(commands.Cog, name="AuditLogging"):
         """Check if a member/user was kicked or banned, if so trigger the kicked or banned entry"""
         await self.bot.wait_until_ready()
         dataObj = data
-        log.debug(f"{dataObj.userObject.id}, {dataObj.auditChan.id}")
+        log.debug(
+            f"usrID={dataObj.userObject.id} | auditChan={dataObj.auditChan.id} | type={dataObj.TYPE}")
         async for entry in data.guildObject.audit_logs(limit=3):
             log.debug(entry.action)
             # if ("kick" or "ban") not in entry.action: continue
@@ -65,15 +67,17 @@ class auditLogger(commands.Cog, name="AuditLogging"):
                 dataObj.reason = reason
                 usr = dataObj.userObject
                 if "kick" in auditLog.action:
-                    log.info(f"MemberKick: {usr.id}: {usr.name}: R;\n{reason}")
-                    dataObj.type = "MemberKick"
+                    log.info(f"MemberKick: {usr.id}: {usr.name}: {reason=}")
+                    dataObj.TYPE = "MemberKick"
+                    log.debug(f"{dataObj.TYPE=}")
                     await auditLogger.logEmbed(self, dataObj)
                 if uR == 1:
                     return
                 elif "ban" in auditLog.action:
                     log.info(
-                        f"MemberBan: {usr.id}: {usr.display_name}: R;\n{reason}")
-                    dataObj.type = "MemberBan"
+                        f"MemberBan: {usr.id}: {usr.display_name}: {reason=}")
+                    dataObj.TYPE = "MemberBan"
+                    log.debug(f"{dataObj=}")
                     await auditLogger.logEmbed(self, dataObj)
                     uR = 0
 
@@ -91,7 +95,7 @@ class auditLogger(commands.Cog, name="AuditLogging"):
         # fmt: on
         unix = int(time.time())
         footer = f"UNIX: {unix}"
-        log.debug(f"log {TYPE}")
+        log.debug(f"logType: {TYPE}")
         if "RawMessageDelete" == TYPE:
             log.debug(TYPE)
             title = "Uncached Message Deleted"
@@ -244,13 +248,13 @@ class auditLogger(commands.Cog, name="AuditLogging"):
             log.debug(TYPE)
             title = "Recently Created User Joined"
             usr = auditInfo.userObject
-            fName1 = minName
+            fName0 = minName
             auth = usr.name
             authID = usr.id
-            fValue1 = f"{authID}\n{auth}"
+            fValue0 = f"{authID}\n{auth}"
             fName2 = "Account Created"
-            accCrtdTime = hoursFromSeconds(seconds=auditInfo.count, asStr=True)
-            fValue2 = f"{accCrtdTime} ago"
+            accCrtdTime = formatTime.time_format(total=auditInfo.count)
+            fValue2 = f"{accCrtdTime} ago\nSee auditlog channel for more info."
             e = nextcord.Embed(title=title, colour=getCol("warning_Low"))
 
         elif "MemberNameChange" == TYPE:
@@ -308,11 +312,10 @@ class auditLogger(commands.Cog, name="AuditLogging"):
             log.debug(TYPE)
             title = "Message Purge"
             usr = auditInfo.userObject
-            messCount = auditInfo.limit
             fName1 = "Invoked by;"
             fValue1 = f"{usr.id}\n{usr.name}\n<@{usr.id}>"
             fName2 = "Number Purged"
-            fValue2 = messCount
+            fValue2 = f"**{auditInfo.limit}** in <#{auditInfo.channelID}>"
             e = nextcord.Embed(title=title, colour=getCol("error"))
 
         elif "CommandToggleEvent" == TYPE:
@@ -335,8 +338,49 @@ class auditLogger(commands.Cog, name="AuditLogging"):
             option = auditInfo.category
             value = auditInfo.commandArg1
             oldValue = auditInfo.commandArg2
-            fName1 = f"C{group} {option}"
-            fValue1 = f"{oldValue} -> {value}"
+            fName1 = f"{group} {option}"
+            fValue1 = f"{oldValue}  ->  {value}"
+            e = nextcord.Embed(title=title, colour=getCol("warning"))
+
+        elif "CommandAutoReact" == TYPE:
+            log.debug(TYPE)
+            title = "AutoReact Configuration Changed"
+            usr = auditInfo.userObject
+            fName9 = "Invoked by;"
+            fValue9 = f"{usr.id}\n{usr.name}\n<@{usr.id}>"
+            from util.genUtil import toStr
+            oldChannel = toStr(auditInfo.channelExtra)
+            newChannel = toStr(auditInfo.channelList)
+            changed = False
+            if oldChannel != newChannel:
+                fName3 = "Channels"
+                fValue3 = f"{oldChannel}  ->  {newChannel}"
+                changed = True
+
+            oldMessage = toStr(auditInfo.messageExtra)
+            newMessage = toStr(auditInfo.messageContent)
+            if oldMessage != newMessage:
+                fName4 = "Words/Emoji To Match"
+                fValue4 = f"{oldMessage}  ->  {newMessage}"
+                changed = True
+
+            oldEmoji = auditInfo.emojiExtra
+            newEmoji = auditInfo.emojiList
+            if oldEmoji != newEmoji:
+                fName5 = "Reactions"
+                fValue5 = f"{oldEmoji}  ->  {newEmoji}"
+                changed = True
+
+            oldIsExact = auditInfo.flag0
+            newIsExact = auditInfo.flagA
+            if oldIsExact != newIsExact:
+                fName6 = "Is Exact Match"
+                fValue6 = f"{oldIsExact}  ->  {newIsExact}"
+                changed = True
+            if not changed:
+                fName0 = "No change"
+                fValue0 = "Command was invoked but no changes were made"
+
             e = nextcord.Embed(title=title, colour=getCol("warning"))
 
         else:

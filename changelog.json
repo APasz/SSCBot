@@ -91,7 +91,7 @@
 	"2.4.0":[ "Toggles::20220629",
 		"-Added: generalEvent cog to house events like on_message or on_member_update that aren't server specific.\nAll items from tpf, nix, and vk have been moved and combined.",
 		"-Added: suggestions cog to house things related to suggestions for the bot, game, etc.\nFor now they're DMed to owner (APasz).",
-		"-Added; config: Global and server specific toggles most for events in generalEvent.\nOn load or invoked via new updateEventList command or toggleEvent slash command, these settings are written to file, so it can be cache separately. #3", 
+		"-Added; config: (#3) Global and server specific toggles most for events in generalEvent.\nOn load or invoked via new updateEventList command or toggleEvent slash command, these settings are written to file, so it can be cache separately.", 
 		"-Added; generalEvent: On_raw_member_remove just in case a member isn't in the interal cache for some reason. Checks if regular one has been called.",
 		"-Added; modding: Mod releases in other servers can now be posted to the global server as well.",
 		"-Changed: Now using black formatting.",
@@ -101,7 +101,7 @@
 		"-Fixed; modding: modRelease splits message content at spaces rather than newlines so multiple mods links can be on the same line now."
 	],
 	"2.5.0":[ "Configuration::20220708",
-		"-Added; admin: Configuration slash command that allows server admins to change existing value in config.json. #6",
+		"-Added; admin: (#6) Configuration slash command that allows server admins to change existing value in config.json.",
 		"-Added; botManage: New cog to house commands and whatnot for managing the bot, wow. Currently only the extension commands are here.",
 		"-Changed; admin: toggleEvent command moved to generalEvent cog.",
 		"-Changed; auditLog: type keys are now more human readable. eg MessageDelete instead of M_D.",
@@ -109,7 +109,7 @@
 		"-Changed; config: Practically all items moved into dataclasses.\nMany changes were required across the codebase but type-hinting and autocomplete are nice.",
 		"-Changed; generalEvent: toggleEvent is now restricted to the current guild.\nAnd better shows the current state, O = True X = False",
 		"-Changed; modding: Upgraded to a cog.",
-		"-Fixed; generalEvent: Can now be reloaded. #15",
+		"-Fixed; generalEvent: (#15) Can now be reloaded.",
 		"-Fixed; generalEvent: toggleEvent command autocomplete now works better."
 	],
 	"2.5.1": ["Configuration::20220708",
@@ -124,10 +124,10 @@
 		"-Added; config: Notfiy channel to admin channels section.\nAlso a MISC section that currently only holds the time in hours a account is considered recently created.",
 		"-Added; generalEvent, auditLog: When a user joins with a recently created account, an embed message is sent to the Notify channel.",
 		"-Fixed; auditLog: Errors in userRemove and checkKickBan that blocked auditlog entries being sent when member leaves.",
-		"-Fixed; bot: Global ReadyMessage setting is respected. Also won't block the restart stuff. #17",
+		"-Fixed; bot: (#17) Global ReadyMessage setting is respected. Also won't block the restart stuff.",
 		"-Fixed; generalEvent: Events error when there is no guild id.",
 		"-Fixed; generalEvent: on_member_remove actually logs user id.",
-		"-Fixed; modding: #16 Replace instances of newline with space first."
+		"-Fixed; modding: (#16) Replace instances of newline with space first."
 	],
 	"2.6.0": ["Backend::20220911",
         "New name, Katoku. A Japanese word meaning heir or successor, cause who knows what the future holds. New PFP. And now hosted on a paid OVH server in Sydney, Australia.",
@@ -151,7 +151,7 @@
         "-Changed; views: Verified button now also removes the unverified role",
         "-Changed|Removed; botTrigger: Completely rewritten and now in it's own repository. https://github.com/APasz/triggerScript",
 		"-Fixed; general: Convert command now has UK and US varients of imperial units. Also checks are consistent.",
-		"-Fixed; generalEvent: modPreview now actually gets the global nmp channel. #22",
+		"-Fixed; generalEvent: (#22) modPreview now actually gets the global nmp channel.",
         "-Fixed; ssc: The themevote command now defers the interaction response if the update option is True.",
         "-Cleanup: Removing unused code and imports, adding docstrings, better more consistent logging, general organisation, and so many try excepts I now have a keybind for them."
 	],
@@ -163,5 +163,17 @@
         "-Changed; genUtil: getRole function now accepts a guild object. If passed it will return a role object instead of an ID",
         "-Fixed; generalEvent: Verified role actually gets applied. Why oh why do a select few Nextcord functions only take an int when everything else accepts str as well.",
         "-Fixed; generalEvent: For some reason the type assignments for memberLeave and memberBan dissappeared. ¯|_(ツ)_|¯"
+    ],
+    "2.6.3": ["Backend::20221004",
+        "-Added: AutoReacts allows server admins to configure reactors.\nA reactor has a list of channels, list of words a message must contain, list of emoji to be added as reacions, as well as a toggle for whether matching should be exact.",
+        "-Added; fileUtil | genUtil: Most of the functions now also log the calling function.",
+        "-Added; generalEvent: (#31) ModPreview_DeleteTrigger Event controls if the trigging message for modPreview is deleted.",
+        "-Changed; admin: Configuration command supports new autoReacts feature.\nOriginal Configuration is now a subcommand along with the AutoReact",
+        "-Changed; generalEvent: Artwork and Battles blocks are now integrated into a new autoReacts feature.",
+        "-Fixed; auditLog: checkKickBan function now assigns type to .TYPE instead of .type",
+        "-Fixed; generalEvent: (#24) /Toggle command now responds.",
+        "-Fixed; generalEvent: (#30) Recent user created notification actually fires.",
+        "-Fixed; ssc: (#27) ssc /command now posts to tpf-ss channel.",
+        "-Removed; genUtil: HoursFromSeconds function. New formatTime class to replace it. Who knows how long this'll stick around..."
     ]
 }

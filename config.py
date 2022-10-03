@@ -2,7 +2,6 @@ import logging
 import math
 import os
 import platform
-import sys
 from dataclasses import dataclass
 
 from util.fileUtil import readJSON, writeJSON
@@ -14,25 +13,96 @@ try:
     log.debug("TRY CONFIG IMPORT MODULES")
     import nextcord
     import psutil
-    from nextcord.ext import commands
     from packaging import version
 except Exception:
     log.exception("CONFIG IMPORT MODULES")
 
 
-def slashList() -> set[int]:
-    """Gets guild IDs of all servers it's allowed for + owner guild"""
-    configuration = readJSON(filename="config")
-    slashes = set()
+def verifyConfigJSON() -> bool:
+    """Checks that certain elements are present and if not, gives a default value.
+    Also to be used to update the config when the bot gets an update."""
+
+    configuration = readJSON(filename="config.json")
+    genCF = configuration["General"]
+    if (not isinstance(genCF["delTime"], int | float) or (genCF["delTime"] > 120)):
+        genCF["delTime"] = 20
+
+    if (not isinstance(genCF["logLevel"], str)):
+        genCF["logLevel"] = "DEBUG"
+
+    if (not isinstance(genCF["purgeLimit"], int | float) or (genCF["purgeLimit"] > 100)):
+        genCF["purgeLimit"] = 100
+
+    for item in generalEventConfig.defaultEvents:
+        if item not in configuration["General"]["Events"]:
+            configuration["General"]["Events"][item] = True
+
     for item in configuration:
-        try:
-            state = configuration[item]["SlashCommands"]
-        except:
-            continue
-        if state is True:
-            slashes.add(int(item))
-    slashes.add(int(431272247001612309))
-    return slashes
+        log.debug(item)
+        if "General" not in item:
+            try:
+                configuration[item]["SlashCommands"]
+            except KeyError:
+                configuration[item]["SlashCommands"] = True
+
+            try:
+                configuration[item]["Events"]["AutoReact"]
+            except KeyError:
+                configuration[item]["Events"]["AutoReact"] = True
+
+            try:
+                del configuration[item]["Events"]["Artwork"]
+            except Exception:
+                log.exception(f"Could Not Delete Artwork Event {item=}")
+
+            try:
+                configuration[item]["AutoReact"]
+            except KeyError:
+                configuration[item]["AutoReact"] = {}
+
+            if "Artwork" in configuration[item]["Channels"]:
+                log.debug("Update Artwork")
+                chan = str(configuration[item]["Channels"]["Artwork"])
+                configuration[item]["AutoReact"] = {}
+                configuration[item]["AutoReact"]["Artwork"] = {}
+                configuration[item]["AutoReact"]["Artwork"]["Channel"] = [chan]
+                configuration[item]["AutoReact"]["Artwork"]["Contains"] = [
+                    "author"]
+                configuration[item]["AutoReact"]["Artwork"]["Emoji"] = ["❤️"]
+                configuration[item]["AutoReact"]["Artwork"]["isExactMatch"] = False
+                del configuration[item]["Channels"]["Artwork"]
+            if "infoBattles" in configuration[item]["Channels"]:
+                log.debug("Update Battles")
+                chan = str(configuration[item]["Channels"]["infoBattles"])
+                configuration[item]["AutoReact"] = {}
+                configuration[item]["AutoReact"]["BattlesThumb"] = {}
+                configuration[item]["AutoReact"]["BattlesThumb"]["Channel"] = [
+                    chan]
+                configuration[item]["AutoReact"]["BattlesThumb"]["Contains"] = [
+                    "👍"]
+                configuration[item]["AutoReact"]["BattlesThumb"]["Emoji"] = [
+                    "👍"]
+                configuration[item]["AutoReact"]["BattlesThumb"]["isExactMatch"] = False
+
+                configuration[item]["AutoReact"]["BattlesCheck"] = {}
+                configuration[item]["AutoReact"]["BattlesCheck"]["Channel"] = [
+                    chan]
+                configuration[item]["AutoReact"]["BattlesCheck"]["Contains"] = [
+                    "☑️"]
+                configuration[item]["AutoReact"]["BattlesCheck"]["Emoji"] = [
+                    "☑️"]
+                configuration[item]["AutoReact"]["BattlesCheck"]["isExactMatch"] = False
+
+                del configuration[item]["Channels"]["infoBattles"]
+
+            if "ModPreview" in configuration[item]["Events"]:
+                try:
+                    configuration[item]["Events"]["ModPreview_DeleteTrigger"]
+                except KeyError:
+                    configuration[item]["Events"]["ModPreview_DeleteTrigger"] = True
+
+    if writeJSON(data=configuration, filename="config.json"):
+        log.debug("Updated Config")
 
 
 class _singleton_(type):
@@ -48,19 +118,36 @@ class _singleton_(type):
 class genericConfig(metaclass=_singleton_):
     """Class for basic bot configuration"""
 
+    def slashList() -> set[int]:
+        """Gets guild IDs of all servers it's allowed for + owner guild"""
+        configuration = readJSON(filename="config")
+        slashes = set()
+        for item in configuration:
+            try:
+                state = configuration[item]["SlashCommands"]
+            except:
+                continue
+            if state is True:
+                slashes.add(int(item))
+        slashes.add(int(431272247001612309))
+        return slashes
+
     @classmethod
     def update(cls):
         "Reassign default class attributes from their source"
-        cls.slashServers = slashList()
+        cls.slashServers = cls.slashList()
         "Servers which the bot has a config for and thus can use slash commands"
         if 246190532949180417 in cls.slashServers:
             cls.emoNotifi = "<:notified:427470234463502336>"
         else:
             cls.emoNotifi = "🙃"
         if 246190532949180417 in cls.slashServers:
+            "If bot knows guild with above ID, assume bot is prod"
             cls.botID = 762054632510849064
+            "ID of the bot"
         else:
             cls.botID = 764270771350142976
+            "ID of the bot"
         return True
 
     emoNotifi = None
@@ -88,9 +175,6 @@ class genericConfig(metaclass=_singleton_):
 
     BOT_PREFIX = "~"
     "Prefix the bot listens to"
-    botName = "Katoku"
-    "Name of the bot user"
-    botID = None
 
     configCommGroupWhitelist = ["Channels", "Channels_Admin", "Roles", "MISC"]
     "Groups of the config JSON that are accessible by the configuration command"
@@ -327,6 +411,65 @@ screenShotCompConfig.update()
 class generalEventConfig(metaclass=_singleton_):
     """Config for the General Events"""
 
+    def getAutoReacts() -> dict[dict]:
+        """Gathers all autoReact dicts from config"""
+        configuration = readJSON(filename="config")
+        autoReactsConfig = {}
+        for item in configuration:
+            log.debug(f"{item=}")
+            if "General" == item:
+                continue
+            try:
+                reactors = configuration[item]["AutoReact"]
+                log.debug(f"{reactors=}")
+            except Exception:
+                log.exception(f"AutoReactCheck")
+                continue
+            if len(reactors) > 0:
+                autoReactsConfig[item] = reactors
+        return autoReactsConfig
+
+    def getAutoReactChannels(autoReacts: dict):
+        """Gets list of channels that are in autoReacts"""
+        log.debug(f"aR, {autoReacts=}")
+        reactChans = {}
+        # add guild IDs to reactChans
+        for guild in autoReacts:
+            #log.debug(f"g in aR {guild=}")
+            reactChans[guild] = {}
+        log.debug(f"rC1, {reactChans=}")
+        guild = None
+
+        # add every channel ID that all reactors of a guild to the appropriate guild ID in reactChans
+        for G in reactChans:
+            #log.debug(f"G in rC, {G=}")
+            for reactor in autoReacts[G]:
+                #log.debug(f"r in aR[G], {reactor=}")
+                chans = autoReacts[G][reactor]["Channel"]
+                for C in chans:
+                    #log.debug(f"C in chans, {C=}")
+                    reactChans[G][C] = set()
+        log.debug(f"rC2, {reactChans=}")
+        G = reactor = chans = C = None
+
+        # go through each guild in reactChans,
+        # get chans from all reactors of same guild in autoReacts,
+        # and add to a set under the guild ID in reactChans
+        for G in reactChans:
+            for reactor in autoReacts[G]:
+                #log.debug(f"r in aR[G], {reactor=}")
+                chans = autoReacts[G][reactor]["Channel"]
+                for element in chans:
+                    #log.debug(f"e in chans, {element=}")
+                    rS = set(reactChans[G][element])
+                    #log.debug(f"rS, {rS=}")
+                    rS.add(reactor)
+                    reactChans[G][element] = list(rS)
+                    #log.debug(f"rC[G][C], {reactChans[G]=}")
+        log.debug(f"rC3, {reactChans=}")
+
+        return reactChans
+
     @classmethod
     def update(cls):
         "Reassign default class attributes from their source"
@@ -349,9 +492,9 @@ class generalEventConfig(metaclass=_singleton_):
         cls.globalEventAll = getGlobalEventConfig(listAll=True)
         "getGlobalEvent | listAll"
         cls.defaultEvents = [
-            "ReadyMessage",
             "Artwork",
             "Battles",
+            "ReadyMessage",
             "MemberJoin",
             "MemberJoinRecentCreation",
             "MemberAccept",
@@ -364,8 +507,14 @@ class generalEventConfig(metaclass=_singleton_):
             "MemberWelcome",
             "MessageDelete",
             "ModPreview",
-            "ModPreviewGlobal", ]
+            "ModPreviewGlobal",
+            "ModPreview_DeleteTrigger",
+            "AutoReact"]
         "All recognised events"
+        cls.autoReacts = cls.getAutoReacts()
+        log.debug(f"{cls.autoReacts=}")
+        cls.autoReactsChans = cls.getAutoReactChannels(cls.autoReacts)
+        log.debug(f"{cls.autoReactsChans=}")
         return True
 
 
@@ -413,7 +562,19 @@ class botInformation(metaclass=_singleton_):
         "Frequency of host CPU"
         cls.processPID = os.getpid()
         "Current process ID"
+        if 246190532949180417 in genericConfig.slashServers:
+            "If bot knows guild with above ID, assume bot is prod"
+            cls.botName = "Katoku"
+            "Name of the bot user"
+        else:
+            cls.botName = "KatokuTest"
+            "Name of the bot user"
         return True
+
+    hostProvider = "OVH"
+    hostLocation = "Sydney"
+    linePyCount = 5124
+    lineJSONCount = 1442
 
 
 botInformation.update()
@@ -444,6 +605,10 @@ class dataObject:
     "The type of channel, eg text, voice, thread, etc"
     channelName: str
     "Name of any type of channel"
+    channelList: list
+    "List of channels"
+    channelExtra: any
+    "Any extra info related to channel"
     channelText: nextcord.TextChannel
     "Channel object of a text channel"
     channelVoice: nextcord.VoiceChannel
@@ -458,6 +623,8 @@ class dataObject:
     "The third argument of a command"
     commandArg4: any
     "The forth argument of a command"
+    commandArg5: any
+    "The fifth argument of a command"
     count: int
     "The count of something"
     directory: str
@@ -484,6 +651,10 @@ class dataObject:
     "Content of a message"
     messageID: int
     "ID of a message"
+    messageList: list
+    "List of messages"
+    messageExtra: any
+    "Any additional data related to a message"
     messageObject: nextcord.Message
     "Message object as received from Discord"
     messageObjectExtra: nextcord.Message
@@ -500,40 +671,34 @@ class dataObject:
     "User or Member object as recieved from Discord"
     userObjectExtra: nextcord.User | nextcord.Member | nextcord.ClientUser
     "An additional user/member object"
+    emoji: str
+    "An emoji"
+    emojiObject: nextcord.Emoji
+    "An emoji object"
+    emojiID: int
+    "An ID of an emoji"
+    emojiName: str
+    "Name of a emoji"
+    emojiList: list
+    "List of emoji"
+    emojiExtra: any
+    "Any additional data related to an emoji"
+    flag0: bool
+    flag1: bool
+    flag2: bool
+    flag3: bool
+    flag4: bool
+    flagA: bool
+    flagB: bool
+    flagC: bool
+    flagD: bool
+    flagE: bool
 
 
-def verifyConfigJSON() -> bool:
-    """Checks that certain elements are present and if not, gives a default value.
-    Also to be used to update the config when the bot gets an update."""
-
-    configuration = readJSON(filename="config.json")
-    genCF = configuration["General"]
-    if (not isinstance(genCF["delTime"], int | float) or (genCF["delTime"] > 120)):
-        genCF["delTime"] = 20
-
-    if (not isinstance(genCF["logLevel"], str)):
-        genCF["logLevel"] = "DEBUG"
-
-    if (not isinstance(genCF["purgeLimit"], int | float) or (genCF["purgeLimit"] > 100)):
-        genCF["purgeLimit"] = 100
-
-    for item in generalEventConfig.defaultEvents:
-        if item not in configuration["General"]["Events"]:
-            configuration["General"]["Events"][item] = True
-
-    for item in configuration:
-        if "General" not in item:
-            try:
-                configuration[item]["SlashCommands"]
-            except KeyError:
-                configuration[item]["SlashCommands"] = True
-
-    writeJSON(data=configuration, filename="config.json")
-    genericConfig.update()
-    screenShotCompConfig.update()
-    generalEventConfig.update()
-    botInformation.update()
-    return
+genericConfig.update()
+screenShotCompConfig.update()
+generalEventConfig.update()
+botInformation.update()
 
 
 # secrets

@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import inspect
 
 print("UtilFile")
 
@@ -23,7 +24,8 @@ def parentDir() -> str:
 
 def writeJSON(data: dict, filename: str, directory: list = None) -> bool:
     """Creates a JSON file contain data."""
-    log.debug(f"{filename=}")
+    func = inspect.stack()[1][3]
+    log.debug(f"{func=} | {filename=}")
     if not filename.casefold().endswith(".json"):
         filename = filename + ".json"
     botDir = parentDir()
@@ -57,7 +59,8 @@ def cacheWrite() -> bool:
 
 def readJSON(filename: str, directory: list = None, cache: bool = True) -> dict | bool:
     """Read a JSON file. By default caches all files to memory. If files doesn't exist, it'll be created and return an empty dict"""
-    log.debug(f"{filename=}")
+    func = inspect.stack()[1][3]
+    log.debug(f"{func=}  | {filename=}")
     if not filename.casefold().endswith(".json"):
         filename = filename + ".json"
     if isinstance(directory, list):
