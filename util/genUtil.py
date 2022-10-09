@@ -13,13 +13,14 @@ from util.fileUtil import readJSON
 print("UtilGen")
 
 log = logging.getLogger("discordGeneral")
+logSys = logging.getLogger("discordSystem")
 try:
-    log.debug("TRY UTIL_GEN IMPORT MODUELS")
+    logSys.debug("TRY UTIL_GEN IMPORT MODUELS")
     import nextcord
     from nextcord import Guild as ncGuild
     from nextcord import Role
 except Exception:
-    log.exception("UTIL_GEN IMPORT MODUELS")
+    logSys.exception("UTIL_GEN IMPORT MODUELS")
 
 configuration = readJSON(filename="config")
 configGen = configuration["General"]
@@ -48,7 +49,7 @@ def hasRole(role: Role, userRoles) -> bool:
 def getUserID(obj) -> str | int:
     """Gets the user id from either ctx or interaction types"""
     func = inspect.stack()[1][3]
-    log.debug(f"{func=} | {type(obj)}")
+    log.debug(f"{func=} | type={type(obj)}")
 
     if hasattr(obj, "author"):
         return obj.author.id
@@ -59,7 +60,7 @@ def getUserID(obj) -> str | int:
 def getChannelID(obj) -> str | int:
     """Gets the channel id from either ctx or interaction types"""
     func = inspect.stack()[1][3]
-    log.debug(f"{func=} | {type(obj)}")
+    log.debug(f"{func=} | type={type(obj)}")
 
     if hasattr(obj, "channel"):
         return obj.channel.id
@@ -70,7 +71,7 @@ def getChannelID(obj) -> str | int:
 def getGuildID(obj) -> str | None:
     """Gets guild id from a guild object"""
     func = inspect.stack()[1][3]
-    log.debug(f"{func=} | {type(obj)}")
+    log.debug(f"{func=} | type={type(obj)}")
 
     if hasattr(obj, "guild_id"):
         return str(obj.guild_id)

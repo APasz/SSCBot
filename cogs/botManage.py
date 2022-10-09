@@ -11,14 +11,15 @@ from util.genUtil import blacklistCheck
 print("CogBotManage")
 
 log = logging.getLogger("discordGeneral")
+logSys = logging.getLogger("discordSystem")
 try:
-    log.debug("TRY BOT_MANAGE IMPORT MODULES")
+    logSys.debug("TRY BOT_MANAGE IMPORT MODULES")
     import nextcord
     from discord import Permissions
     from nextcord import Interaction, SlashOption, slash_command
     from nextcord.ext import commands
-except Exception:
-    log.exception("BOT_MANAGE IMPORT MODULES")
+except Exception:  # pylint: disable=broad-except
+    logSys.exception("BOT_MANAGE IMPORT MODULES")
 
 
 class botManage(commands.Cog, name="BotManagement"):
@@ -29,21 +30,21 @@ class botManage(commands.Cog, name="BotManagement"):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        log.debug(f"{self.__cog_name__} Ready")
+        logSys.debug(f"{self.__cog_name__} Ready")
 
     @commands.command(name="reload", aliases=["rl"], hidden=True)
     @commands.is_owner()
     async def reload(self, ctx: commands.Context, extension):
         """Reloads a specific cog"""
-        log.debug(ctx.author.id)
+        logSys.debug(ctx.author.id)
         try:
             self.bot.reload_extension(f"cogs.{extension}")
         except Exception:
             try:
                 await ctx.send(f"**{extension}** can't be reloaded.")
             except Exception:
-                log.exception(f"Cog Reload")
-            log.exception(f"{extension} can't be reloaded")
+                logSys.exception(f"Cog Reload")
+            logSys.exception(f"{extension} can't be reloaded")
         else:
             await ctx.send(f"**{extension}** successfully reloaded.")
 
@@ -51,7 +52,7 @@ class botManage(commands.Cog, name="BotManagement"):
     @commands.is_owner()
     async def load(self, ctx: commands.Context, extension):
         """Loads a specific cog"""
-        log.debug(ctx.author.id)
+        logSys.debug(ctx.author.id)
         if extension.lower() == "config":
             path = f"{extension}"
         else:
@@ -62,8 +63,8 @@ class botManage(commands.Cog, name="BotManagement"):
             try:
                 await ctx.send(f"**{extension}** can't be loaded.")
             except Exception:
-                log.exception(f"Cog Load")
-            log.warning(f"{extension} can't be loaded")
+                logSys.exception(f"Cog Load")
+            logSys.warning(f"{extension} can't be loaded")
         else:
             await ctx.send(f"**{extension}** successfully loaded.")
 
@@ -71,15 +72,15 @@ class botManage(commands.Cog, name="BotManagement"):
     @commands.is_owner()
     async def unload(self, ctx: commands.Context, extension):
         """Unloads a specific cog"""
-        log.debug(ctx.author.id)
+        logSys.debug(ctx.author.id)
         try:
             self.bot.unload_extension(f"cogs.{extension}")
         except Exception:
             try:
                 await ctx.send(f"**{extension}** can't be unloaded.")
             except Exception:
-                log.exception(f"Unload Cog")
-            log.exception(f"{extension} can't be unloaded")
+                logSys.exception(f"Unload Cog")
+            logSys.exception(f"{extension} can't be unloaded")
         else:
             await ctx.send(f"**{extension}** successfully unloaded.")
 
@@ -87,24 +88,24 @@ class botManage(commands.Cog, name="BotManagement"):
     @commands.is_owner()
     async def reloadAll(self, ctx: commands.Context):
         """Reloads all cogs"""
-        log.debug(ctx.author.id)
+        logSys.debug(ctx.author.id)
         cogsDir = os.path.join(parentDir(), "cogs")
         try:
             for filename in os.listdir(cogsDir):
                 if filename.endswith(".py") and filename != "__init__.py":
                     self.bot.reload_extension(f"cogs.{filename[:-3]}")
-            log.info("All cogs reloaded")
+            logSys.info("All cogs reloaded")
         except Exception:
             try:
                 await ctx.send("Cogs can't be reloaded.")
             except Exception:
-                log.exception(f"Cogs reload")
-            log.exception("Cogs can't be reloaded")
+                logSys.exception(f"Cogs reload")
+            logSys.exception("Cogs can't be reloaded")
         else:
             try:
                 await ctx.send("All cogs successfully reloaded.")
             except Exception:
-                log.exception(f"All Cogs Reloaded")
+                logSys.exception(f"All Cogs Reloaded")
 
     @commands.command(name="toggle")
     @commands.has_permissions(administrator=True)
@@ -112,101 +113,110 @@ class botManage(commands.Cog, name="BotManagement"):
         """Toggles a command. Must be Admin"""
         if not await blacklistCheck(ctx=ctx, blklstType="gen"):
             return
-        log.debug(ctx.author.id)
-        if comm != None:
+        logSys.debug(ctx.author.id)
+        if comm is not None:
             command = self.bot.get_command(comm)
-            log.info(f"{comm}: {command.enabled} | {ctx.author.id}")
-            if command.enabled == True:
+            logSys.info(f"{comm}: {command.enabled} | {ctx.author.id}")
+            if command.enabled:
                 command.enabled = False
-                log.warning(command.enabled)
-            elif command.enabled == False:
+                logSys.warning(command.enabled)
+            elif not command.enabled:
                 command.enabled = True
-                log.warning(command.enabled)
-            log.info(f"{comm}: {command.enabled}")
+                logSys.warning(command.enabled)
+            logSys.info(f"{comm}: {command.enabled}")
             await ctx.send(f"{comm.title()} command toggled")
         else:
             try:
                 await ctx.send("Command not found")
             except Exception:
                 # this should probably check the list of commands...
-                log.exception(f"Toggle: Command Missing")
+                logSys.exception(f"Toggle: Command Missing")
 
     @commands.command(hidden=True)
     @commands.is_owner()
-    async def _config(self, ctx: commands.Context, dump: str = None):
-        log.debug(f"{dump=}")
+    async def _config(self, ctx: commands.Context, arg: str):
+        logSys.debug(f"{arg=}")
         err = False
-        if "-c" in dump:
-            log.info("Writing JSON Cache")
+        if "-c" in arg:
+            logSys.info("Writing JSON Cache")
             try:
                 cacheWrite()
             except Exception:
-                log.exception(f"_config dump cacheJSON")
-        elif "-d" in dump:
+                logSys.exception(f"_config dump cacheJSON")
+        elif "-d" in arg:
             dumpPath = os.path.join(parentDir(), "dump")
             try:
                 os.mkdir(dumpPath)
             except FileExistsError:
-                pass
+                os.remove(dumpPath)
+                os.mkdir(dumpPath)
             except Exception:
-                log.exception(f"Make Dump Folder")
-            log.info("Dumping genericConfig")
+                logSys.exception(f"Make Dump Folder")
+            logSys.info("Dumping genericConfig")
             try:
                 dataGX = str(gxConfig.__dict__)
                 writeJSON(data=dataGX, filename="GX", directory=["dump"])
             except Exception:
-                log.exception(f"Dumping genericConfig")
+                logSys.exception(f"Dumping genericConfig")
                 err = True
-            log.info("Dumping screenShotCompConfig")
+            logSys.info("Dumping screenShotCompConfig")
             try:
                 dataSSC = str(sscConfig.__dict__)
                 writeJSON(data=dataSSC, filename="SSC", directory=["dump"])
             except Exception:
-                log.exception(f"Dumping screenShotCompConfig")
+                logSys.exception(f"Dumping screenShotCompConfig")
                 err = True
-            log.info("Dumping generalEventConfig")
+            logSys.info("Dumping generalEventConfig")
             try:
                 dataGE = str(geConfig.__dict__)
                 writeJSON(data=dataGE, filename="GE", directory=["dump"])
             except Exception:
-                log.exception(f"Dumping generalEventConfig")
+                logSys.exception(f"Dumping generalEventConfig")
                 err = True
-            log.info("Dumping botInformation")
+            logSys.info("Dumping botInformation")
             try:
                 dataBI = str(botInfo.__dict__)
                 writeJSON(data=dataBI, filename="BI", directory=["dump"])
             except Exception:
-                log.exception(f"Dumping botInformation")
+                logSys.exception(f"Dumping botInformation")
                 err = True
-        elif "-u" in dump:
-            log.info("Reload genericConfig")
+            logSys.info("Dumping AutoReact")
+            try:
+                dataAR = str(geConfig.autoReacts) + "\n\n\n" + \
+                    str(geConfig.autoReactsChans)
+                writeJSON(data=dataAR, filename="AR", directory=["dump"])
+            except Exception:
+                logSys.exception(f"Dumping AutoReact")
+                err = True
+        elif "-u" in arg:
+            logSys.info("Reload genericConfig")
             try:
                 gxConfig.update()
             except Exception:
-                log.exception(f"Reload Configuration")
+                logSys.exception(f"Reload Configuration")
                 err = True
-            log.info("Reload screenShotCompConfig")
+            logSys.info("Reload screenShotCompConfig")
             try:
                 sscConfig.update()
             except Exception:
-                log.exception(f"Reload screenShotCompConfig")
+                logSys.exception(f"Reload screenShotCompConfig")
                 err = True
-            log.info("Reload generalEventConfig")
+            logSys.info("Reload generalEventConfig")
             try:
                 geConfig.update()
             except Exception:
-                log.exception(f"Reload generalEventConfig")
+                logSys.exception(f"Reload generalEventConfig")
                 err = True
-            log.info("Reload botInformation")
+            logSys.info("Reload botInformation")
             try:
                 botInfo.update()
             except Exception:
-                log.exception(f"Reload botInformation")
+                logSys.exception(f"Reload botInformation")
                 err = True
         else:
             await ctx.send("Arg not recognised!")
             return
-        log.debug(f"{err=}")
+        logSys.debug(f"{err=}")
         if err:
             await ctx.send("Error!")
         else:
@@ -222,32 +232,31 @@ class botManage(commands.Cog, name="BotManagement"):
                 interaction.send(
                     "This command is restricted to the bot owner.", ephemeral=True)
             except Exception:
-                log.exception(f"/Command Restricted to Owner EditBot")
+                logSys.exception(f"/Command Restricted to Owner EditBot")
             return
-        log.info(f"pfp {type(pfp)}, {name=}")
-        if pfp or name:
-            if pfp:
-                try:
-                    await self.bot.user.edit(avatar=pfp)
-                except Exception:
-                    log.exception("Edit Bot Avatar")
-                log.info("pfp updated")
-            elif name:
-                try:
-                    await self.bot.user.edit(username=name)
-                except Exception:
-                    log.exception("Edit Bot Name")
-                log.info("name updated")
-        else:
+        logSys.info(f"pfp {type(pfp)}, {name=}")
+        if not pfp or not name:
             try:
                 await interaction.send("Nah bro")
             except Exception:
-                log.exception(f"EditBot")
+                logSys.exception(f"EditBot")
             return
+        if pfp:
+            try:
+                await self.bot.user.edit(avatar=pfp)
+            except Exception:
+                logSys.exception("Edit Bot Avatar")
+            logSys.info("pfp updated")
+        if name:
+            try:
+                await self.bot.user.edit(username=name)
+            except Exception:
+                logSys.exception("Edit Bot Name")
+            logSys.info("name updated")
         try:
             await interaction.send("Done!", ephemeral=True)
         except Exception:
-            log.exception(f"EditBot Done")
+            logSys.exception(f"EditBot Done")
 
 
 def setup(bot: commands.Bot):

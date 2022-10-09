@@ -13,15 +13,16 @@ from util.views import factSubmit
 print("CogGeneral")
 
 log = logging.getLogger("discordGeneral")
+logSys = logging.getLogger("discordSystem")
 try:
-    log.debug("TRY GENERAL IMPORT MODUELS")
+    logSys.debug("TRY GENERAL IMPORT MODUELS")
     import nextcord
     import pint
     import psutil
     from nextcord import Embed, Interaction, SlashOption, slash_command
     from nextcord.ext import commands
 except Exception:
-    log.exception("GENERAL IMPORT MODUELS")
+    logSys.exception("GENERAL IMPORT MODUELS")
 
 
 class general(commands.Cog, name="General"):
@@ -32,7 +33,7 @@ class general(commands.Cog, name="General"):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        log.debug(f"{self.__cog_name__} Ready")
+        logSys.debug(f"{self.__cog_name__} Ready")
 
     @slash_command(
         name="submitfact",
@@ -72,14 +73,14 @@ class general(commands.Cog, name="General"):
         initialAdd = factDic["initialAdd"]
         lastUpdate = factDic["lastUpdate"]
         providerID = factDic["providerID"]
-        if providerID == None:
+        if providerID is None:
             providerID = "*Not avaliable*"
         providerName = factDic["providerName"]
-        if providerName == None:
+        if providerName is None:
             providerName = "*Not avaliable*"
-        if source == None and sourceLink == None:
+        if source is None and sourceLink is None:
             source = "Someone forgot the source."
-        if sourceLink == None:
+        if sourceLink is None:
             data = nextcord.Embed(
                 title=ID, description=content, colour=getCol("fact"))
         else:
@@ -156,7 +157,7 @@ class general(commands.Cog, name="General"):
         """Gives ping to server the bot is running on"""
         if testNum > 5:
             testNum = 5
-        if api == None:
+        if api is None:
             api = False
         log.debug(f"pingCommand {testNum=} | {api=}")
         await self.pingDo(ctx=ctx, api=api, testNum=testNum)
@@ -177,7 +178,7 @@ class general(commands.Cog, name="General"):
         BL = await blacklistCheck(ctx=interaction, blklstType="gen")
         if BL is False:
             return
-        if api == None:
+        if api is None:
             api = False
         log.debug(f"pingCommand {testNum=} | {api=}")
         await interaction.response.defer()

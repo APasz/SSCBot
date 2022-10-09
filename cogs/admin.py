@@ -14,18 +14,20 @@ from cogs.auditLog import auditLogger
 print("CogAdmin")
 
 log = logging.getLogger("discordGeneral")
+logSys = logging.getLogger("discordSystem")
 try:
-    log.debug("TRY ADMIN IMPORT MODULES")
+    logSys.debug("TRY ADMIN IMPORT MODULES")
     import nextcord
     from discord import Permissions
     from nextcord import Interaction, SlashOption, slash_command
     from nextcord.ext import commands
 except Exception:
-    log.exception("ADMIN IMPORT MODULES")
+    logSys.exception("ADMIN IMPORT MODULES")
 
 
 def auditChanGet(guildID) -> int:
-    """With the ID of a server, returns either it's auditlog channel or if it has none specified, the owner server auditlog channel"""
+    """With the ID of a server, returns either it's auditlog channel
+    or if it has none specified, the owner server auditlog channel"""
     log.debug("auditGet")
     audit = gxConfig.auditChan
     if str(guildID) in audit.keys():
@@ -45,7 +47,7 @@ class admin(commands.Cog, name="Admin"):
         self.bot.add_view(tpfroles())
         self.bot.add_view(nixroles())
         self.bot.add_view(nixrolesCOL())
-        log.debug(f"{self.__cog_name__} Ready")
+        logSys.debug(f"{self.__cog_name__} Ready")
 
     async def purge(self, ctx: commands.Context, limit: int) -> bool:
         """Purges a number of messages from the channel the command was invoked from"""
@@ -178,7 +180,7 @@ class admin(commands.Cog, name="Admin"):
             id = int(usr)
             data[f"{id}"] = reason
             check = writeJSON(data, filename=blklstType, directory=["secrets"])
-            if check == True:
+            if check:
                 from config import dataObject
                 dataObject.TYPE = "BlacklistAdd"
                 dataObject.userObject = ctx.author
@@ -221,7 +223,7 @@ class admin(commands.Cog, name="Admin"):
         if usr in data:
             del data[f"{usr}"]
             check = writeJSON(data, filename=blklstType, directory=["secrets"])
-            if check == True:
+            if check:
                 id = int(usr)
                 from config import dataObject
                 dataObject.TYPE = "BlacklistRemove"
@@ -301,12 +303,9 @@ class admin(commands.Cog, name="Admin"):
         log.info(f"auditGet: {filename}")
         fName = f"./{filename}"
         if os.path.exists(fName) and not os.path.isdir(fName):
-            if (
-                ("secret" not in filename)
-                or ("log" not in filename)
-                or ("dump" not in filename)
-                or (ctx.author.id == gxConfig.ownerID)
-            ):
+            ignoreFiles = any(ign in filename for ign in [
+                              "secret", "log", "dump"])
+            if (not ignoreFiles) or (ctx.author.id == gxConfig.ownerID):
                 from config import dataObject
                 dataObject.TYPE = "CommandAuditGet"
                 dataObject.userObject = ctx.author
@@ -372,7 +371,7 @@ Modder intern gives access to special channels full of useful info.""",
             return
         try:
             await ctx.send(embed=e, view=view)
-            if nix == True:
+            if nix:
                 await ctx.send(view=view2)
             await view.wait()
         except Exception:
@@ -432,8 +431,9 @@ Modder intern gives access to special channels full of useful info.""",
         except Exception:
             log.exception("Config /Command")
         configuration[guildID][group][option] = value
+        guildName = geConfig.guildListID[guildID]
         log.info(
-            f"ConfigUpdated: {geConfig.guildListID[guildID]}, {interaction.user.id}, {group}-{option}:{oldValue} | {value}"
+            f"ConfigUpdated: {guildName}, {interaction.user.id}, {group}-{option}:{oldValue} | {value}"
         )
         from config import dataObject
         dataObject.TYPE = "CommandGuildConfiguration"
@@ -477,7 +477,7 @@ Modder intern gives access to special channels full of useful info.""",
     @configurationCOMM.on_autocomplete("option")
     async def configurationOption(self, interaction: Interaction, option, group):
         """Autocomplete function for use with the configuration command 'option' and 'group' args"""
-        if group == None:
+        if group is None:
             return
         optionsList = ["undefined"]
         guildID = str(interaction.guild_id)
@@ -500,7 +500,7 @@ Modder intern gives access to special channels full of useful info.""",
     @configurationCOMM.on_autocomplete("value")
     async def configurationValue(self, interaction: Interaction, value, group, option):
         """Autocomplete function for use with the configuration command 'value', 'group', and 'option' args"""
-        if group == None or option == None:
+        if group is None or option is None:
             return
         print(group, option)
         guildID = str(interaction.guild_id)
@@ -570,7 +570,7 @@ Modder intern gives access to special channels full of useful info.""",
         oldMatch = reactorDict["isExactMatch"]
         dat.flag0 = oldMatch
         newMatch = reactModal.isExactText.value
-        if len(newMatch) > 0:
+        if (newMatch is None) or (len(newMatch) > 0):
             newMatch = True
         else:
             newMatch = False

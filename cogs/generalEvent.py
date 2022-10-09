@@ -13,15 +13,16 @@ from cogs.modding import modding
 print("CogGeneralEvent")
 
 log = logging.getLogger("discordGeneral")
+logSys = logging.getLogger("discordSystem")
 logMess = logging.getLogger("discordMessages")
 try:
-    log.debug("TRY GENERAL_EVENT IMPORT MODULES")
+    logSys.debug("TRY GENERAL_EVENT IMPORT MODULES")
     import nextcord
     from discord import Permissions
     from nextcord import Interaction, SlashOption, slash_command
     from nextcord.ext import commands
 except Exception:
-    log.exception("GENERAL_EVENT IMPORT MODULES")
+    logSys.exception("GENERAL_EVENT IMPORT MODULES")
 
 
 class generalEvent(commands.Cog, name="GeneralEvent"):
@@ -32,7 +33,7 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        log.debug(f"{self.__cog_name__} Ready")
+        logSys.debug(f"{self.__cog_name__} Ready")
 
     @commands.command(name="updateEventList")
     @commands.is_owner()
@@ -175,8 +176,8 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
                 usrCrtd = int(round(member.created_at.timestamp()))
                 configuration = readJSON(filename="config")[guildID]["MISC"]
                 try:
-                    crtTime = (configuration["MemberJoin_RecentCreationHours"]
-                               * 60) * 60
+                    crtTime = (
+                        configuration["MemberJoin_RecentCreationHours"] * 60) * 60
                 except KeyError:
                     configuration["MemberJoin_RecentCreationHours"] = 48
                     writeJSON(data=configuration, filename="config")
@@ -202,7 +203,7 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
                 log.exception(f"Del MJ")
 
     @commands.Cog.listener()
-    async def on_member_update(self, before, after):
+    async def on_member_update(self, before, after: nextcord.Member):
         """Check if new user has passed membership or display name changes."""
         await self.bot.wait_until_ready()
         guildID = getGuildID(obj=after)
@@ -253,7 +254,7 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
             if "MemberVerifiedRole" in geConfig.eventConfigID[guildID]:
                 log.info(f"MemberVerifiedRole: {logMess}")
                 role = getRole(guild=after.guild, role="Verified")
-                if role != None:
+                if role is not None:
                     try:
                         await after.add_roles(role, reason="Passed Membership Screen.", atomic=True)
                     except Exception:
@@ -309,7 +310,7 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
         if guildID is None:
             return
         log.debug(f"{guildID=} | {payload.user=}")
-        if self.onMemberFired == True:
+        if self.onMemberFired:
             return
         if guildID not in geConfig.guildListID:
             return
@@ -400,8 +401,8 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
             if message is not None:
                 logMess.info(
                     f"""MessageID: {message.id}:
-				Author: {message.author.id}: {message.author.name} | {message.author.display_name};
-				\nContent: '' {message.content} ''"""
+                Author: {message.author.id}: {message.author.name} | {message.author.display_name};
+                \nContent: '' {message.content} ''"""
                 )
                 dataObject.TYPE = "MessageDelete"
                 dataObject.messageObject = message
@@ -429,7 +430,8 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
         if guildID is None:
             return
         log.debug(
-            f"GE_on_message; {geConfig.guildListID[guildID]} {guildID=} | {ctx.channel.id=} | {ctx.author.id=}")
+            f"GE_on_message; {geConfig.guildListID[guildID]}: {guildID=} | {chanID=} | {ctx.author.id=}")
+        event = False
         if "AutoReact" in geConfig.eventConfigID[guildID]:
             async def addReact(emoji):
                 """Adds a reaction to a message"""
@@ -471,24 +473,25 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
                 event = True
 
         if "ModPreview" in geConfig.eventConfigID[guildID]:
-            nmrChan = getChan(guildID, "NewModRelease")
-            if (ctx.channel.id == nmrChan) and (ctx.author.bot is False):
-                log.debug(f"{nmrChan=}")
-                nmpChan = getChan(guildID, "NewModPreview")
-                globalnmpChan = getChan(
-                    geConfig.guildListName["TPFGuild"], "NewModPreview")
+            nmrChan = str(getChan(guildID, "NewModRelease"))
+            log.debug(f"{nmrChan=} {chanID == nmrChan} | bot {ctx.author.bot}")
+            if (chanID == nmrChan) and (ctx.author.bot is False):
+                try:
+                    nmpChan = str(getChan(guildID, "NewModPreview"))
+                    globalnmpChan = str(getChan(
+                        geConfig.guildListName["TPFGuild"], "NewModPreview"))
+                except Exception:
+                    log.exception(f"Get NMP Chans")
                 log.debug(f"NMR listener | {nmpChan=} | {globalnmpChan=}")
                 try:
                     nmp = await self.bot.fetch_channel(int(nmpChan))
                 except Exception:
                     log.exception(f"Fetch NMP Chan")
                 log.debug(f"{geConfig.eventConfigID[guildID]=}")
-                if ("ModPreviewGlobal" in geConfig.eventConfigID[guildID]) and (
-                    nmpChan != globalnmpChan
-                ):
-                    globalPreview = True
-                else:
-                    globalPreview = False
+                globalPreview = False
+                if "ModPreviewGlobal" not in geConfig.eventConfigID[guildID]:
+                    if nmpChan != globalnmpChan:
+                        globalPreview = True
                 await modding.modRelease(
                     self=self,
                     ctx=ctx,
@@ -500,11 +503,14 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
                     delTrig = True
                 log.info(f"modReleaseSent | delete {delTrig}")
                 if delTrig:
-                    await ctx.delete()
-            event = True
+                    try:
+                        await ctx.delete()
+                    except Exception:
+                        log.exception(f"Delete Trig")
+                event = True
 
         if not event:
-            log.debug(f"GE on_message: No event. {guildID=}")
+            log.debug(f"GE on_message: No event.")
 
 
 def setup(bot: commands.Bot):

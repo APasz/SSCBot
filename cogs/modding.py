@@ -11,12 +11,13 @@ from util.genUtil import getChan, getCol
 print("CogModding")
 
 log = logging.getLogger("discordGeneral")
+logSys = logging.getLogger("discordSystem")
 try:
-    log.debug("TRY MODDING IMPORT MODULES")
+    logSys.debug("TRY MODDING IMPORT MODULES")
     import nextcord
     from nextcord.ext import commands
 except Exception:
-    log.exception("MODDING IMPORT MODULES")
+    logSys.exception("MODDING IMPORT MODULES")
 
 
 class modding(commands.Cog, name="Modding"):
@@ -29,7 +30,7 @@ class modding(commands.Cog, name="Modding"):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        log.debug(f"{self.__cog_name__} Ready")
+        logSys.debug(f"{self.__cog_name__} Ready")
 
     async def modPreview(
         self,

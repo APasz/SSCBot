@@ -1,16 +1,18 @@
 import logging
 
 from config import genericConfig as gxConfig
+from util.fileUtil import readJSON
 from util.genUtil import blacklistCheck
 
 print("CogGameHelp")
 
 log = logging.getLogger("discordGeneral")
+logSys = logging.getLogger("discordSystem")
 try:
-    log.debug("TRY GAME_HELP IMPORT MODULES")
+    logSys.debug("TRY GAME_HELP IMPORT MODULES")
     from nextcord.ext import commands
 except Exception:
-    log.exception("GAME_HELP IMPORT MODULES")
+    logSys.exception("GAME_HELP IMPORT MODULES")
 
 
 class gameHelp(commands.Cog, name="GameHelp"):
@@ -21,7 +23,7 @@ class gameHelp(commands.Cog, name="GameHelp"):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        log.debug(f"{self.__cog_name__} Ready")
+        logSys.debug(f"{self.__cog_name__} Ready")
 
     @commands.command(name="wiki", aliases=["w", "wik", "gameinfo"])
     @commands.cooldown(1, 1, commands.BucketType.user)
@@ -42,18 +44,18 @@ class gameHelp(commands.Cog, name="GameHelp"):
                 await ctx.send(f"Here's the Wiki for Train Fever.\n{gxConfig.Wiki0}")
             else:
                 await ctx.send(
-                    f"Unable to figure out which Wiki you want. Defaulting to TpF2\n{gxConfig.Wiki2}"
+                    f"Unable to find which Wiki you want. Defaulting to TpF2\n{gxConfig.Wiki2}"
                 )
         except Exception:
             log.exception(f"Wiki Base")
 
     @commands.command(name="modding", aliases=["m", "mod"])
     @commands.cooldown(1, 1, commands.BucketType.user)
-    async def modding(self, ctx, type=None):
+    async def modding(self, ctx, entry=None):
         """Provides link TpF mod wiki *WIP*"""
         if not await blacklistCheck(ctx=ctx):
             return
-        if type == None:
+        if entry is None:
             try:
                 await ctx.send(gxConfig.Wiki2modInstall)
             except Exception:
@@ -61,16 +63,19 @@ class gameHelp(commands.Cog, name="GameHelp"):
 
     @commands.command(name="log", aliases=["c", "crash", "stdout", "gamefiles"])
     @commands.cooldown(1, 1, commands.BucketType.user)
-    async def log(self, ctx, type="gameFiles", game="2"):
+    async def log(self, ctx, entry="gameFiles", game="2"):
         """Provides link TpF wiki*WIP*"""
         if not await blacklistCheck(ctx=ctx):
             return
-        if "2" in game and "gameFiles" in type:
+        if "2" in game and "gameFiles" in entry:
             try:
+                txt = gxConfig.Wiki2gameFiles
+                udb = readJSON(filename="strings")[
+                    "en"]["GameHelp"]["UserDataButton"]
                 if "stdout" in ctx.message.content:
-                    await ctx.send(gxConfig.Wiki2gameFiles + "#game_log_files")
+                    await ctx.send(txt + "#game_log_files" + "\n" + udb)
                 else:
-                    await ctx.send(gxConfig.Wiki2gameFiles + "#folder_locations")
+                    await ctx.send(txt + "#folder_locations")
             except Exception:
                 log.exception(f"Wiki stdou|folder")
 

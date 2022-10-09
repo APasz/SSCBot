@@ -5,7 +5,7 @@ import logging
 import os
 import platform
 import sys
-import logging
+import traceback
 from logging import handlers
 
 
@@ -15,9 +15,12 @@ print(f"\n***Starting*** {PID=}")
 
 logging.addLevelName(logging.DEBUG, "DBUG")
 log = logging.getLogger("discordGeneral")
+logSys = logging.getLogger("discordSystem")
 logMess = logging.getLogger("discordMessages")
 
 log.setLevel("DEBUG")
+logSys.setLevel("DEBUG")
+logMess.setLevel("DEBUG")
 
 handleConsole = logging.StreamHandler(sys.stdout)
 handleConsole.setFormatter(
@@ -33,44 +36,49 @@ if not os.path.exists(logDir):
     log.debug("mk logDir")
     os.mkdir(logDir)
 
-# handleFile = logging.FileHandler(
-#    filename=os.path.join(logDir, "discordGeneral.log"), encoding="utf-8", mode="a"
-# )
-
+# log for general
 handleFile = handlers.TimedRotatingFileHandler(
-    os.path.join(logDir, "discordGeneral.log"), when="W6", utc=True)
-
+    os.path.join(logDir, "discordGeneral.log"), when="W6", utc=True, encoding="utf-8")
 handleFile.setFormatter(
     logging.Formatter(
         "%(asctime)s_%(created).2f | %(levelname).4s |:| %(module)s: %(funcName)s | %(message)s",
-        "%Y-%m-%d_%H:%M:%S")
-)
+        "%Y-%m-%d_%H:%M:%S"))
 log.addHandler(handleFile)
 
+# log for sys
+handleDisFile = logging.FileHandler(
+    os.path.join(logDir, "discordSystem.log"), encoding="utf-8", mode="a")
+handleDisFile.setFormatter(
+    logging.Formatter(
+        "%(asctime)s_%(created).2f |:| %(module)s: %(funcName)s | %(message)s",
+        "%Y-%m-%d_%H:%M:%S"))
+logSys.addHandler(handleDisFile)
+
+
+# log for deleted messages
 messHandler = logging.FileHandler(
-    filename=os.path.join(logDir, "discordMessages.log"), encoding="utf-8", mode="a"
-)
+    filename=os.path.join(logDir, "discordMessages.log"), encoding="utf-8", mode="a")
 messHandler.setFormatter(
     logging.Formatter(
-        "%(asctime).19s_%(created).2f |:| %(message)s")
-)
+        "%(asctime).19s_%(created).2f |:| %(message)s"))
 logMess.addHandler(messHandler)
 
 log.critical(f"\n***Starting*** {PID=}")
+logSys.critical(f"\n***Starting*** {PID=}")
 
 critFiles = ["config.json", "config.py"]
 configErr = False
 for element in critFiles:
     if not os.path.exists(element):
-        log.critical(f"{element} missing")
+        logSys.critical(f"{element} missing")
         configErr = True
 
 if configErr:
-    log.critical(f"Files missing!")
+    logSys.critical(f"Files missing!")
     sys.exit(78)
 
 try:
-    log.debug("TRY MAIN IMPORT CONFIG")
+    logSys.debug("TRY MAIN IMPORT CONFIG")
     from config import botInformation as botInfo
     from config import generalEventConfig as geConfig
     from config import genericConfig as gxConfig
@@ -78,24 +86,24 @@ try:
     from util.fileUtil import readJSON
     from util.genUtil import blacklistCheck
 except Exception:
-    log.exception(f"MAIN IMPORT CONFIG")
+    logSys.exception(f"MAIN IMPORT CONFIG")
     sys.exit()
 
 try:
-    log.debug(f"Python {platform.python_version()} | TRY IMPORT MODULES")
+    logSys.debug(f"Python {platform.python_version()} | TRY IMPORT MODULES")
     import nextcord
     from nextcord import ext
     from nextcord.ext import commands
     from nextcord.ext.commands import CommandNotFound
 except Exception:
-    log.exception("MAIN IMPORT MODULES")
+    logSys.exception("MAIN IMPORT MODULES")
     sys.exit()
 
 
 if not verifyConfigJSON():
-    log.critical("Bad Config")
+    logSys.critical("Bad Config")
 else:
-    log.info("Good Config")
+    logSys.info("Good Config")
 
 configuration = readJSON(filename="config")
 
@@ -127,15 +135,30 @@ def main():
     )
     cogsDir = os.path.join(curDir, "cogs")
 
-    def botSevers(bot):
+    def botSevers(bot: commands.Bot):
         """Get info about the servers the bot is in"""
 
         botGuilds = bot.guilds
         botInfo.guildCount = len(botGuilds)
+        botInfo.botPerms = []
+        for item in botGuilds:
+            permList = item.me.guild_permissions
+            botInfo.botPerms.append(permList)
+            logSys.info(f"{item.name}  {item.id} | {permList=}")
+            for perm in permList:
+                logSys.info(f"{perm=}")
 
     @bot.event
     async def on_ready():
+        logSys.info("Ensure /Commands Loaded")
+        try:
+            bot.add_all_application_commands()
+            await bot.sync_application_commands()
+        except Exception:
+            logSys.exception(f"Ensure /Commands")
+
         log.critical("\n***Started*** 'Hello World, or whatever'")
+        logSys.critical("\n***Started*** 'Hello World, or whatever'")
         #log.debug("on_ready wait_ready")
         botSevers(bot)
         # await bot.wait_until_ready()
@@ -145,7 +168,7 @@ def main():
         configuration = readJSON(filename="config")
         globalReady = configuration["General"]["Events"]["ReadyMessage"]
         log.info(f"Config {globalReady=} | {txt=}")
-        if globalReady == True:
+        if globalReady:
             guilds = list((geConfig.guildListID).keys())
             sendReady = []
             for item in guilds:
@@ -157,7 +180,7 @@ def main():
                     continue
                 except Exception:
                     log.exception(f"ReadyMess: {item=}")
-                if event == True:
+                if event:
                     sendReady.append(
                         configuration[item]["Channels"]["ReadyMessage"])
             log.debug(f"{sendReady=}")
@@ -172,26 +195,33 @@ def main():
                 except Exception:
                     log.exception(f"ReadySend {element=}")
         log.critical("Bot Ready")
+        logSys.critical("Bot Ready")
 
     @bot.check
     async def blacklistedUser(ctx):
         """All prefix commands run this check"""
         if ctx.command is None:
-            log.debug("ctxCommand")
+            logSys.debug("ctxCommand")
             return False
         if "private" in str(ctx.channel.type).lower():
-            log.debug("ctxChannelType")
+            logSys.debug("ctxChannelType")
             return False
-        log.debug("blacklistedUserCheck")
+        logSys.debug("blacklistedUserCheck")
         if await blacklistCheck(ctx=ctx, blklstType="gen") is True:
             return True
         else:
             raise ext.commands.MissingPermissions([""])
 
     @bot.event
+    async def on_application_command_error(interaction, exception):
+        logSys.error(f"{interaction.user.name} | {exception=}")
+
+    @bot.event
     async def on_command_error(ctx, error):
         """When a command encounters and error on Discords side."""
+        logSys.critical(f"on_command_error\n{error=}")
         auth = f"{ctx.author.id=}, {ctx.author.display_name=}"
+
         if isinstance(error, (commands.MissingPermissions)):
             try:
                 await ctx.message.delete()
@@ -200,9 +230,11 @@ def main():
                     delete_after=configuration["General"]["delTime"],
                 )
             except Exception:
-                log.exception(f"UserMissingPerm {error.missing_permissions=}")
-            log.error(
+                logSys.exception(
+                    f"UserMissingPerm {error.missing_permissions=}")
+            logSys.error(
                 f"UserMissingPermission. {auth} | {error.missing_permissions=}")
+            return
 
         if isinstance(error, (commands.MissingRole)):
             try:
@@ -212,17 +244,19 @@ def main():
                     delete_after=configuration["General"]["delTime"],
                 )
             except Exception:
-                log.exception(f"UserMissingRole {error.missing_role=}")
-            log.error(f"MissingRole. {auth} | {error.missing_role=}")
+                logSys.exception(f"UserMissingRole {error.missing_role=}")
+            logSys.error(f"MissingRole. {auth} | {error.missing_role=}")
+            return
 
         if isinstance(error, (commands.MissingRequiredArgument)):
             try:
                 await ctx.send("Missing Argument/s")
             except Exception:
-                log.exception(
+                logSys.exception(
                     f"Missing Argument {error.args=} | {error.param=}")
-            log.error(
+            logSys.error(
                 f"MissingArgument. {auth} | {error.args=} | {error.param=}")
+            return
 
         if isinstance(error, (commands.CommandNotFound)):
             if ctx.message.content.startswith(
@@ -234,17 +268,19 @@ def main():
                     f"Command not found.\nPlease check with {gxConfig.BOT_PREFIX}help"
                 )
             except Exception:
-                log.exception(f"Command not Found {error.command_name=}")
-            log.error(f"CommandNotFound. {auth} | {error.command_name=}")
+                logSys.exception(f"Command not Found {error.command_name=}")
+            logSys.error(f"CommandNotFound. {auth} | {error.command_name=}")
+            return
 
         if isinstance(error, (commands.DisabledCommand)):
             try:
                 await ctx.send(f"Command currently **Disabled**")
             except Exception:
-                log.exception(
+                logSys.exception(
                     f"Disabled Command {error.args=} | {error.with_traceback=}")
-            log.error(
+            logSys.error(
                 f"CommandDisabled. {auth} | {error.args=} | {error.with_traceback=}")
+            return
 
         if isinstance(error, commands.CommandOnCooldown):
             try:
@@ -252,37 +288,84 @@ def main():
                     f"Command cooldown in effect: {round(error.retry_after, 3)}s"
                 )
             except Exception:
-                log.exception(
+                logSys.exception(
                     f"Command Cooldown {round(error.retry_after, 3)}")
-            log.error(f"CommandCooldown. {auth}")
+            logSys.error(f"CommandCooldown. {auth}")
+            return
 
         if isinstance(error, commands.ExtensionNotFound):
             try:
                 await ctx.send(f"Cog not found.")
             except Exception:
-                log.exception(f"")
-            log.error(f"ExtensionNotFound. {auth}")
+                logSys.exception(f"")
+            logSys.error(f"ExtensionNotFound. {auth}")
+            return
 
         if isinstance(error, asyncio.TimeoutError):
             try:
                 await ctx.send(f"asyncio 408. Response not received in time.")
             except Exception:
-                log.exception("asyncio 408")
-            log.error(f"asyncio 408 {auth}")
+                logSys.exception("asyncio 408")
+            logSys.error(f"asyncio 408 {auth}")
+            return
+
+        if isinstance(error, (PermissionError)):
+            logSys.error(f"LowPermError")
+            return
+
+        if isinstance(error, (commands.BotMissingRole)):
+            logSys.error(f"BotRoleError")
+            return
+
+        if isinstance(error, (commands.BotMissingAnyRole)):
+            logSys.error(f"BotAnyRoleError")
+            return
+
+        if isinstance(error, (commands.BotMissingPermissions)):
+            logSys.error(f"BotPermError")
+            return
+
+        logSys.critial(f"Unhandled on_command_error")
+
+    @bot.event
+    async def on_error(event, *args, **kwargs):
+        err = sys.exc_info()
+        erro = traceback.format_exception(event)
+        log.error(f"Error! {event=}\n{err=}\n{erro=}\n{args=}\n{kwargs=}")
+        logSys.error(traceback.format_exc())
+        raise
 
     for filename in os.listdir(cogsDir):
         if filename.endswith(".py") and filename != "__init__.py":
             try:
                 bot.load_extension(f"cogs.{filename[:-3]}")
             except Exception:
-                log.exception(f"Autoload Cog {filename=}")
+                logSys.exception(f"Autoload Cog {filename=}")
+
+    @bot.event
+    async def on_connect():
+        log.critical("Connected")
+        logSys.critical("Connected")
+
+    @bot.event
+    async def on_resumed():
+        log.critical("Resumed")
+        logSys.critical("Resumed")
+
+    @bot.event
+    async def on_close():
+        log.critical("Closing")
+        logSys.critical("Closing")
 
     log.critical("Conecting to Discord")
+    logSys.critical("Conecting to Discord")
+
     try:
         from config import DISTOKEN
-        bot.run(DISTOKEN)
+        bot.run(DISTOKEN)  # , log_handler=handleDisFile
     except Exception:
         log.exception(f"Bot Run")
+        logSys.exception(f"Bot Run")
 
 
 if __name__ == "__main__":

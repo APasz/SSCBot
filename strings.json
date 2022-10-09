@@ -1,6 +1,6 @@
 {
-    "en":{
-        "SSC":{
+    "en": {
+        "SSC": {
             "Start": "The Screenshot Competition Is Starting",
             "End": "End date is:",
             "Gift": "This is a special week. There is prize up for grabs.",
@@ -9,14 +9,14 @@
         },
         "Server": {
             "Common": {
-                "Welcome" : "{user}, Welcome to {guild}",
-                "Rules" : "Please keep {rules} in mind"
+                "Welcome": "{user}, Welcome to {guild}",
+                "Rules": "Please keep {rules} in mind"
             },
             "TPFGuild": {
                 "Description": "The original Transport Fever Discord server. Originally known as the Reddit server but these days is generally known as the Global server."
             },
             "NIXGuild": {
-                "Description": "A Transport Fever server to bring 3 small TpF communities together, the Australians, Linux, and MacOS people, though everyone is welcome."
+                "Description": "A Transport Fever server to bring 3 small TpF communities together, the Australian, Linux, and MacOS people, though everyone is welcome."
             },
             "NAGuild": {
                 "Description": "A Transport Fever Modding server meant to bring together all modders of North America."
@@ -27,8 +27,9 @@
             "InfoNameSame": "Hi, I'm **SSCBot**",
             "InfoNameDiff": "Hi, I'm **{name}**, formally known as **SSCBot**.",
             "InfoDesc": "Created by **APasz**\nI'm written in Python and my code is freely avaliable under MIT on **[GitHub](https://github.com/APasz/SSCBot)**\nMy functions include: Reacting to things, Welcoming new users, Giving users the roles, random facts, and conversions they seek, logging, and more.\nYou can use **{prefix}help** to see a list of commands.\nMost commands are also avaliable as slash commands."
+        },
+        "GameHelp": {
+            "UserDataButton": "Also you can click the 'Open Userdata Folder' button on the advanced tab in the settings menu."
         }
-        
-
     }
 }

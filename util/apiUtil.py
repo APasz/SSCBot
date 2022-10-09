@@ -7,11 +7,12 @@ from config import NEXUSAPI, STEAMAPI
 print("UtilAPI")
 
 log = logging.getLogger("discordGeneral")
+logSys = logging.getLogger("discordSystem")
 try:
-    log.debug("TRY UTIL_API IMPORT MODULES")
+    logSys.debug("TRY UTIL_API IMPORT MODULES")
     import gspread
 except Exception:
-    log.exception("UTIL_API IMPORT MODULES")
+    logSys.exception("UTIL_API IMPORT MODULES")
 
 
 def steamWSGet(wsID) -> int | dict:

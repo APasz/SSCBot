@@ -1,5 +1,4 @@
 import asyncio
-from email import message
 import logging
 import textwrap
 import time
@@ -11,16 +10,16 @@ from util.genUtil import getCol, formatTime
 print("CogAuditLog")
 
 log = logging.getLogger("discordGeneral")
+logSys = logging.getLogger("discordSystem")
 try:
-    log.debug("TRY AUDIT_LOG IMPORT MODULES")
-    import datetime
+    logSys.debug("TRY AUDIT_LOG IMPORT MODULES")
     from datetime import datetime, timezone
 
     import nextcord
     from dateutil import relativedelta
     from nextcord.ext import commands
 except Exception:
-    log.exception("AUDIT_LOG IMPORT MODULES")
+    logSys.exception("AUDIT_LOG IMPORT MODULES")
 
 
 class auditLogger(commands.Cog, name="AuditLogging"):
@@ -31,10 +30,11 @@ class auditLogger(commands.Cog, name="AuditLogging"):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        log.debug(f"{self.__cog_name__} Ready")
+        logSys.debug(f"{self.__cog_name__} Ready")
 
     async def userRemove(self, data: dataObject):
-        """Triggers the Member/User left entry. As well as function to check if user was kicked/banned"""
+        """Triggers the Member/User left entry.
+        As well as function to check if user was kicked/banned"""
         await self.bot.wait_until_ready()
         dataObj = data
         log.info(
@@ -229,7 +229,8 @@ class auditLogger(commands.Cog, name="AuditLogging"):
             fName2 = "Account Created"
             crtd = usr.created_at
             crtdStamp = int(round(crtd.timestamp()))
-            fValue2 = f"<t:{crtdStamp}:f>\n<t:{crtdStamp}:R>\n**Unix**: {crtdStamp}\n**Member Count**: {auditInfo.count}"
+            fValue2 = f"""<t:{crtdStamp}:f>\n<t:{crtdStamp}:R>
+            **Unix**: {crtdStamp}\n**Member Count**: {auditInfo.count}"""
             e = nextcord.Embed(title=title, colour=getCol("positive2"))
 
         elif "MemberAccept" == TYPE:

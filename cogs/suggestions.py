@@ -3,14 +3,15 @@ import logging
 print("CogSuggestions")
 
 log = logging.getLogger("discordGeneral")
+logSys = logging.getLogger("discordSystem")
 try:
-    log.debug("TRY SUGGESTIONS IMPORT MODUELS")
+    logSys.debug("TRY SUGGESTIONS IMPORT MODUELS")
     import nextcord
     from config import genericConfig as gxConfig
     from discord import SlashOption
     from nextcord.ext import commands
 except Exception:
-    log.exception("SUGGESTIONS IMPORT MODUELS")
+    logSys.exception("SUGGESTIONS IMPORT MODUELS")
 
 
 class suggModal(nextcord.ui.Modal):

@@ -12,8 +12,9 @@ from util.genUtil import blacklistCheck, getChan, getCol, hasRole
 print("CogSSC")
 
 log = logging.getLogger("discordGeneral")
+logSys = logging.getLogger("discordSystem")
 try:
-    log.debug("TRY SSC IMPORT MODULES")
+    logSys.debug("TRY SSC IMPORT MODULES")
     import datetime
 
     import nextcord
@@ -22,7 +23,7 @@ try:
     from nextcord import Interaction, SlashOption, slash_command
     from nextcord.ext import application_checks, commands, tasks
 except Exception:
-    log.exception("SSC IMPORT MODULES")
+    logSys.exception("SSC IMPORT MODULES")
 
 
 async def timestampset() -> bool:
@@ -75,8 +76,8 @@ class ssc(commands.Cog, name="SSC"):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        log.debug(f"{self.__cog_name__} Ready")
-        log.debug(
+        logSys.debug(f"{self.__cog_name__} Ready")
+        logSys.debug(
             f"{sscConfig.tpfID=}, {sscConfig.sscChan=}, {sscConfig.sscmanager=}, {gxConfig.ownerGuild=}"
         )
 
@@ -85,11 +86,13 @@ class ssc(commands.Cog, name="SSC"):
             "General"]["TaskLengths"]["SSC_Remind"]
     )
     async def remindTask(self):
-        """Get reminder timestamp from file, check if current time is in within range of remindStamp and nextStamp(-2h), if so invoke SSC minder command"""
+        """Get reminder timestamp from file
+        check if current time is in within range of remindStamp and nextStamp(-2h)
+        if so invoke SSC minder command"""
         configuration = readJSON(filename="config")
         configSSC = configuration["General"]["SSC_Data"]
         log.debug(f"remindTask_run:rmSent {configSSC['remindSent']}")
-        if configSSC["remindSent"] == True:
+        if configSSC["remindSent"]:
             log.debug(f"remindYes {configSSC['remindSent']}")
             return
         nex = int(configSSC["nextStamp"])
@@ -104,8 +107,8 @@ class ssc(commands.Cog, name="SSC"):
             chan = getChan(self=self, guild=sscConfig.tpfID, chan="SSC_Comp")
             try:
                 await chan.send(
-                    f"Reminder that the competiton ends soon;\n**<t:{nex}:R>**\nGet you images and votes in. 🇻 🇴 🇹 🇪 @{alert}"
-                )
+                    f"""Reminder that the competiton ends soon;\n**<t:{nex}:R>**
+                    Get your images and votes in. 🇻 🇴 🇹 🇪 @{alert}""")
             except Exception:
                 log.exception(f"SSC Reminder")
             await asyncio.sleep(0.1)
@@ -168,7 +171,7 @@ class ssc(commands.Cog, name="SSC"):
             banner: nextcord.Attachment = SlashOption(
                 name="banner",
                 required=True,
-                description="The image shown in the competition embed. Name of file is used as theme, - replaced with space.",
+                description="The image shown in the competition embed. Name of file is used, - replaced with space.",
             ),
             bannerFull1: nextcord.Attachment = SlashOption(
                 name="bannerfull1",
@@ -320,7 +323,7 @@ class ssc(commands.Cog, name="SSC"):
             else:
                 self.remindTask.start()
                 log.debug("Try remindTask Started")
-        except:
+        except Exception:
             log.debug("remindTask not already running")
         log.debug("remindTask Triggered")
 
@@ -410,7 +413,7 @@ class ssc(commands.Cog, name="SSC"):
         theme = SSC_Data["theme"]
         try:
             themeNote = SSC_Data["allThemes"][theme]
-        except:
+        except Exception:
             themeNote = None
         txt = ["Your image was deleted;"]
         if reason == "1":
@@ -499,7 +502,7 @@ class ssc(commands.Cog, name="SSC"):
         # configuration = readJSON(filename="config")
         log.debug(
             f"exp: {interaction.is_expired()} | {interaction.expires_at.timestamp}")
-        if update == True:
+        if update:
             await interaction.response.defer()
             role = interaction.guild.get_role(int(sscConfig.sscmanager))
             if not hasRole(role=role, userRoles=interaction.user.roles):
@@ -511,7 +514,7 @@ class ssc(commands.Cog, name="SSC"):
                 log.exception("Updating Themes")
                 await interaction.send("Error updating themes", ephemeral=True)
                 return
-        if themes == None:
+        if themes is None:
             themes = list((sscConfig.themesDict).keys())
         if isinstance(themes, list):
             log.debug("is list")
@@ -552,13 +555,13 @@ class ssc(commands.Cog, name="SSC"):
             await interaction.send("Failed!", ephemeral=True)
             return
         else:
-            if update == True:
+            if update:
                 log.debug(f"expSend: {interaction.is_expired()}")
             try:
                 last = await interaction.original_message()
             except Exception:
                 log.exception(f"/Themevote original")
-        if update == True:
+        if update:
             log.debug(f"expFinal: {interaction.is_expired()}")
         for element in emo:
             try:
@@ -568,7 +571,8 @@ class ssc(commands.Cog, name="SSC"):
 
     @ commands.Cog.listener()
     async def on_message(self, ctx: nextcord.ext.commands.Context):
-        """Check if message has attachment or link, if 1 add reaction, if not 1 delete and inform user, set/check prize round state, ignore SSCmanager,"""
+        """Check if message has attachment or link, if 1 add reaction
+        if not 1 delete and inform user, set/check prize round state, ignore SSCmanager,"""
         if ctx.content.startswith(f"{gxConfig.BOT_PREFIX}"):
             return
         if int(ctx.channel.id) != int(sscConfig.sscChan):
@@ -623,7 +627,8 @@ class ssc(commands.Cog, name="SSC"):
             except Exception:
                 log.exception(f"SSC on_message")
         if len(ctx.attachments) != 1 and h == "n":
-            content = f"""Multiple images detected. Please resubmit one image at a time.\n{delTime}sec *self-destruct*"""
+            content = f"""Multiple images detected. Please resubmit one image at a time.
+            {delTime}sec *self-destruct*"""
             try:
                 await ctx.reply(content, delete_after=delTime)
                 log.info(
@@ -632,15 +637,16 @@ class ssc(commands.Cog, name="SSC"):
             except Exception:
                 log.exception(f"SSC on_message")
         if len(ctx.attachments) == 1 or h == "y":
-            if sscConfig.ignoreWinner == True:
+            if sscConfig.ignoreWinner:
                 try:
                     await ctx.add_reaction(gxConfig.emoStar)
                 except Exception:
                     log.exception(f"SSC add_reaction")
                 return
-            if sscConfig.isPrize == True:
+            if sscConfig.isPrize:
                 if ctx.author.get_role(int(sscConfig.winnerPrize)):
-                    content = f"""You're a SSC Prize Winner, so can't participate in this round.\n{delTime}sec *self-destruct*"""
+                    content = f"""You're a SSC Prize Winner, so can't participate in this round.
+                    {delTime}sec *self-destruct*"""
                     try:
                         await ctx.reply(content, delete_after=delTime)
                         log.info(
@@ -658,12 +664,13 @@ class ssc(commands.Cog, name="SSC"):
                     except Exception:
                         log.exception(f"SSC add_reaction")
                     return
-            elif sscConfig.isPrize == False:
+            elif sscConfig.isPrize is False:
                 if ctx.author.get_role(int(sscConfig.winner)) or ctx.author.get_role(
                         int(sscConfig.runnerUp)
                 ):
                     log.debug("w")
-                    content = f"""You're a SSC Winner/Runner Up, so can't participate in this round.\n{delTime}sec *self-destruct*"""
+                    content = f"""You're a SSC Winner/Runner Up, so can't participate in this round.
+                    {delTime}sec *self-destruct*"""
                     try:
                         await ctx.reply(content, delete_after=delTime)
                         log.info(

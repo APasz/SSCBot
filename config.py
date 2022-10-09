@@ -9,13 +9,14 @@ from util.fileUtil import readJSON, writeJSON
 print("Config")
 
 log = logging.getLogger("discordGeneral")
+logSys = logging.getLogger("discordSystem")
 try:
-    log.debug("TRY CONFIG IMPORT MODULES")
+    logSys.debug("TRY CONFIG IMPORT MODULES")
     import nextcord
     import psutil
     from packaging import version
 except Exception:
-    log.exception("CONFIG IMPORT MODULES")
+    logSys.exception("CONFIG IMPORT MODULES")
 
 
 def verifyConfigJSON() -> bool:
@@ -38,7 +39,7 @@ def verifyConfigJSON() -> bool:
             configuration["General"]["Events"][item] = True
 
     for item in configuration:
-        log.debug(item)
+        logSys.debug(item)
         if "General" not in item:
             try:
                 configuration[item]["SlashCommands"]
@@ -53,7 +54,7 @@ def verifyConfigJSON() -> bool:
             try:
                 del configuration[item]["Events"]["Artwork"]
             except Exception:
-                log.exception(f"Could Not Delete Artwork Event {item=}")
+                logSys.exception(f"Could Not Delete Artwork Event {item=}")
 
             try:
                 configuration[item]["AutoReact"]
@@ -61,7 +62,7 @@ def verifyConfigJSON() -> bool:
                 configuration[item]["AutoReact"] = {}
 
             if "Artwork" in configuration[item]["Channels"]:
-                log.debug("Update Artwork")
+                logSys.debug("Update Artwork")
                 chan = str(configuration[item]["Channels"]["Artwork"])
                 configuration[item]["AutoReact"] = {}
                 configuration[item]["AutoReact"]["Artwork"] = {}
@@ -72,7 +73,7 @@ def verifyConfigJSON() -> bool:
                 configuration[item]["AutoReact"]["Artwork"]["isExactMatch"] = False
                 del configuration[item]["Channels"]["Artwork"]
             if "infoBattles" in configuration[item]["Channels"]:
-                log.debug("Update Battles")
+                logSys.debug("Update Battles")
                 chan = str(configuration[item]["Channels"]["infoBattles"])
                 configuration[item]["AutoReact"] = {}
                 configuration[item]["AutoReact"]["BattlesThumb"] = {}
@@ -102,7 +103,10 @@ def verifyConfigJSON() -> bool:
                     configuration[item]["Events"]["ModPreview_DeleteTrigger"] = True
 
     if writeJSON(data=configuration, filename="config.json"):
-        log.debug("Updated Config")
+        logSys.debug("Updated Config")
+        return True
+    else:
+        return False
 
 
 class _singleton_(type):
@@ -118,19 +122,20 @@ class _singleton_(type):
 class genericConfig(metaclass=_singleton_):
     """Class for basic bot configuration"""
 
-    def slashList() -> set[int]:
+    @classmethod
+    def slashList(cls) -> set[int]:
         """Gets guild IDs of all servers it's allowed for + owner guild"""
         configuration = readJSON(filename="config")
         slashes = set()
         for item in configuration:
             try:
                 state = configuration[item]["SlashCommands"]
-            except:
+            except Exception:
                 continue
             if state is True:
                 slashes.add(int(item))
-        slashes.add(int(431272247001612309))
-        return slashes
+        slashes.add(cls.ownerGuild)
+        return list(slashes)
 
     @classmethod
     def update(cls):
@@ -303,12 +308,12 @@ def getGuilds(includeGeneral: bool = False, by: str = "id") -> dict:
         if by == "id":
             try:
                 IDs[item] = configuration[item]["Config_Name"]
-            except:
+            except Exception:
                 pass
         if by == "name":
             try:
                 IDs[configuration[item]["Config_Name"]] = item
-            except:
+            except Exception:
                 pass
     if includeGeneral:
         IDs["Global"] = "General"
@@ -322,9 +327,9 @@ def getGlobalEventConfig(listAll: bool = False) -> set:
     configuration = readJSON(filename="config")
     for itemKey, itemVal in configuration["General"]["Events"].items():
         log.debug(f"{itemKey=} | {itemVal=}")
-        if listAll == True:
+        if listAll:
             globalEvents.add(itemKey)
-        elif itemVal == False:
+        elif not itemVal:
             globalEvents.add(itemKey)
     log.debug(f"{globalEvents=}")
     return globalEvents
@@ -352,7 +357,7 @@ def getEventConfig(by: str = "id") -> dict:
             eventList = []
             try:
                 for elementKey, elementVal in configuration[item]["Events"].items():
-                    if (elementKey not in globalEvents) and (elementVal == True):
+                    if (elementKey not in globalEvents) and (elementVal):
                         eventList.append(elementKey)
                     events[nameID] = eventList
             except Exception:

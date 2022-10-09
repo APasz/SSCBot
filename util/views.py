@@ -5,8 +5,9 @@ import time
 print("UtilViews")
 
 log = logging.getLogger("discordGeneral")
+logSys = logging.getLogger("discordSystem")
 try:
-    log.debug("TRY VIEWS IMPORT MODULES")
+    logSys.debug("TRY VIEWS IMPORT MODULES")
     from config import generalEventConfig as geConfig
     from config import genericConfig as gxConfig
 
@@ -16,7 +17,7 @@ try:
     import nextcord
     from nextcord import Interaction
 except Exception:
-    log.exception("VIEWS IMPORT MODULES")
+    logSys.exception("VIEWS IMPORT MODULES")
 
 configuration = readJSON(filename="config")
 guilds = geConfig.guildListName
@@ -340,7 +341,7 @@ class factSubmit(nextcord.ui.Modal):
             sourceLink = str(self.sourceLink.value)
         else:
             sourceLink = None
-        if source == None and sourceLink == None:
+        if source is None and sourceLink is None:
             try:
                 await inter.send("A source must be provided!", ephemeral=True)
             except Exception:
@@ -396,7 +397,7 @@ class reactorModal(nextcord.ui.Modal):
     def __init__(self, reactor, reactorDict):
         super().__init__(
             title=f"Configure {reactor}",
-            timeout=10 * 60,)
+            timeout=None,)
         from util.genUtil import toStr, emoToStr
         self.reactorName = reactor
         self.channels = toStr(reactorDict["Channel"])
@@ -441,7 +442,9 @@ class reactorModal(nextcord.ui.Modal):
     async def callback(self, interaction: nextcord.Interaction):
         await interaction.send(f"{self.reactorName} Updating! See auditlog for more details.")
         log.debug(
-            f"Reactor={self.reactorName} | Channel={self.channelText.value} | Contain={self.containText.value} | Emoji={self.emojiText.value} | Match={self.isExactText.value}")
+            f"""Reactor={self.reactorName} | Channel={self.channelText.value}
+            Contain={self.containText.value}
+            Emoji={self.emojiText.value} | Match={self.isExactText.value}""")
         self.stop()
 
 

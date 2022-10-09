@@ -6,11 +6,12 @@ import inspect
 print("UtilFile")
 
 log = logging.getLogger("discordGeneral")
+logSys = logging.getLogger("discordSystem")
 try:
-    log.debug("TRY UTIL_FILE IMPORT MODUELS")
-    log.debug("No external moduels")
+    logSys.debug("TRY UTIL_FILE IMPORT MODUELS")
+    logSys.debug("No external moduels")
 except Exception:
-    log.exception("UTIL_FILE IMPORT MODUELS")
+    logSys.exception("UTIL_FILE IMPORT MODUELS")
 
 cacheJSON = {}
 
