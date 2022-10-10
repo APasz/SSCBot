@@ -162,7 +162,7 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
         if guildID not in geConfig.guildListID:
             return
         if "MemberJoin" in geConfig.eventConfigID[guildID]:
-            logMess = f"{geConfig.guildListID[str(guildID)]}, {member.id}: {member.display_name}"
+            logMess = f"{geConfig.guildListID[guildID]}, {member.id}: {member.display_name}"
             log.info(f"MemberJoin: {logMess}")
             from config import dataObject
             dataObject.TYPE = "MemberJoin"
@@ -216,7 +216,7 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
         if before.pending and after.pending is True:
             return
         log.debug("on_member_update")
-        logMess = f"guildID={geConfig.guildListID[str(guildID)]}, {before.id=}: {before.display_name=}"
+        logMess = f"guildID={geConfig.guildListID[guildID]}, {before.id=}: {before.display_name=}"
         from config import dataObject
         dataObject.auditChan = getChan(
             self=self, guild=guildID, chan="Audit", admin=True
@@ -444,7 +444,9 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
 
             log.debug(
                 f"AutoReact: {guildID=} | {chanID=} | {list(geConfig.autoReactsChans)}")
-            if chanID in list(geConfig.autoReactsChans[guildID]):
+            if guildID in list(geConfig.autoReactsChans):
+                if chanID not in list(geConfig.autoReactsChans[guildID]):
+                    pass
                 reactorList = geConfig.autoReactsChans[guildID][chanID]
                 emojiAdd = []
                 for item in reactorList:

@@ -551,8 +551,8 @@ class botInformation(metaclass=_singleton_):
 
     hostProvider = "OVH"
     hostLocation = "Sydney"
-    linePyCount = 5124
-    lineJSONCount = 1442
+    linePyCount = 5239
+    lineJSONCount = 1488
 
 
 botInformation.update()

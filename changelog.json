@@ -203,7 +203,11 @@
     ],
     "2.6.5": [
         "Backend::20221010",
-        "More strict use of int for numbers",
-        "Sync all application commands. Hopefully autocompletes will behave better."
+        "-Changed: More strict use of int for numbers",
+        "-Added; bot: Sync all application commands. Hopefully autocompletes will behave better."
+    ],
+    "2.6.6": [
+        "Backend::20221011",
+        "-Fixed: Missed a couple string that were meant to be integers"
     ]
 }
