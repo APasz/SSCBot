@@ -101,12 +101,14 @@ def getChan(guild: int, chan: str, admin: bool = False, self=None):
         return chanID
 
 
-def getRole(guild: int | str | ncGuild, role: str):
+def getRole(guild: int | ncGuild, role: str):
     """Gets from config a channel id or object using the guild id."""
-    guild = str(guild)
     func = inspect.stack()[1][3]
-    role = str(role)
     logSys.debug(f"{func=} | {type(guild)=} | {guild=} | {role=}")
+
+    if isinstance(guild, str):
+        guild = int(guild)
+    role = str(role)
 
     def fromConfig(g: str, r: str):
         g = str(g)
@@ -119,9 +121,9 @@ def getRole(guild: int | str | ncGuild, role: str):
             logSys.exception("Get Role id")
 
     if isinstance(guild, int):
-        roleRtn = fromConfig(g=str(guild), r=str(role))
+        roleRtn = fromConfig(g=guild, r=role)
     else:
-        roleID = fromConfig(g=str(guild.id), r=str(role))
+        roleID = fromConfig(g=guild.id, r=role)
         try:
             roleRtn = guild.get_role(int(roleID))
         except Exception:

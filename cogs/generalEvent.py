@@ -30,6 +30,7 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        self.onMemberFired = False
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -252,7 +253,7 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
                     log.exception(f"Send Guild Welcome")
             if "MemberVerifiedRole" in geConfig.eventConfigID[guildID]:
                 log.info(f"MemberVerifiedRole: {logMess}")
-                role = getRole(guild=after.guild, role="Verified")
+                role = getRole(guild=after.guild.id, role="Verified")
                 if role is not None:
                     try:
                         await after.add_roles(role, reason="Passed Membership Screen.", atomic=True)
@@ -428,8 +429,12 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
         chanID = int(getChannelID(obj=ctx))
         if guildID is None:
             return
+        cfName = "**"
+        if guildID in list(geConfig.guildListID):
+            cfName = geConfig.guildListID[guildID]
+
         log.debug(
-            f"GE_on_message; {geConfig.guildListID[guildID]}: {guildID=} | {chanID=} | {ctx.author.id=}")
+            f"GE_on_message; {cfName}: {guildID=} | {chanID=} | {ctx.author.id=}")
         event = False
         if "AutoReact" in geConfig.eventConfigID[guildID]:
             async def addReact(emoji):
@@ -445,7 +450,7 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
             log.debug(
                 f"AutoReact: {guildID=} | {chanID=} | {list(geConfig.autoReactsChans)}")
             if guildID in list(geConfig.autoReactsChans):
-                if chanID not in list(geConfig.autoReactsChans[guildID]):
+                if chanID in list(geConfig.autoReactsChans[guildID]):
                     reactorList = geConfig.autoReactsChans[guildID][chanID]
                     emojiAdd = []
                     for item in reactorList:
