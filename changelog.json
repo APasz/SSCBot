@@ -200,5 +200,10 @@
         "Some cleanup",
         "-Added; bot: System log. As well as actually capturing application command errors",
         "-Added; bot: All server perms the bot has are logged."
+    ],
+    "2.6.5": [
+        "Backend::20221010",
+        "More strict use of int for numbers",
+        "Sync all application commands. Hopefully autocompletes will behave better."
     ]
 }

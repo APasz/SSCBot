@@ -6,7 +6,7 @@ import os
 from config import generalEventConfig as geConfig
 from config import genericConfig as gxConfig
 from util.fileUtil import readJSON, writeJSON
-from util.genUtil import blacklistCheck, getChan, getCol, getChannelID, isEmojiCustom
+from util.genUtil import blacklistCheck, getChan, getCol, getChannelID, convListToInt
 from util.views import nixroles, nixrolesCOL, tpfroles, reactorModal
 
 from cogs.auditLog import auditLogger
@@ -464,8 +464,8 @@ Modder intern gives access to special channels full of useful info.""",
     @configurationCOMM.on_autocomplete("group")
     async def configurationGroup(self, interaction: Interaction, group):
         """Autocomplete function for use with the configuration command 'group' arg"""
-        guildID = str(interaction.guild_id)
-        groups = readJSON(filename="config")[guildID]
+        guildID = int(interaction.guild_id)
+        groups = readJSON(filename="config")[str(guildID)]
         configList = []
         groupWhiteList = gxConfig.configCommGroupWhitelist
         for itemKey, itemVal in groups.items():
@@ -480,8 +480,8 @@ Modder intern gives access to special channels full of useful info.""",
         if group is None:
             return
         optionsList = ["undefined"]
-        guildID = str(interaction.guild_id)
-        configuration = readJSON(filename="config")[guildID][group]
+        guildID = int(interaction.guild_id)
+        configuration = readJSON(filename="config")[str(guildID)][group]
         optionsList = list(configuration.keys())
         finalOptionsList = []
         if not option:
@@ -503,8 +503,8 @@ Modder intern gives access to special channels full of useful info.""",
         if group is None or option is None:
             return
         print(group, option)
-        guildID = str(interaction.guild_id)
-        configuration = readJSON(filename="config")[guildID]
+        guildID = int(interaction.guild_id)
+        configuration = readJSON(filename="config")[str(guildID)]
         configItem = []
         try:
             item = str(configuration[group][option])
@@ -524,7 +524,7 @@ Modder intern gives access to special channels full of useful info.""",
     @configurationBASE.subcommand(name="autoreact", description="Add or configure AutoReacts.")
     async def configurationAutoReact(self, interaction: Interaction, reactor=SlashOption(
             description="Supports multiple channels, matches, and emoji (Please copy the emoji you wish to use).")):
-        guildID = str(interaction.guild_id)
+        guildID = int(interaction.guild_id)
         log.debug(f"Subcommand {reactor=} {guildID=}")
         reactors = geConfig.autoReacts[guildID]
         if reactor in reactors:
@@ -553,7 +553,7 @@ Modder intern gives access to special channels full of useful info.""",
 
         oldChannel = reactorDict["Channel"]
         dat.channelExtra = toStr(oldChannel)
-        newChannel = toList(reactModal.channelText.value)
+        newChannel = convListToInt(toList(reactModal.channelText.value))
         dat.channelList = newChannel
 
         oldContain = reactorDict["Contains"]
@@ -584,7 +584,8 @@ Modder intern gives access to special channels full of useful info.""",
         }
         log.debug(f"{newReactorDict=}")
         configuration = readJSON("config")
-        configuration[guildID]["AutoReact"][reactModal.reactorName] = newReactorDict
+        configuration[str(
+            guildID)]["AutoReact"][reactModal.reactorName] = newReactorDict
         if writeJSON(data=configuration, filename="config"):
             await auditLogger.logEmbed(self, auditInfo=dat)
             del dat
@@ -594,7 +595,7 @@ Modder intern gives access to special channels full of useful info.""",
 
     @configurationAutoReact.on_autocomplete("reactor")
     async def configurationARGetReactor(self, interaction: Interaction, reactor):
-        guildID = str(interaction.guild_id)
+        guildID = int(interaction.guild_id)
         reactors = geConfig.autoReacts[guildID]
         reactorList = []
         for itemKey, itemVal in reactors.items():
@@ -624,7 +625,7 @@ Modder intern gives access to special channels full of useful info.""",
         print(messIDs)
         print(emojiSet)
         for item in messIDs:
-            messOBJs.append(await ctx.fetch_message(item))
+            messOBJs.append(await ctx.fetch_message(int(item)))
         if len(emojiSet) == 0:
             emojiSet = ["⭐"]
         badEmoji = set()

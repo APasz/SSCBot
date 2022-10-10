@@ -281,15 +281,19 @@ class ssc(commands.Cog, name="SSC"):
         ebed.add_field(name=txt_CompTheme, value=f"{theme}", inline=True)
         ebed.add_field(name=txt_CompEnd,
                        value=f"<t:{nextstamp}:f>", inline=True)
-        if note is not None:
-            ebed.add_field(name="**Note**",
-                           value=f"\n```\n{note}\n```", inline=False)
-        elif configSSC["allThemes"][theme] is not None:
-            ebed.add_field(
-                name="**Note**",
-                value=f"\n```\n{configSSC['allThemes'][theme]}\n```",
-                inline=False,
-            )
+        try:
+            configSSC["allThemes"][theme]
+        except Exception:
+            log.exception(f"Theme not found")
+        else:
+            if note is not None:
+                ebed.add_field(name="**Note**",
+                               value=f"\n```\n{note}\n```", inline=False)
+            elif configSSC["allThemes"][theme] is not None:
+                ebed.add_field(
+                    name="**Note**",
+                    value=f"\n```\n{configSSC['allThemes'][theme]}\n```",
+                    inline=False,)
         if not writeJSON(data=configuration, filename="config"):
             try:
                 await interaction.send("Failed to write to config", ephemeral=True)
@@ -649,41 +653,33 @@ class ssc(commands.Cog, name="SSC"):
                     {delTime}sec *self-destruct*"""
                     try:
                         await ctx.reply(content, delete_after=delTime)
-                        log.info(
-                            f"Deletion_PrizeWinner: {idName}"
-                        )
+                        log.info(f"Deletion_PrizeWinner: {idName}")
                         await delete(ctx=ctx, delay=delTime)
                     except Exception:
                         log.exception(f"SSC on_message")
                 else:
                     try:
                         await ctx.add_reaction(gxConfig.emoStar)
-                        log.info(
-                            f"SubmissionPrize: {idName}"
-                        )
+                        log.info(f"SubmissionPrize: {idName}")
                     except Exception:
                         log.exception(f"SSC add_reaction")
                     return
             elif sscConfig.isPrize is False:
                 if ctx.author.get_role(int(sscConfig.winner)) or ctx.author.get_role(
-                        int(sscConfig.runnerUp)
-                ):
+                        int(sscConfig.runnerUp)):
                     log.debug("w")
                     content = f"""You're a SSC Winner/Runner Up, so can't participate in this round.
                     {delTime}sec *self-destruct*"""
                     try:
                         await ctx.reply(content, delete_after=delTime)
-                        log.info(
-                            f"Deletion_WinnerRunnerUp: {idName}"
-                        )
+                        log.info(f"Deletion_WinnerRunnerUp: {idName}")
                         await delete(ctx=ctx, delay=delTime)
                     except Exception:
                         log.exception(f"SSC on_message")
                 else:
                     try:
                         await ctx.add_reaction(gxConfig.emoStar)
-                        log.info(
-                            f"Submission: {idName}")
+                        log.info(f"Submission: {idName}")
                     except Exception:
                         log.exception(f"SSC add_reaction")
                     return

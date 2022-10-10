@@ -46,47 +46,43 @@ def hasRole(role: Role, userRoles) -> bool:
     return role in userRoles
 
 
-def getUserID(obj) -> str | int:
+def getUserID(obj) -> int:
     """Gets the user id from either ctx or interaction types"""
     func = inspect.stack()[1][3]
     log.debug(f"{func=} | type={type(obj)}")
 
     if hasattr(obj, "author"):
-        return obj.author.id
+        return int(obj.author.id)
     if hasattr(obj, "user"):
-        return obj.user.id
+        return int(obj.user.id)
 
 
-def getChannelID(obj) -> str | int:
+def getChannelID(obj) -> int:
     """Gets the channel id from either ctx or interaction types"""
     func = inspect.stack()[1][3]
     log.debug(f"{func=} | type={type(obj)}")
 
     if hasattr(obj, "channel"):
-        return obj.channel.id
+        return int(obj.channel.id)
     if hasattr(obj, "channel_id"):
-        return obj.channel_id
+        return int(obj.channel_id)
 
 
-def getGuildID(obj) -> str | None:
+def getGuildID(obj) -> int:
     """Gets guild id from a guild object"""
     func = inspect.stack()[1][3]
     log.debug(f"{func=} | type={type(obj)}")
 
     if hasattr(obj, "guild_id"):
-        return str(obj.guild_id)
+        return int(obj.guild_id)
     elif hasattr(obj, "guild"):
         if hasattr(obj.guild, "id"):
-            return str(obj.guild.id)
-    else:
-        return None
+            return int(obj.guild.id)
 
 
-def getChan(guild: str | int, chan: str, admin: bool = False, self=None):
+def getChan(guild: int, chan: str, admin: bool = False, self=None):
     """Gets from config a channel id or object using the guild id."""
     func = inspect.stack()[1][3]
-    guild = str(guild)
-    chan = str(chan)
     log.debug(f"{func=} | {guild=}, {chan=}, {admin=}, self={type(self)}")
 
     if admin is True:
@@ -94,7 +90,7 @@ def getChan(guild: str | int, chan: str, admin: bool = False, self=None):
     else:
         admin = "Channels"
     try:
-        chanID = int(readJSON(filename="config")[guild][admin][chan])
+        chanID = int(readJSON(filename="config")[str(guild)][admin][str(chan)])
     except KeyError:
         return None
     except Exception:
@@ -105,13 +101,16 @@ def getChan(guild: str | int, chan: str, admin: bool = False, self=None):
         return chanID
 
 
-def getRole(guild: str | int | ncGuild, role: str):
+def getRole(guild: int | str | ncGuild, role: str):
     """Gets from config a channel id or object using the guild id."""
+    guild = str(guild)
     func = inspect.stack()[1][3]
     role = str(role)
     log.debug(f"{func=} | {type(guild)=} | {guild=} | {role=}")
 
     def fromConfig(g: str, r: str):
+        g = str(g)
+        r = str(r)
         try:
             return readJSON(filename="config")[g]["Roles"][r]
         except KeyError:
@@ -119,7 +118,7 @@ def getRole(guild: str | int | ncGuild, role: str):
         except Exception:
             log.exception("Get Role id")
 
-    if isinstance(guild, int | str):
+    if isinstance(guild, int):
         roleRtn = fromConfig(g=str(guild), r=str(role))
     else:
         roleID = fromConfig(g=str(guild.id), r=str(role))
@@ -309,6 +308,8 @@ def isEmojiCustom(emoji: str, guildEmos: tuple = None) -> str | list:
                     log.debug(f"{type(item)} | {item}")
                     if emoName in str(item):
                         return [item.name, item.id]
+                return emoji
+
             else:
                 log.error("guildEmos not provided")
                 return False
@@ -321,12 +322,29 @@ def isEmojiCustom(emoji: str, guildEmos: tuple = None) -> str | list:
         return False
 
 
+def convListToInt(b: list, toInt: bool = True):
+    "Converts a list of strings to integers or vise versa"
+    func = inspect.stack()[1][3]
+    log.debug(f"{func=} | {b=} | {type(b)}")
+    if not isinstance(b, list):
+        return b
+    b2 = []
+    for item in b:
+        if toInt:
+            b2.append(int(item))
+        else:
+            b2.append(str(item))
+    return b2
+
+
 def toStr(k: list, sep: str = ' '):
     "Converts a list to string"
     func = inspect.stack()[1][3]
     log.debug(f"{func=} | {k=} | {type(k)}")
+
     if isinstance(k, list):
-        return sep.join(k)
+        k2 = convListToInt(k, toInt=False)
+        return sep.join(k2)
     else:
         return k
 
@@ -351,8 +369,7 @@ def toList(k: str | int, sep: str = ' '):
     func = inspect.stack()[1][3]
     log.debug(f"{func=} | {k=} | {type(k)} | {sep=}")
     if isinstance(k, str | int):
-        k = str(k)
-        return k.split(str(sep))
+        return (str(k)).split(str(sep))
     else:
         return k
 

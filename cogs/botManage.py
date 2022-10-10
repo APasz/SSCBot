@@ -146,9 +146,10 @@ class botManage(commands.Cog, name="BotManagement"):
         elif "-d" in arg:
             dumpPath = os.path.join(parentDir(), "dump")
             try:
-                os.mkdir(dumpPath)
-            except FileExistsError:
                 os.remove(dumpPath)
+            except Exception:
+                logSys.exception(f"Delete Dump Folder")
+            try:
                 os.mkdir(dumpPath)
             except Exception:
                 logSys.exception(f"Make Dump Folder")

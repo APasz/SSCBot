@@ -59,9 +59,10 @@ def cacheWrite() -> bool:
 
 
 def readJSON(filename: str, directory: list = None, cache: bool = True) -> dict | bool:
-    """Read a JSON file. By default caches all files to memory. If files doesn't exist, it'll be created and return an empty dict"""
+    """Read a JSON file. By default caches all files to memory.
+    If files doesn't exist, it'll be created and return an empty dict"""
     func = inspect.stack()[1][3]
-    log.debug(f"{func=}  | {filename=}")
+    log.debug(f"{func=} | {filename=}")
     if not filename.casefold().endswith(".json"):
         filename = filename + ".json"
     if isinstance(directory, list):

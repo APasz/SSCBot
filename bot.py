@@ -153,7 +153,7 @@ def main():
         logSys.info("Ensure /Commands Loaded")
         try:
             bot.add_all_application_commands()
-            await bot.sync_application_commands()
+            await bot.sync_all_application_commands()
         except Exception:
             logSys.exception(f"Ensure /Commands")
 
@@ -325,12 +325,20 @@ def main():
             logSys.error(f"BotPermError")
             return
 
-        logSys.critial(f"Unhandled on_command_error")
+        logSys.critical(f"Unhandled on_command_error")
 
     @bot.event
     async def on_error(event, *args, **kwargs):
-        err = sys.exc_info()
-        erro = traceback.format_exception(event)
+        try:
+            err = sys.exc_info()
+        except Exception:
+            log.exception(f"err")
+            err = "*undefined*"
+        try:
+            erro = traceback.format_exception()
+        except Exception:
+            log.exception(f"erro")
+            erro = "*undefined*"
         log.error(f"Error! {event=}\n{err=}\n{erro=}\n{args=}\n{kwargs=}")
         logSys.error(traceback.format_exc())
         raise

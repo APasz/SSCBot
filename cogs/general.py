@@ -191,7 +191,7 @@ class general(commands.Cog, name="General"):
                    category: str = SlashOption(name="category", required=True, choices=["Bot", "Server", "Member"],
                                                description="What sort of info are you looking for?"),):
         """Get info about the bot or current server."""
-        guildID = str(interaction.guild_id)
+        guildID = int(interaction.guild_id)
         await interaction.response.defer()
         if category == "Bot":
             strBot = readJSON(filename="strings")["en"]["Bot"]
@@ -241,7 +241,8 @@ Guilds: {botInfo.guildCount}""")
         elif category == "Server":
             try:
                 strServ = readJSON(filename="strings")["en"]["Server"]
-                desc = strServ[geConfig.guildListID[guildID]]["Description"]
+                desc = strServ[geConfig.guildListID[str(
+                    guildID)]]["Description"]
             except Exception:
                 log.exception("InfoCommand_desc")
                 desc = f"There is no description for this server yet.\nPlease contact {gxConfig.ownerName}"
@@ -518,8 +519,7 @@ Guilds: {botInfo.guildCount}""")
             if usr.premium_since is not None:
                 premium = int(round(usr.premium_since.timestamp()))
                 e.add_field(
-                    name="Booster Since;", value=f"<t:{premium}:R>", inline=True
-                )
+                    name="Booster Since;", value=f"<t:{premium}:R>", inline=True)
             roleList = usr.roles
             roleList.pop(0)
             roleList.reverse()

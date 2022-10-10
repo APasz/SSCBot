@@ -33,6 +33,7 @@ def verifyConfigJSON() -> bool:
 
     if (not isinstance(genCF["purgeLimit"], int | float) or (genCF["purgeLimit"] > 100)):
         genCF["purgeLimit"] = 100
+    configuration["General"] = genCF
 
     for item in generalEventConfig.defaultEvents:
         if item not in configuration["General"]["Events"]:
@@ -60,41 +61,6 @@ def verifyConfigJSON() -> bool:
                 configuration[item]["AutoReact"]
             except KeyError:
                 configuration[item]["AutoReact"] = {}
-
-            if "Artwork" in configuration[item]["Channels"]:
-                logSys.debug("Update Artwork")
-                chan = str(configuration[item]["Channels"]["Artwork"])
-                configuration[item]["AutoReact"] = {}
-                configuration[item]["AutoReact"]["Artwork"] = {}
-                configuration[item]["AutoReact"]["Artwork"]["Channel"] = [chan]
-                configuration[item]["AutoReact"]["Artwork"]["Contains"] = [
-                    "author"]
-                configuration[item]["AutoReact"]["Artwork"]["Emoji"] = ["❤️"]
-                configuration[item]["AutoReact"]["Artwork"]["isExactMatch"] = False
-                del configuration[item]["Channels"]["Artwork"]
-            if "infoBattles" in configuration[item]["Channels"]:
-                logSys.debug("Update Battles")
-                chan = str(configuration[item]["Channels"]["infoBattles"])
-                configuration[item]["AutoReact"] = {}
-                configuration[item]["AutoReact"]["BattlesThumb"] = {}
-                configuration[item]["AutoReact"]["BattlesThumb"]["Channel"] = [
-                    chan]
-                configuration[item]["AutoReact"]["BattlesThumb"]["Contains"] = [
-                    "👍"]
-                configuration[item]["AutoReact"]["BattlesThumb"]["Emoji"] = [
-                    "👍"]
-                configuration[item]["AutoReact"]["BattlesThumb"]["isExactMatch"] = False
-
-                configuration[item]["AutoReact"]["BattlesCheck"] = {}
-                configuration[item]["AutoReact"]["BattlesCheck"]["Channel"] = [
-                    chan]
-                configuration[item]["AutoReact"]["BattlesCheck"]["Contains"] = [
-                    "☑️"]
-                configuration[item]["AutoReact"]["BattlesCheck"]["Emoji"] = [
-                    "☑️"]
-                configuration[item]["AutoReact"]["BattlesCheck"]["isExactMatch"] = False
-
-                del configuration[item]["Channels"]["infoBattles"]
 
             if "ModPreview" in configuration[item]["Events"]:
                 try:
@@ -300,19 +266,20 @@ def bytesToHuman(byteNum: int, magnitude: str, bi: bool = True, bit: bool = Fals
     return f"{size}{magnitude}{power}{length}"
 
 
-def getGuilds(includeGeneral: bool = False, by: str = "id") -> dict:
+def getGuilds(includeGeneral: bool = False, by: str = "id") -> dict[int, str] | dict[str, int]:
     """Returns dict(ID|ConfigName) of all guilds and their ids"""
     configuration = readJSON(filename="config")
     IDs = {}
     for item in configuration:
+        item = str(item)
         if by == "id":
             try:
-                IDs[item] = configuration[item]["Config_Name"]
+                IDs[int(item)] = configuration[item]["Config_Name"]
             except Exception:
                 pass
         if by == "name":
             try:
-                IDs[configuration[item]["Config_Name"]] = item
+                IDs[configuration[item]["Config_Name"]] = int(item)
             except Exception:
                 pass
     if includeGeneral:
@@ -328,30 +295,31 @@ def getGlobalEventConfig(listAll: bool = False) -> set:
     for itemKey, itemVal in configuration["General"]["Events"].items():
         log.debug(f"{itemKey=} | {itemVal=}")
         if listAll:
-            globalEvents.add(itemKey)
+            globalEvents.add(str(itemKey))
         elif not itemVal:
-            globalEvents.add(itemKey)
+            globalEvents.add(str(itemKey))
     log.debug(f"{globalEvents=}")
     return globalEvents
 
 
-def getEventConfig(by: str = "id") -> dict:
+def getEventConfig(by: str = "id") -> dict[int, str] | dict[str, int]:
     """Returns list of events allowed per server by either ID or config name."""
     log.debug(f"getEventConfigRead {by=}")
     configuration = readJSON(filename="config")
     globalEvents = getGlobalEventConfig()
     events = {}
     for item in configuration:
+        item = str(item)
         if item != "General":
             if by == "name":
                 try:
-                    nameID = configuration[item]["Config_Name"]
+                    nameID = str(configuration[item]["Config_Name"])
                 except Exception:
                     log.exception("ConfigName to nameID")
             elif by == "id":
                 try:
                     configuration[item]["Config_Name"]
-                    nameID = item
+                    nameID = int(item)
                 except Exception:
                     log.exception("ConfigID to nameID")
             eventList = []
@@ -379,21 +347,21 @@ class screenShotCompConfig(metaclass=_singleton_):
         _tpfConfig = _configuration[str(cls.tpfID)]
         cls.curTheme = _sscConifg["theme"]
         "The current theme of the competition"
-        cls.sscmanager = str(_tpfConfig["Roles"]["SSC_Manager"])
+        cls.sscmanager = int(_tpfConfig["Roles"]["SSC_Manager"])
         "ID of the SSCManager role"
-        cls.winner = str(_tpfConfig["Roles"]["SSC_Winner"])
+        cls.winner = int(_tpfConfig["Roles"]["SSC_Winner"])
         "ID of the SSC Winner role"
-        cls.winnerPrize = str(_tpfConfig["Roles"]["SSC_WinnerPrize"])
+        cls.winnerPrize = int(_tpfConfig["Roles"]["SSC_WinnerPrize"])
         "ID of the SSC Prize Winner role"
-        cls.runnerUp = str(_tpfConfig["Roles"]["SSC_Runnerup"])
+        cls.runnerUp = int(_tpfConfig["Roles"]["SSC_Runnerup"])
         "ID of the SSC Runnerup role"
-        cls.remindChan = str(_tpfConfig["Channels"]["SSC_Remind"])
+        cls.remindChan = int(_tpfConfig["Channels"]["SSC_Remind"])
         "Channel competition reminder should be sent"
-        cls.sscChan = str(_tpfConfig["Channels"]["SSC_Comp"])
+        cls.sscChan = int(_tpfConfig["Channels"]["SSC_Comp"])
         "Channel the competition takes place"
-        cls.TPFssChan = str(_tpfConfig["Channels"]["ScreenshotsTPF"])
+        cls.TPFssChan = int(_tpfConfig["Channels"]["ScreenshotsTPF"])
         "Channel where TpF screenshots should go "
-        cls.OGssChan = str(_tpfConfig["Channels"]["ScreenshotsGames"])
+        cls.OGssChan = int(_tpfConfig["Channels"]["ScreenshotsGames"])
         "Channel where non-TpF screenshots should go"
         cls.themesDict = _sscConifg["allThemes"]
         "Dict of all themes and their notes"
@@ -421,11 +389,12 @@ class generalEventConfig(metaclass=_singleton_):
         configuration = readJSON(filename="config")
         autoReactsConfig = {}
         for item in configuration:
-            log.debug(f"{item=}")
-            if "General" == item:
+            if "General" in item:
                 continue
+            item = int(item)
+            log.debug(f"{item=}")
             try:
-                reactors = configuration[item]["AutoReact"]
+                reactors = configuration[str(item)]["AutoReact"]
                 log.debug(f"{reactors=}")
             except Exception:
                 log.exception(f"AutoReactCheck")
@@ -434,24 +403,26 @@ class generalEventConfig(metaclass=_singleton_):
                 autoReactsConfig[item] = reactors
         return autoReactsConfig
 
-    def getAutoReactChannels(autoReacts: dict):
+    def getAutoReactChannels(autoReacts: dict) -> dict[int]:
         """Gets list of channels that are in autoReacts"""
         log.debug(f"aR, {autoReacts=}")
         reactChans = {}
         # add guild IDs to reactChans
         for guild in autoReacts:
             #log.debug(f"g in aR {guild=}")
-            reactChans[guild] = {}
+            reactChans[int(guild)] = {}
         log.debug(f"rC1, {reactChans=}")
         guild = None
 
         # add every channel ID that all reactors of a guild to the appropriate guild ID in reactChans
         for G in reactChans:
+            G = int(G)
             #log.debug(f"G in rC, {G=}")
             for reactor in autoReacts[G]:
                 #log.debug(f"r in aR[G], {reactor=}")
                 chans = autoReacts[G][reactor]["Channel"]
                 for C in chans:
+                    C = int(C)
                     #log.debug(f"C in chans, {C=}")
                     reactChans[G][C] = set()
         log.debug(f"rC2, {reactChans=}")
@@ -461,10 +432,12 @@ class generalEventConfig(metaclass=_singleton_):
         # get chans from all reactors of same guild in autoReacts,
         # and add to a set under the guild ID in reactChans
         for G in reactChans:
+            G = int(G)
             for reactor in autoReacts[G]:
                 #log.debug(f"r in aR[G], {reactor=}")
                 chans = autoReacts[G][reactor]["Channel"]
                 for element in chans:
+                    element = int(element)
                     #log.debug(f"e in chans, {element=}")
                     rS = set(reactChans[G][element])
                     #log.debug(f"rS, {rS=}")
