@@ -29,7 +29,7 @@ configGen = configuration["General"]
 def getCol(col: str) -> nextcord.Color:
     """Gets the colour RGB list from config and returns colour object"""
     func = inspect.stack()[1][3]
-    log.debug(f"{func=} | {col=}")
+    logSys.debug(f"{func=} | {col=}")
 
     red, green, blue = configGen["EmbedColours"][col]
     colour = nextcord.Colour.from_rgb(red, green, blue)
@@ -41,7 +41,7 @@ def hasRole(role: Role, userRoles) -> bool:
     role = Discord role object
     :param arg2: roles object of a user"""
     func = inspect.stack()[1][3]
-    log.debug(f"{func=} | {role=} | {userRoles=}")
+    logSys.debug(f"{func=} | {role=} | {userRoles=}")
 
     return role in userRoles
 
@@ -49,7 +49,7 @@ def hasRole(role: Role, userRoles) -> bool:
 def getUserID(obj) -> int:
     """Gets the user id from either ctx or interaction types"""
     func = inspect.stack()[1][3]
-    log.debug(f"{func=} | type={type(obj)}")
+    logSys.debug(f"{func=} | type={type(obj)}")
 
     if hasattr(obj, "author"):
         return int(obj.author.id)
@@ -60,7 +60,7 @@ def getUserID(obj) -> int:
 def getChannelID(obj) -> int:
     """Gets the channel id from either ctx or interaction types"""
     func = inspect.stack()[1][3]
-    log.debug(f"{func=} | type={type(obj)}")
+    logSys.debug(f"{func=} | type={type(obj)}")
 
     if hasattr(obj, "channel"):
         return int(obj.channel.id)
@@ -71,7 +71,7 @@ def getChannelID(obj) -> int:
 def getGuildID(obj) -> int:
     """Gets guild id from a guild object"""
     func = inspect.stack()[1][3]
-    log.debug(f"{func=} | type={type(obj)}")
+    logSys.debug(f"{func=} | type={type(obj)}")
 
     if hasattr(obj, "guild_id"):
         return int(obj.guild_id)
@@ -83,7 +83,7 @@ def getGuildID(obj) -> int:
 def getChan(guild: int, chan: str, admin: bool = False, self=None):
     """Gets from config a channel id or object using the guild id."""
     func = inspect.stack()[1][3]
-    log.debug(f"{func=} | {guild=}, {chan=}, {admin=}, self={type(self)}")
+    logSys.debug(f"{func=} | {guild=}, {chan=}, {admin=}, self={type(self)}")
 
     if admin is True:
         admin = "Channels_Admin"
@@ -94,7 +94,7 @@ def getChan(guild: int, chan: str, admin: bool = False, self=None):
     except KeyError:
         return None
     except Exception:
-        log.exception("Get Chan")
+        logSys.exception("Get Chan")
     if self is not None:
         return self.bot.get_channel(chanID)
     else:
@@ -106,7 +106,7 @@ def getRole(guild: int | str | ncGuild, role: str):
     guild = str(guild)
     func = inspect.stack()[1][3]
     role = str(role)
-    log.debug(f"{func=} | {type(guild)=} | {guild=} | {role=}")
+    logSys.debug(f"{func=} | {type(guild)=} | {guild=} | {role=}")
 
     def fromConfig(g: str, r: str):
         g = str(g)
@@ -114,9 +114,9 @@ def getRole(guild: int | str | ncGuild, role: str):
         try:
             return readJSON(filename="config")[g]["Roles"][r]
         except KeyError:
-            log.exception("getRole KeyErr")
+            logSys.exception("getRole KeyErr")
         except Exception:
-            log.exception("Get Role id")
+            logSys.exception("Get Role id")
 
     if isinstance(guild, int):
         roleRtn = fromConfig(g=str(guild), r=str(role))
@@ -125,9 +125,9 @@ def getRole(guild: int | str | ncGuild, role: str):
         try:
             roleRtn = guild.get_role(int(roleID))
         except Exception:
-            log.exception(f"getRole obj")
+            logSys.exception(f"getRole obj")
             roleRtn = None
-    log.debug(f"{type(roleRtn)=} | {roleRtn=}")
+    logSys.debug(f"{type(roleRtn)=} | {roleRtn=}")
     return roleRtn
 
 
@@ -293,39 +293,39 @@ def isEmojiCustom(emoji: str, guildEmos: tuple = None) -> str | list:
     if only a name is given, a guild emoji tuple must also be provided, in order to get the id
     else the emoji is returned"""
     func = inspect.stack()[1][3]
-    log.debug(f"{func=} | {type(emoji)} | {emoji=} | {guildEmos=})")
+    logSys.debug(f"{func=} | {type(emoji)} | {emoji=} | {guildEmos=})")
 
     if isinstance(emoji, str):
         if emoji.startswith('<'):
-            log.debug("Is special")
+            logSys.debug("Is special")
             name, ID = (emoji[2:-1]).split(':')
             return [name, ID]
         elif emoji.startswith(':'):
-            log.debug("Is name")
+            logSys.debug("Is name")
             if guildEmos:
                 emoName = emoji[1:-1]
                 for item in guildEmos:
-                    log.debug(f"{type(item)} | {item}")
+                    logSys.debug(f"{type(item)} | {item}")
                     if emoName in str(item):
                         return [item.name, item.id]
                 return emoji
 
             else:
-                log.error("guildEmos not provided")
+                logSys.error("guildEmos not provided")
                 return False
 
         else:
-            log.debug("Likely normal")
+            logSys.debug("Likely normal")
             return emoji
     else:
-        log.debug(f"Not str {type(emoji)=}")
+        logSys.debug(f"Not str {type(emoji)=}")
         return False
 
 
 def convListToInt(b: list, toInt: bool = True):
     "Converts a list of strings to integers or vise versa"
     func = inspect.stack()[1][3]
-    log.debug(f"{func=} | {b=} | {type(b)}")
+    logSys.debug(f"{func=} | {b=} | {type(b)}")
     if not isinstance(b, list):
         return b
     b2 = []
@@ -340,7 +340,7 @@ def convListToInt(b: list, toInt: bool = True):
 def toStr(k: list, sep: str = ' '):
     "Converts a list to string"
     func = inspect.stack()[1][3]
-    log.debug(f"{func=} | {k=} | {type(k)}")
+    logSys.debug(f"{func=} | {k=} | {type(k)}")
 
     if isinstance(k, list):
         k2 = convListToInt(k, toInt=False)
@@ -351,7 +351,7 @@ def toStr(k: list, sep: str = ' '):
 
 def emoToStr(e: list, sep: str = ' '):
     func = inspect.stack()[1][3]
-    log.debug(f"{func=} | {e=} | {type(e)}")
+    logSys.debug(f"{func=} | {e=} | {type(e)}")
     if isinstance(e, list):
         emoList = []
         for item in e:
@@ -367,7 +367,7 @@ def emoToStr(e: list, sep: str = ' '):
 
 def toList(k: str | int, sep: str = ' '):
     func = inspect.stack()[1][3]
-    log.debug(f"{func=} | {k=} | {type(k)} | {sep=}")
+    logSys.debug(f"{func=} | {k=} | {type(k)} | {sep=}")
     if isinstance(k, str | int):
         return (str(k)).split(str(sep))
     else:
@@ -376,7 +376,7 @@ def toList(k: str | int, sep: str = ' '):
 
 def emoToList(e: str, guildEmos: tuple, sep: str = ' '):
     func = inspect.stack()[1][3]
-    log.debug(f"{func=} | {e=} | {type(e)} | {sep=} | {guildEmos=}")
+    logSys.debug(f"{func=} | {e=} | {type(e)} | {sep=} | {guildEmos=}")
     if isinstance(e, str):
         eList = e.split(str(sep))
     else:

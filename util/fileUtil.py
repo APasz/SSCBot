@@ -26,7 +26,7 @@ def parentDir() -> str:
 def writeJSON(data: dict, filename: str, directory: list = None) -> bool:
     """Creates a JSON file contain data."""
     func = inspect.stack()[1][3]
-    log.debug(f"{func=} | {filename=}")
+    logSys.debug(f"{func=} | {filename=}")
     if not filename.casefold().endswith(".json"):
         filename = filename + ".json"
     botDir = parentDir()
@@ -40,12 +40,12 @@ def writeJSON(data: dict, filename: str, directory: list = None) -> bool:
             json.dump(obj=data, fp=file, indent=4)
             return True
     except Exception:
-        log.exception("WriteJSON")
+        logSys.exception("WriteJSON")
         return False
 
 
 def cacheWrite() -> bool:
-    log.debug(f"writeCache")
+    logSys.debug(f"writeCache")
     global cacheJSON
     dumpPath = os.path.join(parentDir(), "dump")
     try:
@@ -53,8 +53,8 @@ def cacheWrite() -> bool:
     except FileExistsError:
         pass
     except Exception:
-        log.exception(f"Make Dump Folder")
-    log.info("Dumping CacheJSON")
+        logSys.exception(f"Make Dump Folder")
+    logSys.info("Dumping CacheJSON")
     return writeJSON(data=cacheJSON, filename="cacheJSON", directory=["dump"])
 
 
@@ -62,7 +62,7 @@ def readJSON(filename: str, directory: list = None, cache: bool = True) -> dict 
     """Read a JSON file. By default caches all files to memory.
     If files doesn't exist, it'll be created and return an empty dict"""
     func = inspect.stack()[1][3]
-    log.debug(f"{func=} | {filename=}")
+    logSys.debug(f"{func=} | {filename=}")
     if not filename.casefold().endswith(".json"):
         filename = filename + ".json"
     if isinstance(directory, list):
@@ -79,10 +79,10 @@ def readJSON(filename: str, directory: list = None, cache: bool = True) -> dict 
                 data = json.load(file)
         except FileNotFoundError:
             if writeJSON(data=data, directory=directory, filename=filename) is False:
-                log.error(f"| writeJSON: {fullDir=}")
+                logSys.error(f"| writeJSON: {fullDir=}")
                 return False
         except Exception:
-            log.exception("readJSON")
+            logSys.exception("readJSON")
             return False
         finally:
             return data
@@ -91,11 +91,11 @@ def readJSON(filename: str, directory: list = None, cache: bool = True) -> dict 
         return read()
     if os.path.exists(fullDir):
         newModTime = int(os.path.getmtime(fullDir))
-        # log.debug(f"exists:, {fullDir=}, {newModTime=}")
+        # logSys.debug(f"exists:, {fullDir=}, {newModTime=}")
     else:
         newModTime = 0
     if fileDir in cacheJSON:
-        # log.debug("fileInCache")
+        # logSys.debug("fileInCache")
         oldModTime = cacheJSON[fileDir]["modTime"]
         if oldModTime != newModTime:
             data = read()
@@ -104,7 +104,7 @@ def readJSON(filename: str, directory: list = None, cache: bool = True) -> dict 
         else:
             data = cacheJSON[fileDir]["content"]
     else:
-        log.debug("fileNotInCache")
+        logSys.debug("fileNotInCache")
         data = read()
         meta = {"modTime": newModTime, "content": data}
         cacheJSON[fileDir] = meta
@@ -113,28 +113,28 @@ def readJSON(filename: str, directory: list = None, cache: bool = True) -> dict 
 
 def newFile(data, directory: str, filename: str, extenstion: str = "txt") -> bool:
     """Creates a file"""
-    log.debug(f"{type(data)} | {directory=}, {filename=} {extenstion=}")
+    logSys.debug(f"{type(data)} | {directory=}, {filename=} {extenstion=}")
     try:
         file = os.path.join(directory, f"{filename}.{extenstion}")
         f = open(file, "w")
         f.write(str(data))
         f.close()
     except Exception:
-        log.exception("newFile")
+        logSys.exception("newFile")
         return False
     return True
 
 
 def readFile(directory: str, filename: str, extenstion: str = "txt") -> str | bool:
     """Reads any sort of file and returns its content"""
-    log.debug(f"{directory=}, {filename=} {extenstion=}")
+    logSys.debug(f"{directory=}, {filename=} {extenstion=}")
     try:
         file = os.path.join(directory, f"{filename}.{extenstion}")
         f = open(file, "r")
         data = f.read()
         f.close()
     except Exception:
-        log.exception("readFile")
+        logSys.exception("readFile")
     return data
 
 

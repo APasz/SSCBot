@@ -176,7 +176,7 @@ def main():
                 try:
                     event = configuration[item]["Events"]["ReadyMessage"]
                 except KeyError:
-                    log.exception(f"KeyErr {item=}")
+                    log.warning(f"Ready KeyErr {item=}")
                     continue
                 except Exception:
                     log.exception(f"ReadyMess: {item=}")
@@ -332,12 +332,10 @@ def main():
         try:
             err = sys.exc_info()
         except Exception:
-            log.exception(f"err")
             err = "*undefined*"
         try:
             erro = traceback.format_exception()
         except Exception:
-            log.exception(f"erro")
             erro = "*undefined*"
         log.error(f"Error! {event=}\n{err=}\n{erro=}\n{args=}\n{kwargs=}")
         logSys.error(traceback.format_exc())

@@ -446,32 +446,31 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
                 f"AutoReact: {guildID=} | {chanID=} | {list(geConfig.autoReactsChans)}")
             if guildID in list(geConfig.autoReactsChans):
                 if chanID not in list(geConfig.autoReactsChans[guildID]):
-                    pass
-                reactorList = geConfig.autoReactsChans[guildID][chanID]
-                emojiAdd = []
-                for item in reactorList:
-                    reactor = geConfig.autoReacts[guildID][item]
-                    match = False
-                    log.debug(f"{reactor=}")
-                    for element in reactor["Contains"]:
-                        if reactor["isExactMatch"]:
-                            if element in ctx.content:
-                                match = True
-                        else:
-                            if element in ctx.content.casefold():
-                                match = True
-                    log.debug(f"{match=}")
-                    if match:
-                        for emoji in reactor["Emoji"]:
-                            if isinstance(emoji, list):
-                                emoji = int(emoji[1])
-                            if emoji not in emojiAdd:
-                                emojiAdd.append(emoji)
+                    reactorList = geConfig.autoReactsChans[guildID][chanID]
+                    emojiAdd = []
+                    for item in reactorList:
+                        reactor = geConfig.autoReacts[guildID][item]
+                        match = False
+                        log.debug(f"{reactor=}")
+                        for element in reactor["Contains"]:
+                            if reactor["isExactMatch"]:
+                                if element in ctx.content:
+                                    match = True
+                            else:
+                                if element in ctx.content.casefold():
+                                    match = True
+                        log.debug(f"{match=}")
+                        if match:
+                            for emoji in reactor["Emoji"]:
+                                if isinstance(emoji, list):
+                                    emoji = int(emoji[1])
+                                if emoji not in emojiAdd:
+                                    emojiAdd.append(emoji)
 
-                log.debug(f"{emojiAdd=}")
-                for emo in emojiAdd:
-                    await addReact(emo)
-                event = True
+                    log.debug(f"{emojiAdd=}")
+                    for emo in emojiAdd:
+                        await addReact(emo)
+                    event = True
 
         if "ModPreview" in geConfig.eventConfigID[guildID]:
             nmrChan = int(getChan(guildID, "NewModRelease"))

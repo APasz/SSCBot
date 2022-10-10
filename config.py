@@ -268,6 +268,7 @@ def bytesToHuman(byteNum: int, magnitude: str, bi: bool = True, bit: bool = Fals
 
 def getGuilds(includeGeneral: bool = False, by: str = "id") -> dict[int, str] | dict[str, int]:
     """Returns dict(ID|ConfigName) of all guilds and their ids"""
+    logSys.debug(f"{includeGeneral=} | {by=}")
     configuration = readJSON(filename="config")
     IDs = {}
     for item in configuration:
@@ -284,27 +285,28 @@ def getGuilds(includeGeneral: bool = False, by: str = "id") -> dict[int, str] | 
                 pass
     if includeGeneral:
         IDs["Global"] = "General"
+    logSys.debug(f"{IDs=}")
     return IDs
 
 
 def getGlobalEventConfig(listAll: bool = False) -> set:
     """Gets list of either all or only globally disabled events"""
-    log.debug(f"{listAll=}")
+    logSys.debug(f"{listAll=}")
     globalEvents = set()
     configuration = readJSON(filename="config")
     for itemKey, itemVal in configuration["General"]["Events"].items():
-        log.debug(f"{itemKey=} | {itemVal=}")
+        logSys.debug(f"{itemKey=} | {itemVal=}")
         if listAll:
             globalEvents.add(str(itemKey))
         elif not itemVal:
             globalEvents.add(str(itemKey))
-    log.debug(f"{globalEvents=}")
+    logSys.debug(f"{globalEvents=}")
     return globalEvents
 
 
 def getEventConfig(by: str = "id") -> dict[int, str] | dict[str, int]:
     """Returns list of events allowed per server by either ID or config name."""
-    log.debug(f"getEventConfigRead {by=}")
+    logSys.debug(f"getEventConfigRead {by=}")
     configuration = readJSON(filename="config")
     globalEvents = getGlobalEventConfig()
     events = {}
@@ -315,13 +317,13 @@ def getEventConfig(by: str = "id") -> dict[int, str] | dict[str, int]:
                 try:
                     nameID = str(configuration[item]["Config_Name"])
                 except Exception:
-                    log.exception("ConfigName to nameID")
+                    logSys.exception("ConfigName to nameID")
             elif by == "id":
                 try:
                     configuration[item]["Config_Name"]
                     nameID = int(item)
                 except Exception:
-                    log.exception("ConfigID to nameID")
+                    logSys.exception("ConfigID to nameID")
             eventList = []
             try:
                 for elementKey, elementVal in configuration[item]["Events"].items():
@@ -329,7 +331,7 @@ def getEventConfig(by: str = "id") -> dict[int, str] | dict[str, int]:
                         eventList.append(elementKey)
                     events[nameID] = eventList
             except Exception:
-                log.exception("nameID and Events")
+                logSys.exception("nameID and Events")
     return events
 
 
@@ -392,12 +394,12 @@ class generalEventConfig(metaclass=_singleton_):
             if "General" in item:
                 continue
             item = int(item)
-            log.debug(f"{item=}")
+            logSys.debug(f"{item=}")
             try:
                 reactors = configuration[str(item)]["AutoReact"]
-                log.debug(f"{reactors=}")
+                logSys.debug(f"{reactors=}")
             except Exception:
-                log.exception(f"AutoReactCheck")
+                logSys.exception(f"AutoReactCheck")
                 continue
             if len(reactors) > 0:
                 autoReactsConfig[item] = reactors
@@ -405,27 +407,27 @@ class generalEventConfig(metaclass=_singleton_):
 
     def getAutoReactChannels(autoReacts: dict) -> dict[int]:
         """Gets list of channels that are in autoReacts"""
-        log.debug(f"aR, {autoReacts=}")
+        logSys.debug(f"aR, {autoReacts=}")
         reactChans = {}
         # add guild IDs to reactChans
         for guild in autoReacts:
-            #log.debug(f"g in aR {guild=}")
+            #logSys.debug(f"g in aR {guild=}")
             reactChans[int(guild)] = {}
-        log.debug(f"rC1, {reactChans=}")
+        logSys.debug(f"rC1, {reactChans=}")
         guild = None
 
         # add every channel ID that all reactors of a guild to the appropriate guild ID in reactChans
         for G in reactChans:
             G = int(G)
-            #log.debug(f"G in rC, {G=}")
+            #logSys.debug(f"G in rC, {G=}")
             for reactor in autoReacts[G]:
-                #log.debug(f"r in aR[G], {reactor=}")
+                #logSys.debug(f"r in aR[G], {reactor=}")
                 chans = autoReacts[G][reactor]["Channel"]
                 for C in chans:
                     C = int(C)
-                    #log.debug(f"C in chans, {C=}")
+                    #logSys.debug(f"C in chans, {C=}")
                     reactChans[G][C] = set()
-        log.debug(f"rC2, {reactChans=}")
+        logSys.debug(f"rC2, {reactChans=}")
         G = reactor = chans = C = None
 
         # go through each guild in reactChans,
@@ -434,17 +436,17 @@ class generalEventConfig(metaclass=_singleton_):
         for G in reactChans:
             G = int(G)
             for reactor in autoReacts[G]:
-                #log.debug(f"r in aR[G], {reactor=}")
+                #logSys.debug(f"r in aR[G], {reactor=}")
                 chans = autoReacts[G][reactor]["Channel"]
                 for element in chans:
                     element = int(element)
-                    #log.debug(f"e in chans, {element=}")
+                    #logSys.debug(f"e in chans, {element=}")
                     rS = set(reactChans[G][element])
-                    #log.debug(f"rS, {rS=}")
+                    #logSys.debug(f"rS, {rS=}")
                     rS.add(reactor)
                     reactChans[G][element] = list(rS)
-                    #log.debug(f"rC[G][C], {reactChans[G]=}")
-        log.debug(f"rC3, {reactChans=}")
+                    #logSys.debug(f"rC[G][C], {reactChans[G]=}")
+        logSys.debug(f"rC3, {reactChans=}")
 
         return reactChans
 
@@ -490,9 +492,9 @@ class generalEventConfig(metaclass=_singleton_):
             "AutoReact"]
         "All recognised events"
         cls.autoReacts = cls.getAutoReacts()
-        log.debug(f"{cls.autoReacts=}")
+        logSys.debug(f"{cls.autoReacts=}")
         cls.autoReactsChans = cls.getAutoReactChannels(cls.autoReacts)
-        log.debug(f"{cls.autoReactsChans=}")
+        logSys.debug(f"{cls.autoReactsChans=}")
         return True
 
 
@@ -547,6 +549,7 @@ class botInformation(metaclass=_singleton_):
         else:
             cls.botName = "KatokuTest"
             "Name of the bot user"
+        logSys.info(cls.botName)
         return True
 
     hostProvider = "OVH"
