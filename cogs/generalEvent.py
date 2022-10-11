@@ -253,7 +253,7 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
                     log.exception(f"Send Guild Welcome")
             if "MemberVerifiedRole" in geConfig.eventConfigID[guildID]:
                 log.info(f"MemberVerifiedRole: {logMess}")
-                role = getRole(guild=after.guild.id, role="Verified")
+                role = getRole(guild=after.guild, role="Verified")
                 if role is not None:
                     try:
                         await after.add_roles(role, reason="Passed Membership Screen.", atomic=True)
