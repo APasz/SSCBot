@@ -82,7 +82,7 @@ try:
     from config import botInformation as botInfo
     from config import generalEventConfig as geConfig
     from config import genericConfig as gxConfig
-    from config import verifyConfigJSON
+    from config import verifyConfigJSON, syncCommands
     from util.fileUtil import readJSON
     from util.genUtil import blacklistCheck
 except Exception:
@@ -137,7 +137,6 @@ def main():
 
     def botSevers(bot: commands.Bot):
         """Get info about the servers the bot is in"""
-
         botGuilds = bot.guilds
         botInfo.guildCount = len(botGuilds)
         botInfo.botPerms = []
@@ -150,13 +149,7 @@ def main():
 
     @bot.event
     async def on_ready():
-        logSys.info("Ensure /Commands Loaded")
-        try:
-            bot.add_all_application_commands()
-            await bot.sync_all_application_commands()
-        except Exception:
-            logSys.exception(f"Ensure /Commands")
-
+        await syncCommands(bot)
         log.critical("\n***Started*** 'Hello World, or whatever'")
         logSys.critical("\n***Started*** 'Hello World, or whatever'")
         #log.debug("on_ready wait_ready")

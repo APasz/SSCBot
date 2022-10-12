@@ -409,7 +409,7 @@ Modder intern gives access to special channels full of useful info.""",
         ),
     ):
         """Server admins can change bot configuration for their server."""
-        guildID = str(interaction.guild_id)
+        guildID = int(interaction.guild_id)
         if value.lower() in ("false", "none"):
             value = None
         elif value.isdigit():
@@ -421,7 +421,7 @@ Modder intern gives access to special channels full of useful info.""",
                 log.exception(f"config /command ValueError")
         configuration = readJSON(filename="config")
         try:
-            oldValue = str(configuration[guildID][group][option])
+            oldValue = str(configuration[str(guildID)][group][option])
         except KeyError as xcp:
             if group in str(xcp):
                 err = group
@@ -430,7 +430,7 @@ Modder intern gives access to special channels full of useful info.""",
             await interaction.send(f"KeyError: {err}", ephemeral=True)
         except Exception:
             log.exception("Config /Command")
-        configuration[guildID][group][option] = value
+        configuration[str(guildID)][group][option] = value
         guildName = geConfig.guildListID[guildID]
         log.info(
             f"ConfigUpdated: {guildName}, {interaction.user.id}, {group}-{option}:{oldValue} | {value}"

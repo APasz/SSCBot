@@ -220,9 +220,8 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
         logMess = f"guildID={geConfig.guildListID[guildID]}, {before.id=}: {before.display_name=}"
         from config import dataObject
         dataObject.auditChan = getChan(
-            self=self, guild=guildID, chan="Audit", admin=True
-        )
-        if before.pending is False and after.pending is False:
+            self=self, guild=guildID, chan="Audit", admin=True)
+        if before.pending and not after.pending:
             if "MemberAccept" in geConfig.eventConfigID[guildID]:
                 log.info(f"MemberAccept: {logMess}")
                 dataObject.TYPE = "MemberAccept"

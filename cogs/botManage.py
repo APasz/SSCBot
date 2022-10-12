@@ -5,6 +5,7 @@ from config import botInformation as botInfo
 from config import generalEventConfig as geConfig
 from config import genericConfig as gxConfig
 from config import screenShotCompConfig as sscConfig
+from config import syncCommands
 from util.fileUtil import cacheWrite, parentDir, writeJSON
 from util.genUtil import blacklistCheck
 
@@ -143,6 +144,7 @@ class botManage(commands.Cog, name="BotManagement"):
                 cacheWrite()
             except Exception:
                 logSys.exception(f"_config dump cacheJSON")
+
         elif "-d" in arg:
             dumpPath = os.path.join(parentDir(), "dump")
             try:
@@ -189,6 +191,7 @@ class botManage(commands.Cog, name="BotManagement"):
             except Exception:
                 logSys.exception(f"Dumping AutoReact")
                 err = True
+
         elif "-u" in arg:
             logSys.info("Reload genericConfig")
             try:
@@ -214,6 +217,11 @@ class botManage(commands.Cog, name="BotManagement"):
             except Exception:
                 logSys.exception(f"Reload botInformation")
                 err = True
+
+        elif "-s/" in arg:
+            if not await syncCommands(self.bot):
+                err = False
+
         else:
             await ctx.send("Arg not recognised!")
             return

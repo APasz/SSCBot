@@ -209,5 +209,9 @@
     "2.6.6": [
         "Backend::20221011",
         "-Fixed: Missed a couple string that were meant to be integers"
+    ],
+    "2.6.7": [
+        "Backend::20221011",
+        "-Changed; bot: The force sync of all /commands from 2.6.5 is now it's own function in config.py. The _config command now has option to force sync"
     ]
 }

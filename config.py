@@ -1,3 +1,4 @@
+import inspect
 import logging
 import math
 import os
@@ -72,6 +73,19 @@ def verifyConfigJSON() -> bool:
         logSys.debug("Updated Config")
         return True
     else:
+        return False
+
+
+async def syncCommands(bot):
+    "Force sync all slash commands"
+    func = inspect.stack()[1][3]
+    logSys.info(f"{func=} | Ensure /Commands Loaded")
+    try:
+        bot.add_all_application_commands()
+        await bot.sync_all_application_commands()
+        return True
+    except Exception:
+        logSys.exception(f"Ensure /Commands")
         return False
 
 
@@ -304,7 +318,7 @@ def getGlobalEventConfig(listAll: bool = False) -> set:
     return globalEvents
 
 
-def getEventConfig(by: str = "id") -> dict[int, str] | dict[str, int]:
+def getEventConfig(by: str = "id") -> dict[int, str] | dict[str, str]:
     """Returns list of events allowed per server by either ID or config name."""
     logSys.debug(f"getEventConfigRead {by=}")
     configuration = readJSON(filename="config")
