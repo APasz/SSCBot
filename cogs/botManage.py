@@ -185,8 +185,9 @@ class botManage(commands.Cog, name="BotManagement"):
                 err = True
             logSys.info("Dumping AutoReact")
             try:
-                dataAR = str(geConfig.autoReacts) + "\n\n\n" + \
-                    str(geConfig.autoReactsChans)
+                dataAR = (
+                    str(geConfig.autoReacts) + "\n\n\n" + str(geConfig.autoReactsChans)
+                )
                 writeJSON(data=dataAR, filename="AR", directory=["dump"])
             except Exception:
                 logSys.exception(f"Dumping AutoReact")
@@ -218,7 +219,7 @@ class botManage(commands.Cog, name="BotManagement"):
                 logSys.exception(f"Reload botInformation")
                 err = True
 
-        elif "-s/" in arg:
+        elif "-s" in arg:
             if not await syncCommands(self.bot):
                 err = False
 
@@ -231,15 +232,23 @@ class botManage(commands.Cog, name="BotManagement"):
         else:
             await ctx.send("Success!")
 
-    @slash_command(name="editbot", guild_ids=gxConfig.slashServers,
-                   default_member_permissions=Permissions(administrator=True))
-    async def editbot(self, interaction: Interaction,
-                      pfp: nextcord.Attachment = None, name: str = None,):
+    @slash_command(
+        name="editbot",
+        guild_ids=gxConfig.slashServers,
+        default_member_permissions=Permissions(administrator=True),
+    )
+    async def editbot(
+        self,
+        interaction: Interaction,
+        pfp: nextcord.Attachment = None,
+        name: str = None,
+    ):
         """Update pfp or name of the bot user. Owner Only"""
         if interaction.user.id != gxConfig.ownerID:
             try:
                 interaction.send(
-                    "This command is restricted to the bot owner.", ephemeral=True)
+                    "This command is restricted to the bot owner.", ephemeral=True
+                )
             except Exception:
                 logSys.exception(f"/Command Restricted to Owner EditBot")
             return

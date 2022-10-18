@@ -1,13 +1,19 @@
 import asyncio
-from distutils.command.config import config
 import logging
 import os
 
 from config import generalEventConfig as geConfig
 from config import genericConfig as gxConfig
 from util.fileUtil import readJSON, writeJSON
-from util.genUtil import blacklistCheck, getChan, getCol, getChannelID, convListToInt
-from util.views import nixroles, nixrolesCOL, tpfroles, reactorModal
+from util.genUtil import (
+    blacklistCheck,
+    getChan,
+    getCol,
+    getChannelID,
+    getLocaleText,
+    sortReactions,
+)
+from util.views import nixroles, nixrolesCOL, tpfroles
 
 from cogs.auditLog import auditLogger
 
@@ -64,11 +70,13 @@ class admin(commands.Cog, name="Admin"):
         if limit <= max:
             await asyncio.sleep(0.5)
             from config import dataObject
+
             dataObject.TYPE = "CommandPurge"
             dataObject.userObject = usr
             dataObject.limit = limit
             dataObject.auditChan = getChan(
-                self=self, guild=ctx.guild.id, chan="Audit", admin=True)
+                self=self, guild=ctx.guild.id, chan="Audit", admin=True
+            )
             dataObject.channelID = int(getChannelID(ctx))
             await auditLogger.logEmbed(self, dataObject)
             await ctx.channel.purge(limit=limit2)
@@ -118,7 +126,9 @@ class admin(commands.Cog, name="Admin"):
     @commands.command(name="blacklist", aliases=["SSCblacklist"])
     @commands.cooldown(1, 1, commands.BucketType.user)
     @commands.has_permissions(ban_members=True)
-    async def blacklist(self, ctx: commands.Context, usr: str, reason: str = "No reason given"):
+    async def blacklist(
+        self, ctx: commands.Context, usr: str, reason: str = "No reason given"
+    ):
         await self.bot.wait_until_ready()
         """"Blacklist users from certain parts of the bot."""
         if not await blacklistCheck(ctx=ctx):
@@ -182,6 +192,7 @@ class admin(commands.Cog, name="Admin"):
             check = writeJSON(data, filename=blklstType, directory=["secrets"])
             if check:
                 from config import dataObject
+
                 dataObject.TYPE = "BlacklistAdd"
                 dataObject.userObject = ctx.author
                 dataObject.commandArg1 = await self.bot.fetch_user(id)
@@ -226,6 +237,7 @@ class admin(commands.Cog, name="Admin"):
             if check:
                 id = int(usr)
                 from config import dataObject
+
                 dataObject.TYPE = "BlacklistRemove"
                 dataObject.userObject = ctx.author
                 dataObject.commandArg1 = await self.bot.fetch_user(id)
@@ -303,16 +315,16 @@ class admin(commands.Cog, name="Admin"):
         log.info(f"auditGet: {filename}")
         fName = f"./{filename}"
         if os.path.exists(fName) and not os.path.isdir(fName):
-            ignoreFiles = any(ign in filename for ign in [
-                              "secret", "log", "dump"])
+            ignoreFiles = any(ign in filename for ign in ["secret", "log", "dump"])
             if (not ignoreFiles) or (ctx.author.id == gxConfig.ownerID):
                 from config import dataObject
+
                 dataObject.TYPE = "CommandAuditGet"
                 dataObject.userObject = ctx.author
                 dataObject.filename = filename
-                dataObject.auditID = int(getChan(
-                    guild=ctx.guild.id, chan="Audit", admin=True
-                ))
+                dataObject.auditID = int(
+                    getChan(guild=ctx.guild.id, chan="Audit", admin=True)
+                )
                 log.debug("send auditlog")
                 await auditLogger.logEmbed(self, dataObject)
                 log.debug("make file")
@@ -386,8 +398,7 @@ Modder intern gives access to special channels full of useful info.""",
         log.debug(f"configurationBASE {Interaction.user.id}")
 
     @configurationBASE.subcommand(
-        name="server",
-        description="Server configurator for server admins"
+        name="server", description="Server configurator for server admins"
     )
     async def configurationCOMM(
         self,
@@ -414,11 +425,11 @@ Modder intern gives access to special channels full of useful info.""",
             value = None
         elif value.isdigit():
             value = int(value)
-        else:
-            try:
-                await interaction.send(f"ValueError")
-            except Exception:
-                log.exception(f"config /command ValueError")
+        # else:
+        #    try:
+        #        await interaction.send(f"ValueError")
+        #    except Exception:
+        #        log.exception(f"config /command ValueError")
         configuration = readJSON(filename="config")
         try:
             oldValue = str(configuration[str(guildID)][group][option])
@@ -436,6 +447,7 @@ Modder intern gives access to special channels full of useful info.""",
             f"ConfigUpdated: {guildName}, {interaction.user.id}, {group}-{option}:{oldValue} | {value}"
         )
         from config import dataObject
+
         dataObject.TYPE = "CommandGuildConfiguration"
         dataObject.auditChan = getChan(
             guild=guildID, chan="Audit", admin=True, self=self
@@ -521,77 +533,175 @@ Modder intern gives access to special channels full of useful info.""",
             configItem.append(value)
         await interaction.response.send_autocomplete(configItem)
 
-    @configurationBASE.subcommand(name="autoreact", description="Add or configure AutoReacts.")
-    async def configurationAutoReact(self, interaction: Interaction, reactor=SlashOption(
-            description="Supports multiple channels, matches, and emoji (Please copy the emoji you wish to use).")):
+    @configurationBASE.subcommand(
+        name="autoreact", description="Add or configure autoReact Reactors."
+    )
+    async def configurationAutoReact(
+        self,
+        interaction: Interaction,
+        reactor: str = SlashOption(
+            required=True,
+            description="Name of the Reactor you with to create/override.",
+        ),
+        messageID=SlashOption(
+            required=False,
+            name="template-message-id",
+            description="Which message is the template. URL is accepted. If no ID is provided, a template message is created",
+        ),
+        strictMatch: bool = SlashOption(
+            name="strict-matching",
+            required=False,
+            description="If not set to True, False is assumed",
+        ),
+        extraChannel: nextcord.TextChannel = SlashOption(
+            name="extra-channel-to-watch",
+            required=False,
+            description="If an additional channel should watched",
+        ),
+        deleteAR: bool = SlashOption(
+            name="delete-autoreact",
+            required=False,
+            description="If True, the reactor will be deleted. This action is IRREVERSIBLE",
+        ),
+    ):
         guildID = int(interaction.guild_id)
         log.debug(f"Subcommand {reactor=} {guildID=}")
-        reactors = geConfig.autoReacts[guildID]
-        if reactor in reactors:
-            reactorDict = reactors[reactor]
+        setReactor = bool(messageID)
+        deleteAR = bool(deleteAR)
+
+        logSys.debug(
+            f"{guildID=} | {setReactor=} | {messageID=} | {strictMatch=} | {extraChannel=} | {deleteAR=}"
+        )
+
+        from config import dataObject as data
+
+        data.auditChan = getChan(self=self, guild=guildID, chan="Audit", admin=True)
+        data.userObject = interaction.user
+
+        def reduceList(obj: list | tuple, nameOnly: bool = False):
+            logSys.debug(f"{obj=} | {nameOnly=}")
+            objList = []
+            if isinstance(obj, str | int):
+                return obj
+            elif isinstance(obj, list | tuple):
+                for item in obj:
+                    logSys.debug(f"{type(item)=}")
+                    if isinstance(item, list | tuple):
+                        if nameOnly:
+                            objList.append(f"{item[0]}")
+                        else:
+                            objList.append(f"{item[0]} ({item[1]})")
+                    else:
+                        objList.append(item)
+            return objList
+
+        if guildID in list(geConfig.autoReacts):
+            if reactor in list(geConfig.autoReacts[guildID]):
+                try:
+                    oldReactorDict = geConfig.autoReacts[guildID][reactor]
+                except Exception:
+                    log.exception(f"Get Current AutoReact")
+                    oldReactorDict = False
+                else:
+                    if deleteAR:
+                        data.TYPE = "CommandAutoReact_Delete"
+                        data.channelList = ", ".join(
+                            reduceList(oldReactorDict["Channel"])
+                        )
+                        data.messageContent = ", ".join(oldReactorDict["Contains"])
+                        data.emojiList = ", ".join(reduceList(oldReactorDict["Emoji"]))
+                        data.flagA = oldReactorDict["isExactMatch"]
+                        try:
+                            await auditLogger.logEmbed(self, auditInfo=data)
+                        except Exception:
+                            log.exception(f"Send Audit")
+                        configuration = readJSON("config")
+                        del configuration[str(guildID)]["AutoReact"][reactor]
+                        if writeJSON(configuration, "config"):
+                            txt = "AutoReact reactor deleted!"
+                            geConfig.update()
+                        else:
+                            txt = "Failed to delete AutoReact reactor"
+                        try:
+                            await interaction.send(txt)
+                        except Exception:
+                            log.exception(f"Del AutoReact Message")
+                        try:
+                            del configuration
+                        except Exception:
+                            log.exception(f"Del AutoReact Config")
+                        return
         else:
+            oldReactorDict = False
+
+        if setReactor:
+            try:
+                mess = await interaction.channel.fetch_message(int(messageID))
+            except nextcord.NotFound:
+                logSys.exception(f"Message Not Found")
+                await interaction.send("Message Not Found", ephemeral=True)
+                return
+            except nextcord.Forbidden:
+                logSys.exception("Message Forbidden")
+                await interaction.send("Message Not Accessible", ephemeral=True)
+                return
+            except Exception:
+                logSys.exception(f"Fetch Message Channel")
+                await interaction.send("Unknown Exception", ephemeral=True)
+                return
+            messContent = (mess.content).split(" ")
+            messReac = mess.reactions
+            if len(messReac) == 0:
+                await interaction.send(
+                    "This message does have any reactions", ephemeral=True
+                )
+                return
+            reactsAll = sortReactions(messReac)
+            if len(reactsAll.Bad) > 0:
+                await interaction.send(f"These emoji can't be used.\n{reactsAll.Bad}")
+                return
+            if len(reactsAll.Unk) > 0:
+                await interaction.send(f"Unknown issue;\n{reactsAll.Unk}")
+                return
+            chanID = [(interaction.channel.name, getChannelID(interaction))]
+            if extraChannel:
+                chanID.append((extraChannel.name, extraChannel.id))
             reactorDict = {}
-            reactorDict["Channel"] = None
-            reactorDict["Contains"] = None
-            reactorDict["Emoji"] = None
-            reactorDict["isExactMatch"] = False
-        log.debug(f"{reactorDict=}")
-        reactModal = reactorModal(
-            reactor=reactor, reactorDict=reactorDict)
-        await interaction.response.send_modal(reactModal)
-        log.debug("AutoReact Config Modal Sent")
-        await reactModal.wait()
-        log.debug(f"AutoReact Config Modal Received")
-        # Update AutoReact
+            reactorDict["Channel"] = chanID
+            reactorDict["Contains"] = messContent
+            reactorDict["Emoji"] = reactsAll.Str + reactsAll.Obj
+            reactorDict["isExactMatch"] = bool(strictMatch)
 
-        from util.genUtil import toStr, emoToStr, toList, emoToList
-        from config import dataObject as dat
-        dat.TYPE = "CommandAutoReact"
-        dat.auditID = getChan(self=self, guild=guildID,
-                              chan="Audit", admin=True)
-        dat.userObject = interaction.user
+            data.channelList = ", ".join(reduceList(chanID))
+            data.messageContent = ", ".join(messContent)
+            data.emojiList = ", ".join(reduceList((reactsAll.Str + reactsAll.Obj)))
+            data.flagA = bool(strictMatch)
 
-        oldChannel = reactorDict["Channel"]
-        dat.channelExtra = toStr(oldChannel)
-        newChannel = convListToInt(toList(reactModal.channelText.value))
-        dat.channelList = newChannel
+            configuration = readJSON("config")
+            configuration[str(guildID)]["AutoReact"][reactor] = {}
+            configuration[str(guildID)]["AutoReact"][reactor] = reactorDict
 
-        oldContain = reactorDict["Contains"]
-        dat.messageExtra = toStr(oldContain)
-        newContain = toList(reactModal.containText.value)
-        dat.messageContent = newContain
-
-        oldEmoji = reactorDict["Emoji"]
-        dat.emojiExtra = emoToStr(oldEmoji)
-        newEmoji = emoToList(reactModal.emojiText.value,
-                             interaction.guild.emojis)
-        dat.emojiList = reactModal.emojiText.value
-
-        oldMatch = reactorDict["isExactMatch"]
-        dat.flag0 = oldMatch
-        newMatch = reactModal.isExactText.value
-        if (newMatch is None) or (len(newMatch) > 0):
-            newMatch = True
+            if writeJSON(data=configuration, filename="config"):
+                await interaction.send("Reactor updating! Check auditlog for details")
         else:
-            newMatch = False
-        dat.flagA = newMatch
-
-        newReactorDict = {
-            "Channel": newChannel,
-            "Contains": newContain,
-            "Emoji": newEmoji,
-            "isExactMatch": newMatch
-        }
-        log.debug(f"{newReactorDict=}")
-        configuration = readJSON("config")
-        configuration[str(
-            guildID)]["AutoReact"][reactModal.reactorName] = newReactorDict
-        if writeJSON(data=configuration, filename="config"):
-            await auditLogger.logEmbed(self, auditInfo=dat)
-            del dat
+            if oldReactorDict:
+                await interaction.send(f"{' '.join(oldReactorDict['Contains'])}")
+                temp = interaction.channel.last_message
+                for emo in oldReactorDict["Emoji"]:
+                    if isinstance(emo, tuple | list):
+                        emo = self.bot.get_emoji(geConfig.getNameID(emo, name=False))
+                    if emo:
+                        await temp.add_reaction(emo)
+                await interaction.send(
+                    f"The channels this reactor watches\n{reduceList(oldReactorDict['Channel'])}"
+                )
+            else:
+                await interaction("Failed to retrieve Reactor")
+        if setReactor:
+            data.TYPE = "CommandAutoReact"
+            await auditLogger.logEmbed(self, auditInfo=data)
+            del data
             geConfig.update()
-        reactModal.stop()
-        return
 
     @configurationAutoReact.on_autocomplete("reactor")
     async def configurationARGetReactor(self, interaction: Interaction, reactor):

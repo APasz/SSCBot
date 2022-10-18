@@ -18,7 +18,8 @@ try:
     logSys.debug("TRY UTIL_GEN IMPORT MODUELS")
     import nextcord
     from nextcord import Guild as ncGuild
-    from nextcord import Role
+    from nextcord import Role, Emoji, PartialEmoji
+    from nextcord.ext.commands import EmojiConverter, EmojiNotFound
 except Exception:
     logSys.exception("UTIL_GEN IMPORT MODUELS")
 
@@ -51,6 +52,10 @@ def getUserID(obj) -> int:
     func = inspect.stack()[1][3]
     logSys.debug(f"{func=} | type={type(obj)}")
 
+    if hasattr(obj, "author_id"):
+        return int(obj.author_id)
+    if hasattr(obj, "user_id"):
+        return int(obj.user_id)
     if hasattr(obj, "author"):
         return int(obj.author.id)
     if hasattr(obj, "user"):
@@ -62,10 +67,10 @@ def getChannelID(obj) -> int:
     func = inspect.stack()[1][3]
     logSys.debug(f"{func=} | type={type(obj)}")
 
-    if hasattr(obj, "channel"):
-        return int(obj.channel.id)
     if hasattr(obj, "channel_id"):
         return int(obj.channel_id)
+    if hasattr(obj, "channel"):
+        return int(obj.channel.id)
 
 
 def getGuildID(obj) -> int:
@@ -75,9 +80,8 @@ def getGuildID(obj) -> int:
 
     if hasattr(obj, "guild_id"):
         return int(obj.guild_id)
-    elif hasattr(obj, "guild"):
-        if hasattr(obj.guild, "id"):
-            return int(obj.guild.id)
+    if hasattr(obj, "guild"):
+        return int(obj.guild.id)
 
 
 def getChan(guild: int, chan: str, admin: bool = False, self=None):
@@ -135,6 +139,7 @@ def getRole(guild: int | ncGuild, role: str):
 
 class formatTime:
     """Turn seconds into more human readable"""
+
     func = inspect.stack()[1][3]
     log.debug(f"{func=}")
 
@@ -147,7 +152,7 @@ class formatTime:
 
     def _breakdown(num: int):
         @dataclass(slots=True)
-        class _totals():
+        class _totals:
             total_second: int
             seconds: int
             total_minute: int
@@ -188,7 +193,7 @@ class formatTime:
 
         strTime.reverse()
         log.debug(strTime)
-        return ', '.join(strTime)
+        return ", ".join(strTime)
 
 
 async def blacklistCheck(ctx, blklstType: str = "gen") -> bool:
@@ -290,104 +295,72 @@ async def _ping(self, api: bool = False, testNum: int = 1) -> list[int]:
     return testsBoth
 
 
-def isEmojiCustom(emoji: str, guildEmos: tuple = None) -> str | list:
-    """If a emoji is custom, a tuple of it's name and id is returned
-    if only a name is given, a guild emoji tuple must also be provided, in order to get the id
-    else the emoji is returned"""
-    func = inspect.stack()[1][3]
-    logSys.debug(f"{func=} | {type(emoji)} | {emoji=} | {guildEmos=})")
-
-    if isinstance(emoji, str):
-        if emoji.startswith('<'):
-            logSys.debug("Is special")
-            name, ID = (emoji[2:-1]).split(':')
-            return [name, ID]
-        elif emoji.startswith(':'):
-            logSys.debug("Is name")
-            if guildEmos:
-                emoName = emoji[1:-1]
-                for item in guildEmos:
-                    logSys.debug(f"{type(item)} | {item}")
-                    if emoName in str(item):
-                        return [item.name, item.id]
-                return emoji
-
-            else:
-                logSys.error("guildEmos not provided")
-                return False
-
+def sortReactions(reactions: list):
+    "Sorts the reactions list of a message into lists[(name, id) | str] of Emoji, Partial, String, and Unknown"
+    reactsObj = []
+    reactsStr = []
+    reactsBad = []
+    reactsUnk = []
+    for react in reactions:
+        if isinstance(react.emoji, str):
+            logSys.debug(f"StrEmoji | {react.emoji}")
+            reactsStr.append(react.emoji)
+        elif isinstance(react.emoji, Emoji):
+            logSys.debug(f"ObjEmoji | {react.emoji}")
+            reactsObj.append((react.emoji.name, react.emoji.id))
+        elif isinstance(react.emoji, PartialEmoji):
+            logSys.debug(f"ParEmoji | {react.emoji}")
+            reactsBad.append((react.emoji.name, react.emoji.id))
         else:
-            logSys.debug("Likely normal")
-            return emoji
+            logSys.debug(f"UnkEmoji | {type(react)}, {react}")
+            reactsUnk.append(react)
+
+    class reacts:
+        Obj = reactsObj
+        Str = reactsStr
+        Bad = reactsBad
+        Unk = reactsUnk
+
+    return reacts
+
+
+def getNameID(k: list | tuple | set, name: bool = True) -> str | int:
+    "Returns the first str or first int"
+    if name:
+        typ = str
     else:
-        logSys.debug(f"Not str {type(emoji)=}")
-        return False
+        typ = int
+    for e in k:
+        print(type(e), e)
+        if isinstance(e, typ):
+            return e
+    return False
 
 
-def convListToInt(b: list, toInt: bool = True):
-    "Converts a list of strings to integers or vise versa"
+def getLocale(locale: str) -> dict:
+    "Returns dict associated with a lang code. Defaults to en"
+    logSys.debug(f"{locale=}")
+    if locale.startswith("en"):
+        locale = "en"
+    if locale not in gxConfig.langs:
+        locale = "en"
+    return readJSON(filename=locale, directory=["strings"])
+
+
+def getLocaleText(
+    locale: str = "en", category: str = "undefined", key: str = "undefined"
+) -> str:
+    "Returns localised text for the key provided. Defaults to en"
     func = inspect.stack()[1][3]
-    logSys.debug(f"{func=} | {b=} | {type(b)}")
-    if not isinstance(b, list):
-        return b
-    b2 = []
-    for item in b:
-        if toInt:
-            b2.append(int(item))
-        else:
-            b2.append(str(item))
-    return b2
+    logSys.debug(f"{func=} | {locale=} | {category=} | {key=}")
+    if category == "undefined" or key == "undefined":
+        return None
+    try:
+        return getLocale(locale)[category][key]
+    except Exception as xcp:
+        if "KeyError" not in str(xcp):
+            logSys.exception("Locale Text")
+        return getLocale("en")[category][key]
 
-
-def toStr(k: list, sep: str = ' '):
-    "Converts a list to string"
-    func = inspect.stack()[1][3]
-    logSys.debug(f"{func=} | {k=} | {type(k)}")
-
-    if isinstance(k, list):
-        k2 = convListToInt(k, toInt=False)
-        return sep.join(k2)
-    else:
-        return k
-
-
-def emoToStr(e: list, sep: str = ' '):
-    func = inspect.stack()[1][3]
-    logSys.debug(f"{func=} | {e=} | {type(e)}")
-    if isinstance(e, list):
-        emoList = []
-        for item in e:
-            if isinstance(item, str):
-                emoList.append(item)
-            elif isinstance(item, list):
-                print(item[0], type(item[0]))
-                emoList.append(item[0])
-        return sep.join(emoList)
-    else:
-        return e
-
-
-def toList(k: str | int, sep: str = ' '):
-    func = inspect.stack()[1][3]
-    logSys.debug(f"{func=} | {k=} | {type(k)} | {sep=}")
-    if isinstance(k, str | int):
-        return (str(k)).split(str(sep))
-    else:
-        return k
-
-
-def emoToList(e: str, guildEmos: tuple, sep: str = ' '):
-    func = inspect.stack()[1][3]
-    logSys.debug(f"{func=} | {e=} | {type(e)} | {sep=} | {guildEmos=}")
-    if isinstance(e, str):
-        eList = e.split(str(sep))
-    else:
-        return e
-    emoList = []
-    for item in eList:
-        if len(item) > 0:
-            emoList.append(isEmojiCustom(
-                emoji=item, guildEmos=guildEmos))
-    return emoList
 
 # MIT APasz

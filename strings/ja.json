@@ -1,0 +1,5 @@
+{
+    "Bot": {
+        "Ready": "**v{baseVer} | {name}**\n起動した {boot}s | Nextcord v{ncVer} **準備**\n/changelog を使用して変更を確認します"
+    }
+}

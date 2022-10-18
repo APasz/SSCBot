@@ -1,6 +1,6 @@
 # SSCBot v2
+My first real proper python coding project.
 Discord bot which does things.
 
-Linux Only. Must cd to script location.
-
-My first real proper python coding project.
+While I've not intentionally made it Linux only, I don't test on on Windows really at all.
+Must cd to script location.

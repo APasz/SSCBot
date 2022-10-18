@@ -5,7 +5,7 @@ import os
 import platform
 from dataclasses import dataclass
 
-from util.fileUtil import readJSON, writeJSON
+from util.fileUtil import readJSON, writeJSON, sepExt
 
 print("Config")
 
@@ -26,13 +26,13 @@ def verifyConfigJSON() -> bool:
 
     configuration = readJSON(filename="config.json")
     genCF = configuration["General"]
-    if (not isinstance(genCF["delTime"], int | float) or (genCF["delTime"] > 120)):
+    if not isinstance(genCF["delTime"], int | float) or (genCF["delTime"] > 120):
         genCF["delTime"] = 20
 
-    if (not isinstance(genCF["logLevel"], str)):
+    if not isinstance(genCF["logLevel"], str):
         genCF["logLevel"] = "DEBUG"
 
-    if (not isinstance(genCF["purgeLimit"], int | float) or (genCF["purgeLimit"] > 100)):
+    if not isinstance(genCF["purgeLimit"], int | float) or (genCF["purgeLimit"] > 100):
         genCF["purgeLimit"] = 100
     configuration["General"] = genCF
 
@@ -43,6 +43,17 @@ def verifyConfigJSON() -> bool:
     for item in configuration:
         logSys.debug(item)
         if "General" not in item:
+
+            try:
+                configuration[item]["MISC"]
+            except KeyError:
+                configuration[item]["MISC"] = {}
+
+            try:
+                configuration[item]["MISC"]["Language"]
+            except KeyError:
+                configuration[item]["MISC"]["Language"] = "en"
+
             try:
                 configuration[item]["SlashCommands"]
             except KeyError:
@@ -68,6 +79,13 @@ def verifyConfigJSON() -> bool:
                     configuration[item]["Events"]["ModPreview_DeleteTrigger"]
                 except KeyError:
                     configuration[item]["Events"]["ModPreview_DeleteTrigger"] = True
+            if "MemberJoinRecentCreation" in configuration[item]["Events"]:
+                try:
+                    val = configuration[item]["Events"]["MemberJoinRecentCreation"]
+                    configuration[item]["Events"]["MemberJoin_RecentCreation"] = val
+                    del configuration[item]["Events"]["MemberJoinRecentCreation"]
+                except Exception:
+                    log.exception("MemberJoin_RecentCreation")
 
     if writeJSON(data=configuration, filename="config.json"):
         logSys.debug("Updated Config")
@@ -133,6 +151,12 @@ class genericConfig(metaclass=_singleton_):
         else:
             cls.botID = 764270771350142976
             "ID of the bot"
+        cls.langs = []
+        _allStringFiles = os.listdir(os.path.join(genericConfig.botDir, "strings"))
+        for item in _allStringFiles:
+            if (item).upper().endswith("JSON"):
+                cls.langs.append(sepExt(item)[0])
+        log.debug(f"{cls.langs=}")
         return True
 
     emoNotifi = None
@@ -168,6 +192,8 @@ class genericConfig(metaclass=_singleton_):
     factsJSON = "facts.json"
     "Name of the file which contains all the facts"
     pingingChan = 1018012984053870622
+    "Channel ID to use for API pinging"
+    botDir = os.path.dirname(os.path.realpath(__file__))
 
     ownerID = 375547210760454145
     "Discord user ID of owner"
@@ -247,8 +273,7 @@ def bytesMagnitude(byteNum: int, magnitude: str, bi: bool, bit: bool) -> float:
         bi = 1000
     if bit:
         byteNum = byteNum * 8
-    ratios = {'K': 1, 'M': 2, 'G': 3, 'T': 4,
-              'P': 5, 'E': 6, 'Z': 7, 'Y': 8}
+    ratios = {"K": 1, "M": 2, "G": 3, "T": 4, "P": 5, "E": 6, "Z": 7, "Y": 8}
     try:
         return round(byteNum / math.pow(bi, ratios[magnitude]), 3)
     except Exception:
@@ -256,19 +281,20 @@ def bytesMagnitude(byteNum: int, magnitude: str, bi: bool, bit: bool) -> float:
         return False
 
 
-def bytesToHuman(byteNum: int, magnitude: str, bi: bool = True, bit: bool = False) -> str:
+def bytesToHuman(
+    byteNum: int, magnitude: str, bi: bool = True, bit: bool = False
+) -> str:
     """Turns an int into a friendly notation
     magnitude=['AUTO', 'K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y']"""
     if not isinstance(byteNum, int):
         log.error("BytesHuman, Not INT")
         return False
-    nota = ['K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y']
+    nota = ["K", "M", "G", "T", "P", "E", "Z", "Y"]
     magnitude = magnitude.upper()
     if magnitude not in nota:
         log.error("BytesHuman, Not MAG")
         return False
-    size = bytesMagnitude(
-        byteNum=byteNum, magnitude=magnitude, bi=bi, bit=bit)
+    size = bytesMagnitude(byteNum=byteNum, magnitude=magnitude, bi=bi, bit=bit)
     if bi:
         power = "i"
     else:
@@ -280,23 +306,31 @@ def bytesToHuman(byteNum: int, magnitude: str, bi: bool = True, bit: bool = Fals
     return f"{size}{magnitude}{power}{length}"
 
 
-def getGuilds(includeGeneral: bool = False, by: str = "id") -> dict[int, str] | dict[str, int]:
+def getGuilds(
+    includeGeneral: bool = False, by: str = "id"
+) -> dict[int, str] | dict[str, int]:
     """Returns dict(ID|ConfigName) of all guilds and their ids"""
     logSys.debug(f"{includeGeneral=} | {by=}")
     configuration = readJSON(filename="config")
     IDs = {}
     for item in configuration:
         item = str(item)
+        if item == "General":
+            continue
         if by == "id":
             try:
                 IDs[int(item)] = configuration[item]["Config_Name"]
-            except Exception:
+            except KeyError:
                 pass
+            except Exception:
+                logSys.exception("Name to ID")
         if by == "name":
             try:
                 IDs[configuration[item]["Config_Name"]] = int(item)
-            except Exception:
+            except KeyError:
                 pass
+            except Exception:
+                logSys.exception("ID to Name")
     if includeGeneral:
         IDs["Global"] = "General"
     logSys.debug(f"{IDs=}")
@@ -309,7 +343,7 @@ def getGlobalEventConfig(listAll: bool = False) -> set:
     globalEvents = set()
     configuration = readJSON(filename="config")
     for itemKey, itemVal in configuration["General"]["Events"].items():
-        logSys.debug(f"{itemKey=} | {itemVal=}")
+        # logSys.debug(f"{itemVal}| {itemKey=}")
         if listAll:
             globalEvents.add(str(itemKey))
         elif not itemVal:
@@ -400,6 +434,20 @@ screenShotCompConfig.update()
 class generalEventConfig(metaclass=_singleton_):
     """Config for the General Events"""
 
+    def getNameID(k: list | tuple | set, name: bool = True) -> str | int:
+        "Returns the first str or first int"
+        if name:
+            typ = str
+        else:
+            typ = int
+        if not isinstance(k, list | tuple | set):
+            return k
+        for e in k:
+            print(type(e), e)
+            if isinstance(e, typ):
+                return e
+        return False
+
     def getAutoReacts() -> dict[dict]:
         """Gathers all autoReact dicts from config"""
         configuration = readJSON(filename="config")
@@ -425,7 +473,7 @@ class generalEventConfig(metaclass=_singleton_):
         reactChans = {}
         # add guild IDs to reactChans
         for guild in autoReacts:
-            #logSys.debug(f"g in aR {guild=}")
+            # logSys.debug(f"g in aR {guild=}")
             reactChans[int(guild)] = {}
         logSys.debug(f"rC1, {reactChans=}")
         guild = None
@@ -433,13 +481,13 @@ class generalEventConfig(metaclass=_singleton_):
         # add every channel ID that all reactors of a guild to the appropriate guild ID in reactChans
         for G in reactChans:
             G = int(G)
-            #logSys.debug(f"G in rC, {G=}")
+            # logSys.debug(f"G in rC, {G=}")
             for reactor in autoReacts[G]:
-                #logSys.debug(f"r in aR[G], {reactor=}")
+                # logSys.debug(f"r in aR[G], {reactor=}")
                 chans = autoReacts[G][reactor]["Channel"]
                 for C in chans:
-                    C = int(C)
-                    #logSys.debug(f"C in chans, {C=}")
+                    C = generalEventConfig.getNameID(C, name=False)
+                    # logSys.debug(f"C in chans, {C=}")
                     reactChans[G][C] = set()
         logSys.debug(f"rC2, {reactChans=}")
         G = reactor = chans = C = None
@@ -450,16 +498,16 @@ class generalEventConfig(metaclass=_singleton_):
         for G in reactChans:
             G = int(G)
             for reactor in autoReacts[G]:
-                #logSys.debug(f"r in aR[G], {reactor=}")
+                # logSys.debug(f"r in aR[G], {reactor=}")
                 chans = autoReacts[G][reactor]["Channel"]
                 for element in chans:
-                    element = int(element)
-                    #logSys.debug(f"e in chans, {element=}")
+                    element = generalEventConfig.getNameID(element, name=False)
+                    # logSys.debug(f"e in chans, {element=}")
                     rS = set(reactChans[G][element])
-                    #logSys.debug(f"rS, {rS=}")
+                    # logSys.debug(f"rS, {rS=}")
                     rS.add(reactor)
                     reactChans[G][element] = list(rS)
-                    #logSys.debug(f"rC[G][C], {reactChans[G]=}")
+                    # logSys.debug(f"rC[G][C], {reactChans[G]=}")
         logSys.debug(f"rC3, {reactChans=}")
 
         return reactChans
@@ -490,7 +538,7 @@ class generalEventConfig(metaclass=_singleton_):
             "Battles",
             "ReadyMessage",
             "MemberJoin",
-            "MemberJoinRecentCreation",
+            "MemberJoin_RecentCreation",
             "MemberAccept",
             "MemberNameChange",
             "MemberVerifiedRole",
@@ -503,7 +551,8 @@ class generalEventConfig(metaclass=_singleton_):
             "ModPreview",
             "ModPreviewGlobal",
             "ModPreview_DeleteTrigger",
-            "AutoReact"]
+            "AutoReact",
+        ]
         "All recognised events"
         cls.autoReacts = cls.getAutoReacts()
         logSys.debug(f"{cls.autoReacts=}")
@@ -548,14 +597,13 @@ class botInformation(metaclass=_singleton_):
         cls.hostPython = platform.python_version()
         "Version of Python installed"
         cls.hostRAM = bytesToHuman(
-            byteNum=(int(psutil.virtual_memory().total)), magnitude="G")
+            byteNum=(int(psutil.virtual_memory().total)), magnitude="G"
+        )
         "Total RAM in GiB of host system | Includes notation"
         cls.hostCores = psutil.cpu_count(logical=True)
         "Number of logical cores host has"
         cls.hostCPUfreq = psutil.cpu_freq()
         "Frequency of host CPU"
-        cls.processPID = os.getpid()
-        "Current process ID"
         if 246190532949180417 in genericConfig.slashServers:
             "If bot knows guild with above ID, assume bot is prod"
             cls.botName = "Katoku"
@@ -566,10 +614,16 @@ class botInformation(metaclass=_singleton_):
         logSys.info(cls.botName)
         return True
 
+    processPID = os.getpid()
+    "Current process ID"
     hostProvider = "OVH"
+    "Provider of the hardware"
     hostLocation = "Sydney"
-    linePyCount = 5239
-    lineJSONCount = 1488
+    "Where is the hardware"
+    linePyCount = 5480
+    "Appox count of Python lines"
+    lineJSONCount = 1600
+    "Appox count of JSON lines"
 
 
 botInformation.update()

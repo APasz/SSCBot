@@ -1,0 +1,5 @@
+{
+    "Bot": {
+        "Ready": "**v{baseVer} | {name}**\nEingebootet {boot}s | Nextcord v{ncVer} **Bereit**\nVerwenden Sie /changelog, um Änderungen anzuzeigen"
+    }
+}

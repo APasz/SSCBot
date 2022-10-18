@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-
-import asyncio
-import logging
-import os
-import platform
-import sys
-import traceback
 from logging import handlers
+import traceback
+import sys
+import platform
+import os
+import logging
+import asyncio
+import time
+
+botStart = time.perf_counter()
 
 
 PID = os.getpid()
@@ -25,9 +27,11 @@ logMess.setLevel("DEBUG")
 handleConsole = logging.StreamHandler(sys.stdout)
 handleConsole.setFormatter(
     logging.Formatter(
-        "%(asctime)s |:| %(module)s: %(funcName)s | %(message)s", "%H:%M:%S")
+        "%(asctime)s |:| %(module)s: %(funcName)s | %(message)s", "%H:%M:%S"
+    )
 )
 log.addHandler(handleConsole)
+
 
 curDir = os.path.dirname(os.path.realpath(__file__))
 logDir = os.path.join(curDir, "logs")
@@ -38,33 +42,41 @@ if not os.path.exists(logDir):
 
 # log for general
 handleFile = handlers.TimedRotatingFileHandler(
-    os.path.join(logDir, "discordGeneral.log"), when="W6", utc=True, encoding="utf-8")
+    os.path.join(logDir, "discordGeneral.log"), when="W6", utc=True, encoding="utf-8"
+)
 handleFile.setFormatter(
     logging.Formatter(
         "%(asctime)s_%(created).2f | %(levelname).4s |:| %(module)s: %(funcName)s | %(message)s",
-        "%Y-%m-%d_%H:%M:%S"))
+        "%Y-%m-%d_%H:%M:%S",
+    )
+)
 log.addHandler(handleFile)
 
 # log for sys
 handleDisFile = logging.FileHandler(
-    os.path.join(logDir, "discordSystem.log"), encoding="utf-8", mode="a")
+    os.path.join(logDir, "discordSystem.log"), encoding="utf-8", mode="a"
+)
 handleDisFile.setFormatter(
     logging.Formatter(
         "%(asctime)s_%(created).2f |:| %(module)s: %(funcName)s | %(message)s",
-        "%Y-%m-%d_%H:%M:%S"))
+        "%Y-%m-%d_%H:%M:%S",
+    )
+)
 logSys.addHandler(handleDisFile)
 
 
 # log for deleted messages
 messHandler = logging.FileHandler(
-    filename=os.path.join(logDir, "discordMessages.log"), encoding="utf-8", mode="a")
+    filename=os.path.join(logDir, "discordMessages.log"), encoding="utf-8", mode="a"
+)
 messHandler.setFormatter(
-    logging.Formatter(
-        "%(asctime).19s_%(created).2f |:| %(message)s"))
+    logging.Formatter("%(asctime).19s_%(created).2f |:| %(message)s")
+)
 logMess.addHandler(messHandler)
 
 log.critical(f"\n***Starting*** {PID=}")
 logSys.critical(f"\n***Starting*** {PID=}")
+logMess.critical(f"\n***Starting*** {PID=}")
 
 critFiles = ["config.json", "config.py"]
 configErr = False
@@ -84,11 +96,11 @@ try:
     from config import genericConfig as gxConfig
     from config import verifyConfigJSON, syncCommands
     from util.fileUtil import readJSON
-    from util.genUtil import blacklistCheck
+    from util.genUtil import blacklistCheck, getLocaleText
 except Exception:
     logSys.exception(f"MAIN IMPORT CONFIG")
     sys.exit()
-
+gxConfig.botDir = curDir
 try:
     logSys.debug(f"Python {platform.python_version()} | TRY IMPORT MODULES")
     import nextcord
@@ -152,15 +164,14 @@ def main():
         await syncCommands(bot)
         log.critical("\n***Started*** 'Hello World, or whatever'")
         logSys.critical("\n***Started*** 'Hello World, or whatever'")
-        #log.debug("on_ready wait_ready")
+        # log.debug("on_ready wait_ready")
         botSevers(bot)
         # await bot.wait_until_ready()
-        stringsBot = readJSON(filename="strings")["en"]["Bot"]
-        txt = (stringsBot["Ready"]).format(base=botInfo.base, name=botInfo.name,
-                                           ncVer=botInfo.nextcordVer)
+        botEnd = time.perf_counter()
+        botInfo.bootTime = round((botEnd - botStart), 2)
         configuration = readJSON(filename="config")
         globalReady = configuration["General"]["Events"]["ReadyMessage"]
-        log.info(f"Config {globalReady=} | {txt=}")
+        log.info(f"Config {globalReady=}")
         if globalReady:
             guilds = list((geConfig.guildListID).keys())
             sendReady = []
@@ -174,14 +185,25 @@ def main():
                 except Exception:
                     log.exception(f"ReadyMess: {item=}")
                 if event:
-                    sendReady.append(
-                        configuration[item]["Channels"]["ReadyMessage"])
+                    sendReady.append(configuration[item]["Channels"]["ReadyMessage"])
             log.debug(f"{sendReady=}")
             for element in sendReady:
                 try:
                     chan = await bot.fetch_channel(int(element))
                 except Exception:
                     log.exception(f"ReadyGet {element=}")
+                guildID = chan.guild.id
+                lang = str(configuration[str(guildID)]["MISC"]["Language"])
+                txt = getLocaleText(locale=lang, category="Bot", key="Ready")
+                if txt is None:
+                    log.warning("Ready Locale")
+                    continue
+                txt = txt.format(
+                    baseVer=botInfo.base,
+                    name=botInfo.name,
+                    boot=botInfo.bootTime,
+                    ncVer=botInfo.nextcordVer,
+                )
                 try:
                     await chan.send(txt)
                     log.info(f"Ready Sent: {element=}")
@@ -223,10 +245,10 @@ def main():
                     delete_after=configuration["General"]["delTime"],
                 )
             except Exception:
-                logSys.exception(
-                    f"UserMissingPerm {error.missing_permissions=}")
+                logSys.exception(f"UserMissingPerm {error.missing_permissions=}")
             logSys.error(
-                f"UserMissingPermission. {auth} | {error.missing_permissions=}")
+                f"UserMissingPermission. {auth} | {error.missing_permissions=}"
+            )
             return
 
         if isinstance(error, (commands.MissingRole)):
@@ -245,10 +267,8 @@ def main():
             try:
                 await ctx.send("Missing Argument/s")
             except Exception:
-                logSys.exception(
-                    f"Missing Argument {error.args=} | {error.param=}")
-            logSys.error(
-                f"MissingArgument. {auth} | {error.args=} | {error.param=}")
+                logSys.exception(f"Missing Argument {error.args=} | {error.param=}")
+            logSys.error(f"MissingArgument. {auth} | {error.args=} | {error.param=}")
             return
 
         if isinstance(error, (commands.CommandNotFound)):
@@ -270,9 +290,11 @@ def main():
                 await ctx.send(f"Command currently **Disabled**")
             except Exception:
                 logSys.exception(
-                    f"Disabled Command {error.args=} | {error.with_traceback=}")
+                    f"Disabled Command {error.args=} | {error.with_traceback=}"
+                )
             logSys.error(
-                f"CommandDisabled. {auth} | {error.args=} | {error.with_traceback=}")
+                f"CommandDisabled. {auth} | {error.args=} | {error.with_traceback=}"
+            )
             return
 
         if isinstance(error, commands.CommandOnCooldown):
@@ -281,8 +303,7 @@ def main():
                     f"Command cooldown in effect: {round(error.retry_after, 3)}s"
                 )
             except Exception:
-                logSys.exception(
-                    f"Command Cooldown {round(error.retry_after, 3)}")
+                logSys.exception(f"Command Cooldown {round(error.retry_after, 3)}")
             logSys.error(f"CommandCooldown. {auth}")
             return
 
@@ -361,6 +382,7 @@ def main():
 
     try:
         from config import DISTOKEN
+
         bot.run(DISTOKEN)  # , log_handler=handleDisFile
     except Exception:
         log.exception(f"Bot Run")

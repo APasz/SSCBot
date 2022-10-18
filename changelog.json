@@ -213,5 +213,13 @@
     "2.6.7": [
         "Backend::20221011",
         "-Changed; bot: The force sync of all /commands from 2.6.5 is now it's own function in config.py. The _config command now has option to force sync"
+    ],
+    "2.6.8": [
+        "Backend::20221018",
+        "Yet another point release... when will it end?\nAlso Black formatting reenforced.",
+        "-Added: New strings folder and each support language is in it's own own file. Localisation will probably be in flux for a while.",
+        "-Added: admin: AutoReact config /command can now delete a reactor.",
+        "-Changed; admin: AutoReacts are now setup with a template message. Contents being the trigger, reactions being what the bot reacts with.\nAs such the autoReact config subcommand is now just a standard slashcommand asking for the name of the autoReact, template message id, strict matching, and if an additional channel should watched.",
+        "-Removed; views: AutoReact modal. Emoji suck with it."
     ]
 }

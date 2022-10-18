@@ -115,7 +115,9 @@ def parseURL(url) -> dict | None:
     return data
 
 
-def GSheetGet(sheetName: str = "TpF Screenshot Competition Public", page: str = "List") -> any:
+def GSheetGet(
+    sheetName: str = "TpF Screenshot Competition Public", page: str = "List"
+) -> any:
     log.debug(f"GSheetGet: {sheetName=}")
     servAcc = gspread.service_account(
         filename=f"secrets{os.sep}google_service_account.json"

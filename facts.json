@@ -797,7 +797,7 @@
         "providerID": 375547210760454145,
         "providerName": "APasz",
         "sourceLink": null,
-		"source": "Yoshi"
+        "source": "Yoshi"
     },
     "150": {
         "content": "OpenTTD was released 2004-03-06.",
@@ -807,7 +807,7 @@
         "providerID": 375547210760454145,
         "providerName": "APasz",
         "sourceLink": "https://en.wikipedia.org/wiki/OpenTTD",
-		"source": "Wikipedia"
+        "source": "Wikipedia"
     },
     "200": {
         "content": "The Transport Fever global EN server a.k.a the Reddit server was created on 2016-10-11 by .Patchi.",
@@ -817,6 +817,6 @@
         "providerID": 98706583223042048,
         "providerName": ".Patchi",
         "sourceLink": null,
-		"source": "The global server (246190532949180417)"
+        "source": "The global server (246190532949180417)"
     }
 }

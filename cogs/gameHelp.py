@@ -70,8 +70,7 @@ class gameHelp(commands.Cog, name="GameHelp"):
         if "2" in game and "gameFiles" in entry:
             try:
                 txt = gxConfig.Wiki2gameFiles
-                udb = readJSON(filename="strings")[
-                    "en"]["GameHelp"]["UserDataButton"]
+                udb = readJSON(filename="strings")["en"]["GameHelp"]["UserDataButton"]
                 if "stdout" in ctx.message.content:
                     await ctx.send(txt + "#game_log_files" + "\n" + udb)
                 else:
