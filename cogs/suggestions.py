@@ -20,11 +20,13 @@ class suggModal(nextcord.ui.Modal):
     def __init__(self, suggTitle, nameLabel, descLabel):
         super().__init__(
             title=suggTitle,
-            timeout=30 * 60,)
+            timeout=30 * 60,
+        )
         self.name = nextcord.ui.TextInput(
             label=nameLabel,
             min_length=3,
-            max_length=75,)
+            max_length=75,
+        )
         self.add_item(self.name)
 
         self.description = nextcord.ui.TextInput(
@@ -32,7 +34,8 @@ class suggModal(nextcord.ui.Modal):
             style=nextcord.TextInputStyle.paragraph,
             placeholder="Describe with as much detail as possible.",
             required=False,
-            max_length=1000,)
+            max_length=1000,
+        )
         self.add_item(self.description)
 
     async def callback(self, interaction: nextcord.Interaction):
@@ -54,7 +57,8 @@ class suggCOMM(commands.Cog, description="Trigger Modal"):
     @nextcord.slash_command(
         name="suggest",
         description="Trigger a form modal where you can explain your suggestion. Currently sent to APasz",
-        guild_ids=gxConfig.slashServers,)
+        guild_ids=gxConfig.slashServers,
+    )
     async def send(
         self,
         interaction: nextcord.Interaction,
@@ -76,7 +80,7 @@ class suggCOMM(commands.Cog, description="Trigger Modal"):
             nameLabel = "Your Suggestion?"
             descLabel = "What sort of suggestion do you want to make?"
 
-        data = await interaction.response.send_modal(
+        await interaction.response.send_modal(
             modal=suggModal(
                 suggTitle=modalTitle, nameLabel=nameLabel, descLabel=descLabel
             )

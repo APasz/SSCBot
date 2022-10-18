@@ -47,7 +47,9 @@ class general(commands.Cog, name="General"):
         except Exception:
             log.exception(f"Fact Submit Modal")
 
-    async def factGet(self, index: int = -1, metadata: bool = False) -> str | nextcord.Embed:
+    async def factGet(
+        self, index: int = -1, metadata: bool = False
+    ) -> str | nextcord.Embed:
         """Retrieves a fact from the facts JSON file."""
         log.debug(f"run| {index=}| {metadata=}")
         data = f"'An error occurred' Alert <@{gxConfig.ownerID}>"
@@ -81,11 +83,11 @@ class general(commands.Cog, name="General"):
         if source is None and sourceLink is None:
             source = "Someone forgot the source."
         if sourceLink is None:
-            data = nextcord.Embed(
-                title=ID, description=content, colour=getCol("fact"))
+            data = nextcord.Embed(title=ID, description=content, colour=getCol("fact"))
         else:
             data = nextcord.Embed(
-                title=ID, description=content, colour=getCol("fact"), url=sourceLink)
+                title=ID, description=content, colour=getCol("fact"), url=sourceLink
+            )
         if source and sourceLink:
             source = f"Source;\n{source}\n{sourceLink}"
         elif sourceLink and not source:
@@ -96,7 +98,9 @@ class general(commands.Cog, name="General"):
             data.add_field(name="Extra Links", value=extraLinks, inline=False)
         if metadata:
             data.add_field(
-                name="Metadata", value=f"Provider Name|ID: {providerName} | {providerID}\nDate Added|Updated: {initialAdd} | {lastUpdate}")
+                name="Metadata",
+                value=f"Provider Name|ID: {providerName} | {providerID}\nDate Added|Updated: {initialAdd} | {lastUpdate}",
+            )
         return data
 
     @commands.command(name="fact", aliases=["randomFact"])
@@ -117,11 +121,22 @@ class general(commands.Cog, name="General"):
 
     @slash_command(name="fact")
     @commands.cooldown(1, 1, commands.BucketType.user)
-    async def factSlash(self, interaction: Interaction, index: int = SlashOption(
-            name="index", required=False, default=-1,
-            description="When looking for a specific fact. If in an invalid index is given, one will be picked at random"),
-            metadata: bool = SlashOption(name="metadata", required=False, default=bool(False),
-                                         description="Whether to show addition information such as who submitted a fact and when.")):
+    async def factSlash(
+        self,
+        interaction: Interaction,
+        index: int = SlashOption(
+            name="index",
+            required=False,
+            default=-1,
+            description="When looking for a specific fact. If in an invalid index is given, one will be picked at random",
+        ),
+        metadata: bool = SlashOption(
+            name="metadata",
+            required=False,
+            default=bool(False),
+            description="Whether to show addition information such as who submitted a fact and when.",
+        ),
+    ):
         """Serves Random Facts"""
         if not await blacklistCheck(ctx=interaction, blklstType="gen"):
             return
@@ -134,8 +149,7 @@ class general(commands.Cog, name="General"):
                 await interaction.response.send_message(fact)
         except Exception:
             log.exception("factSLASH")
-        log.info(
-            f"Fact: {interaction.user.id},{interaction.user.display_name}")
+        log.info(f"Fact: {interaction.user.id},{interaction.user.display_name}")
 
     async def pingDo(self, ctx, api: bool, testNum: int):
         """Sends a formated string containing the latency"""
@@ -165,13 +179,20 @@ class general(commands.Cog, name="General"):
 
     @slash_command(name="ping")
     async def pingSlash(
-            self,
-            interaction: Interaction,
-            api: bool = SlashOption(
-                name="api", description="Do you want to check API latency?", required=False, default=bool(False)
-            ),
-            testNum: int = SlashOption(
-                name="test-count", description="How many tests to do?", default=1, max_value=5)
+        self,
+        interaction: Interaction,
+        api: bool = SlashOption(
+            name="api",
+            description="Do you want to check API latency?",
+            required=False,
+            default=bool(False),
+        ),
+        testNum: int = SlashOption(
+            name="test-count",
+            description="How many tests to do?",
+            default=1,
+            max_value=5,
+        ),
     ):
         """Gives ping to server the bot is running on"""
         log.debug(interaction.user.id)
@@ -183,13 +204,19 @@ class general(commands.Cog, name="General"):
         log.debug(f"pingCommand {testNum=} | {api=}")
         await interaction.response.defer()
         await self.pingDo(ctx=interaction, api=api, testNum=testNum)
-        log.info(
-            f"Ping: {interaction.user.id=},{interaction.user.display_name=}")
+        log.info(f"Ping: {interaction.user.id=},{interaction.user.display_name=}")
 
     @slash_command(name="info", guild_ids=gxConfig.slashServers)
-    async def info(self, interaction: Interaction,
-                   category: str = SlashOption(name="category", required=True, choices=["Bot", "Server", "Member"],
-                                               description="What sort of info are you looking for?"),):
+    async def info(
+        self,
+        interaction: Interaction,
+        category: str = SlashOption(
+            name="category",
+            required=True,
+            choices=["Bot", "Server", "Member"],
+            description="What sort of info are you looking for?",
+        ),
+    ):
         """Get info about the bot or current server."""
         guildID = int(interaction.guild_id)
         await interaction.response.defer()
@@ -200,14 +227,13 @@ class general(commands.Cog, name="General"):
                 desc = strBot["InfoNameSame"]
             else:
                 try:
-                    desc = '\n'.join(
-                        [strBot["InfoNameDiff"], strBot["InfoDesc"]])
-                    desc = desc.format(name=botInfo.botName,
-                                       prefix=gxConfig.BOT_PREFIX)
+                    desc = "\n".join([strBot["InfoNameDiff"], strBot["InfoDesc"]])
+                    desc = desc.format(name=botInfo.botName, prefix=gxConfig.BOT_PREFIX)
                 except Exception:
                     log.exception("InfoComand_desc")
-            embd = nextcord.Embed(title="Bot Info", description=desc,
-                                  colour=getCol(col="botInfo"))
+            embd = nextcord.Embed(
+                title="Bot Info", description=desc, colour=getCol(col="botInfo")
+            )
             # generate memory info
             try:
                 processBot = psutil.Process(botInfo.processPID)
@@ -229,27 +255,33 @@ class general(commands.Cog, name="General"):
             latency = await _ping(self=self, api=True)
             latencyTxt = f"Gateway: {latency[0]}ms, API: {latency[1]}ms"
             # add field to embed
-            embd.add_field(name="Host System",
-                           value=f"""Hostname: {botInfo.hostname} | OS: {botInfo.hostOS} | Host: {botInfo.hostProvider} {botInfo.hostLocation}
+            embd.add_field(
+                name="Host System",
+                value=f"""Hostname: {botInfo.hostname} | OS: {botInfo.hostOS} | Host: {botInfo.hostProvider} {botInfo.hostLocation}
 RAM; Total: {botInfo.hostRAM} | Used: {psutil.virtual_memory().percent}% | Process: {memMiB}
 CPU; Cores: {botInfo.hostCores} | Frequency: {round(psutil.cpu_freq()[0])}Mhz | Sys Usage: {psutil.cpu_percent()}%
 Uptime: {sinceBoot}
 Latency; {latencyTxt}
 Python: {botInfo.hostPython} | Nextcord: {botInfo.nextcordVer} | Bot: {botInfo.base}
 Line Count; Python: ~{botInfo.linePyCount} | JSON: ~{botInfo.lineJSONCount}
-Guilds: {botInfo.guildCount}""")
+Guilds: {botInfo.guildCount}""",
+            )
         elif category == "Server":
             try:
                 strServ = readJSON(filename="strings")["en"]["Server"]
-                desc = strServ[geConfig.guildListID[str(
-                    guildID)]]["Description"]
+                desc = strServ[geConfig.guildListID[str(guildID)]]["Description"]
             except Exception:
                 log.exception("InfoCommand_desc")
                 desc = f"There is no description for this server yet.\nPlease contact {gxConfig.ownerName}"
-            embd = nextcord.Embed(title="Server Info", description=desc,
-                                  colour=getCol(col="neutral_Light"))
-            embd.add_field(name="Stats",
-                           value=f"""Member Count: {interaction.user.guild.member_count}\n *WIP*""")
+            embd = nextcord.Embed(
+                title="Server Info",
+                description=desc,
+                colour=getCol(col="neutral_Light"),
+            )
+            embd.add_field(
+                name="Stats",
+                value=f"""Member Count: {interaction.user.guild.member_count}\n *WIP*""",
+            )
         elif category == "Member":
             await self.profile(interaction=interaction, usr=interaction.user)
             return
@@ -282,47 +314,47 @@ Guilds: {botInfo.guildCount}""")
 
     @slash_command(name="convert")
     async def convert(
-            self,
-            interaction: Interaction,
-            value: float = SlashOption(
-                name="value", description="What is it we are converting?", required=True
-            ),
-            fromMetric: str = SlashOption(
-                name="original-metric",
-                description="What Metric unit are we converting from?",
-                required=False,
-                choices=gxConfig.metricUnits,
-            ),
-            fromImperialUS: str = SlashOption(
-                name="original-imperial-us",
-                description="What Imperial/US unit are we converting from?",
-                required=False,
-                choices=gxConfig.imperialUnits,
-            ),
-            fromTime: str = SlashOption(
-                name="original-time",
-                description="If a original-unit is also given, original-unit/original-time",
-                required=False,
-                choices=gxConfig.timeUnits,
-            ),
-            toMetric: str = SlashOption(
-                name="new-metric",
-                description="What unit are we converting to?",
-                required=False,
-                choices=gxConfig.metricUnits,
-            ),
-            toImperialUS: str = SlashOption(
-                name="new-imperial-us",
-                description="What unit are we converting to?",
-                required=False,
-                choices=gxConfig.imperialUnits,
-            ),
-            toTime: str = SlashOption(
-                name="new-time",
-                description="If a new-unit is also given, new-unit/original-time",
-                required=False,
-                choices=gxConfig.timeUnits,
-            ),
+        self,
+        interaction: Interaction,
+        value: float = SlashOption(
+            name="value", description="What is it we are converting?", required=True
+        ),
+        fromMetric: str = SlashOption(
+            name="original-metric",
+            description="What Metric unit are we converting from?",
+            required=False,
+            choices=gxConfig.metricUnits,
+        ),
+        fromImperialUS: str = SlashOption(
+            name="original-imperial-us",
+            description="What Imperial/US unit are we converting from?",
+            required=False,
+            choices=gxConfig.imperialUnits,
+        ),
+        fromTime: str = SlashOption(
+            name="original-time",
+            description="If a original-unit is also given, original-unit/original-time",
+            required=False,
+            choices=gxConfig.timeUnits,
+        ),
+        toMetric: str = SlashOption(
+            name="new-metric",
+            description="What unit are we converting to?",
+            required=False,
+            choices=gxConfig.metricUnits,
+        ),
+        toImperialUS: str = SlashOption(
+            name="new-imperial-us",
+            description="What unit are we converting to?",
+            required=False,
+            choices=gxConfig.imperialUnits,
+        ),
+        toTime: str = SlashOption(
+            name="new-time",
+            description="If a new-unit is also given, new-unit/original-time",
+            required=False,
+            choices=gxConfig.timeUnits,
+        ),
     ):
         """Converts between units using pint."""
         if not await blacklistCheck(ctx=interaction):
@@ -379,10 +411,10 @@ Guilds: {botInfo.guildCount}""")
             return
         orig = str(orig)
         new = str(new)
-        orig = orig.replace('meter', 'metre').replace('_', ' ').title()
-        orig = orig.replace('Uk', 'UK').replace('Us', 'US')
-        new = new.replace('meter', 'metre').replace('_', ' ').title()
-        new = new.replace('Uk', 'UK').replace('Us', 'US')
+        orig = orig.replace("meter", "metre").replace("_", " ").title()
+        orig = orig.replace("Uk", "UK").replace("Us", "US")
+        new = new.replace("meter", "metre").replace("_", " ").title()
+        new = new.replace("Uk", "UK").replace("Us", "US")
         text = f"Conversion;\n{orig} -> {new}"
         try:
             await interaction.send(text)
@@ -391,13 +423,13 @@ Guilds: {botInfo.guildCount}""")
 
     @slash_command(name="changelog")
     async def changelog(
-            self,
-            interaction: Interaction,
-            ver=SlashOption(
-                name="version",
-                required=False,
-                description="If looking for specific version; x.x.x or list",
-            ),
+        self,
+        interaction: Interaction,
+        ver=SlashOption(
+            name="version",
+            required=False,
+            description="If looking for specific version; x.x.x or list",
+        ),
     ):
         """Provides the changelog"""
         BL = await blacklistCheck(ctx=interaction, blklstType="gen")
@@ -479,11 +511,11 @@ Guilds: {botInfo.guildCount}""")
 
     @slash_command(name="profile", guild_ids=gxConfig.slashServers)
     async def profile(
-            self,
-            interaction: Interaction,
-            usr: nextcord.Member = SlashOption(
-                name="member", description="If looking for member", required=False
-            ),
+        self,
+        interaction: Interaction,
+        usr: nextcord.Member = SlashOption(
+            name="member", description="If looking for member", required=False
+        ),
     ):
         """Provides an embed with information about a user."""
         if not await blacklistCheck(ctx=interaction, blklstType="gen"):
@@ -514,12 +546,12 @@ Guilds: {botInfo.guildCount}""")
         permsList2 = []
         if "member" in str(type(usr)):
             joined = int(round(usr.joined_at.timestamp()))
-            e.add_field(name="Last Joined;",
-                        value=f"<t:{joined}:R>", inline=True)
+            e.add_field(name="Last Joined;", value=f"<t:{joined}:R>", inline=True)
             if usr.premium_since is not None:
                 premium = int(round(usr.premium_since.timestamp()))
                 e.add_field(
-                    name="Booster Since;", value=f"<t:{premium}:R>", inline=True)
+                    name="Booster Since;", value=f"<t:{premium}:R>", inline=True
+                )
             roleList = usr.roles
             roleList.pop(0)
             roleList.reverse()
@@ -543,9 +575,9 @@ Guilds: {botInfo.guildCount}""")
                 "timeout",
             ]
             for (
-                    perm
+                perm
             ) in (
-                    usr.guild_permissions
+                usr.guild_permissions
             ):  # put all permissions into a list only if the user has it.
                 alpha, bravo = perm
                 if bravo is True:

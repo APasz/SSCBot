@@ -4,8 +4,7 @@ import re
 import textwrap
 
 from config import generalEventConfig as geConfig
-from util.apiUtil import (nexusModGet, parseURL, steamUsrGet, steamWSGet,
-                          tpfnetModGet)
+from util.apiUtil import nexusModGet, parseURL, steamUsrGet, steamWSGet, tpfnetModGet
 from util.genUtil import getChan, getCol
 
 print("CogModding")
@@ -116,8 +115,7 @@ class modding(commands.Cog, name="Modding"):
             )
             NSFW = dets["contains_adult_content"]
             if NSFW is True:
-                e.insert_field_at(
-                    1, name="NSFW", value="**`TRUE`**", inline=False)
+                e.insert_field_at(1, name="NSFW", value="**`TRUE`**", inline=False)
 
         elif platform == "tpfnet":
             modid = dets["ID"]
@@ -145,11 +143,9 @@ class modding(commands.Cog, name="Modding"):
         if desc is not None:
             e.add_field(name="Description", value=desc, inline=False)
         if createdAt is not None:
-            e.add_field(name="Published",
-                        value=f"<t:{createdAt}:R>", inline=True)
+            e.add_field(name="Published", value=f"<t:{createdAt}:R>", inline=True)
             if not createdAt <= updatedAt <= (createdAt + 3600):
-                e.add_field(name="Updated",
-                            value=f"<t:{updatedAt}:R>", inline=True)
+                e.add_field(name="Updated", value=f"<t:{updatedAt}:R>", inline=True)
         if len(tags) != 0:
             e.add_field(name="Tags", value=tags, inline=False)
         if modThumb is not None:
@@ -172,8 +168,7 @@ class modding(commands.Cog, name="Modding"):
         if globalPreview is True:
             try:
                 globalPreviewChan = getChan(
-                    guild=geConfig.guildListName[
-                        "TPFGuild"], chan="NewModPreview"
+                    guild=geConfig.guildListName["TPFGuild"], chan="NewModPreview"
                 )
                 gnmp = await self.bot.fetch_channel(int(globalPreviewChan))
                 await gnmp.send(embed=e)
@@ -198,11 +193,11 @@ class modding(commands.Cog, name="Modding"):
         cont = ctx.content
         cont = cont.replace("\n", " ")
         mess = cont.split(" ")
-        for l in mess:
+        for M in mess:
             # print(f"L: {l}")
-            if re.search(r"https:", l):
+            if re.search(r"https:", M):
                 # l = l.replace(' ','')
-                urlDic = parseURL(l)
+                urlDic = parseURL(M)
                 ID = urlDic["ID"]
                 game = urlDic["game"]
                 plat = urlDic["platform"]

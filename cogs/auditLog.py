@@ -37,8 +37,7 @@ class auditLogger(commands.Cog, name="AuditLogging"):
         As well as function to check if user was kicked/banned"""
         await self.bot.wait_until_ready()
         dataObj = data
-        log.info(
-            f"MemberRemove: {data.userObject.id}: {data.userObject.display_name}")
+        log.info(f"MemberRemove: {data.userObject.id}: {data.userObject.display_name}")
         dataObj.TYPE = "MemberLeave"
         dataObject.count = data.guildObject.member_count
         await auditLogger.logEmbed(self, dataObj)
@@ -50,7 +49,8 @@ class auditLogger(commands.Cog, name="AuditLogging"):
         await self.bot.wait_until_ready()
         dataObj = data
         log.debug(
-            f"usrID={dataObj.userObject.id} | auditChan={dataObj.auditChan.id} | type={dataObj.TYPE}")
+            f"usrID={dataObj.userObject.id} | auditChan={dataObj.auditChan.id} | type={dataObj.TYPE}"
+        )
         async for entry in data.guildObject.audit_logs(limit=3):
             log.debug(entry.action)
             # if ("kick" or "ban") not in entry.action: continue
@@ -74,8 +74,7 @@ class auditLogger(commands.Cog, name="AuditLogging"):
                 if uR == 1:
                     return
                 elif "ban" in auditLog.action:
-                    log.info(
-                        f"MemberBan: {usr.id}: {usr.display_name}: {reason=}")
+                    log.info(f"MemberBan: {usr.id}: {usr.display_name}: {reason=}")
                     dataObj.TYPE = "MemberBan"
                     log.debug(f"{dataObj=}")
                     await auditLogger.logEmbed(self, dataObj)
@@ -125,8 +124,7 @@ class auditLogger(commands.Cog, name="AuditLogging"):
                 fName5 = "Message"
                 txt = cont = mess.content.replace("`", "")
                 if len(cont) > 1000:
-                    txt = textwrap.shorten(
-                        cont, width=1000, placeholder=" ...")
+                    txt = textwrap.shorten(cont, width=1000, placeholder=" ...")
                     footer = footer + " | Full message content in bot log."
                 fValue5 = f"\n```\n{txt}\n```"
             if attach != 0:
@@ -245,7 +243,7 @@ class auditLogger(commands.Cog, name="AuditLogging"):
             fValue2 = auditInfo.count
             e = nextcord.Embed(title=title, colour=getCol("positive"))
 
-        elif "MemberJoinRecentCreation" == TYPE:
+        elif "MemberJoin_RecentCreation" == TYPE:
             log.debug(TYPE)
             title = "Recently Created User Joined"
             usr = auditInfo.userObject
@@ -306,8 +304,7 @@ class auditLogger(commands.Cog, name="AuditLogging"):
                     title = f"User Unblacklisted [{auditInfo.category}]"
                 else:
                     title = f"User Unblacklisted"
-                e = nextcord.Embed(
-                    title=title, colour=getCol("neutral_Bright"))
+                e = nextcord.Embed(title=title, colour=getCol("neutral_Bright"))
 
         elif "CommandPurge" == TYPE:
             log.debug(TYPE)
@@ -349,38 +346,72 @@ class auditLogger(commands.Cog, name="AuditLogging"):
             usr = auditInfo.userObject
             fName9 = "Invoked by;"
             fValue9 = f"{usr.id}\n{usr.name}\n<@{usr.id}>"
-            from util.genUtil import toStr
-            oldChannel = toStr(auditInfo.channelExtra)
-            newChannel = toStr(auditInfo.channelList)
+
+            oldChannel = auditInfo.channelExtra
+            newChannel = auditInfo.channelList
             changed = False
             if oldChannel != newChannel:
                 fName3 = "Channels"
-                fValue3 = f"{oldChannel}  ->  {newChannel}"
+                if isinstance(oldChannel, str):
+                    fValue3 = f"{oldChannel}  ->  {newChannel}"
+                else:
+                    fValue3 = f"{newChannel}"
                 changed = True
 
-            oldMessage = toStr(auditInfo.messageExtra)
-            newMessage = toStr(auditInfo.messageContent)
+            oldMessage = auditInfo.messageExtra
+            print(type(oldMessage))
+            newMessage = auditInfo.messageContent
             if oldMessage != newMessage:
                 fName4 = "Words/Emoji To Match"
-                fValue4 = f"{oldMessage}  ->  {newMessage}"
+                if isinstance(oldChannel, str):
+                    fValue4 = f"{oldMessage}  ->  {newMessage}"
+                else:
+                    fValue4 = f"{newMessage}"
                 changed = True
 
             oldEmoji = auditInfo.emojiExtra
             newEmoji = auditInfo.emojiList
             if oldEmoji != newEmoji:
                 fName5 = "Reactions"
-                fValue5 = f"{oldEmoji}  ->  {newEmoji}"
+                if isinstance(oldChannel, str):
+                    fValue5 = f"{oldEmoji}  ->  {newEmoji}"
+                else:
+                    fValue5 = f"{newEmoji}"
                 changed = True
 
             oldIsExact = auditInfo.flag0
             newIsExact = auditInfo.flagA
             if oldIsExact != newIsExact:
                 fName6 = "Is Exact Match"
-                fValue6 = f"{oldIsExact}  ->  {newIsExact}"
+                if isinstance(oldChannel, str):
+                    fValue6 = f"{oldIsExact}  ->  {newIsExact}"
+                else:
+                    fValue6 = f"{newIsExact}"
                 changed = True
             if not changed:
                 fName0 = "No change"
                 fValue0 = "Command was invoked but no changes were made"
+
+            e = nextcord.Embed(title=title, colour=getCol("warning"))
+
+        elif "CommandAutoReact_Delete" == TYPE:
+            log.debug(TYPE)
+            title = "AutoReact Configuration Deleted"
+            usr = auditInfo.userObject
+            fName9 = "Invoked by;"
+            fValue9 = f"{usr.id}\n{usr.name}\n<@{usr.id}>"
+
+            fName3 = "Channels"
+            fValue3 = f"{auditInfo.channelList}"
+
+            fName4 = "Words/Emoji To Match"
+            fValue4 = f"{auditInfo.messageContent}"
+
+            fName5 = "Reactions"
+            fValue5 = f"{auditInfo.emojiList}"
+
+            fName6 = "Is Exact Match"
+            fValue6 = f"{auditInfo.flagA}"
 
             e = nextcord.Embed(title=title, colour=getCol("warning"))
 
@@ -410,8 +441,7 @@ class auditLogger(commands.Cog, name="AuditLogging"):
         if fValue9 is not None:
             e.add_field(name=fName9, value=f"{fValue9}", inline=True)
         e.set_footer(text=footer)
-        log.info(
-            f"_auditChan{type(auditInfo.auditChan)} | {auditInfo.auditChan=}")
+        log.info(f"_auditChan{type(auditInfo.auditChan)} | {auditInfo.auditChan=}")
         log.info(f"_auditID{type(auditInfo.auditID)} | {auditInfo.auditID=}")
         if isinstance(auditInfo.auditChan, nextcord.TextChannel):
             log.debug(f"{type(auditInfo.auditChan)}")

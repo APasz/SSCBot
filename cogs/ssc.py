@@ -29,8 +29,7 @@ except Exception:
 async def timestampset() -> bool:
     """Refreshes the timestamps for the SSC"""
     log.debug("timeStampset")
-    utc = datetime.datetime.utcnow().replace(
-        hour=0, minute=0, second=0, microsecond=0)
+    utc = datetime.datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
     monUTC = utc - datetime.timedelta(days=utc.weekday())
     currStamp = int((monUTC - datetime.datetime(1970, 1, 1)).total_seconds())
     nextStamp = int(currStamp) + 604800
@@ -82,8 +81,7 @@ class ssc(commands.Cog, name="SSC"):
         )
 
     @tasks.loop(
-        minutes=readJSON(filename="config")[
-            "General"]["TaskLengths"]["SSC_Remind"]
+        minutes=readJSON(filename="config")["General"]["TaskLengths"]["SSC_Remind"]
     )
     async def remindTask(self):
         """Get reminder timestamp from file
@@ -108,7 +106,8 @@ class ssc(commands.Cog, name="SSC"):
             try:
                 await chan.send(
                     f"""Reminder that the competiton ends soon;\n**<t:{nex}:R>**
-                    Get your images and votes in. 🇻 🇴 🇹 🇪 @{alert}""")
+                    Get your images and votes in. 🇻 🇴 🇹 🇪 @{alert}"""
+                )
             except Exception:
                 log.exception(f"SSC Reminder")
             await asyncio.sleep(0.1)
@@ -166,79 +165,82 @@ class ssc(commands.Cog, name="SSC"):
     )
     # @application_checks.has_role(sscConfig.sscmanager)
     async def comp(
-            self,
-            interaction: Interaction,
-            banner: nextcord.Attachment = SlashOption(
-                name="banner",
-                required=True,
-                description="The image shown in the competition embed. Name of file is used, - replaced with space.",
-            ),
-            bannerFull1: nextcord.Attachment = SlashOption(
-                name="bannerfull1",
-                required=False,
-                description="The original image that makes the banner",
-            ),
-            bannerFull2: nextcord.Attachment = SlashOption(
-                name="bannerfull2",
-                required=False,
-                description="The second image that makes the banner",
-            ),
-            bannerFull4: nextcord.Attachment = SlashOption(
-                name="bannerfull3",
-                required=False,
-                description="The third image that makes the banner",
-            ),
-            bannerFull8: nextcord.Attachment = SlashOption(
-                name="bannerfull4",
-                required=False,
-                description="The fourth image that makes the banner",
-            ),
-            bannerFull1OG: nextcord.Attachment = SlashOption(
-                name="bannerfull1-og",
-                required=False,
-                description="The original image that makes the banner but for othergames channel",
-            ),
-            bannerFull2OG: nextcord.Attachment = SlashOption(
-                name="bannerfull2-og",
-                required=False,
-                description="The second image that makes the banner but for othergames channel",
-            ),
-            bannerFull4OG: nextcord.Attachment = SlashOption(
-                name="bannerfull3-og",
-                required=False,
-                description="The third image that makes the banner but for othergames channel",
-            ),
-            bannerFull8OG: nextcord.Attachment = SlashOption(
-                name="bannerfull4-og",
-                required=False,
-                description="The fourth image that makes the banner but for othergames channel",
-            ),
-            note: str = SlashOption(
-                name="note",
-                required=False,
-                description="If the theme has any restrictions or tips. Overrides existing.",
-            ),
-            prize: str = SlashOption(
-                name="prize",
-                required=False,
-                description="If the is a prize round, what is it?",
-            ),
-            prizeUser: nextcord.Member = SlashOption(
-                name="prize-giver",
-                required=False,
-                description="Who is providing the prize. Format is 'prize' provided by 'prize giver'",
-            ),
-            ignoreWinner: bool = SlashOption(
-                name="ignore-winner",
-                required=False,
-                default=bool(False),
-                description="For special rounds where SSCManager would like everyone to participate.",
-            ),
+        self,
+        interaction: Interaction,
+        banner: nextcord.Attachment = SlashOption(
+            name="banner",
+            required=True,
+            description="The image shown in the competition embed. Name of file is used, - replaced with space.",
+        ),
+        bannerFull1: nextcord.Attachment = SlashOption(
+            name="bannerfull1",
+            required=False,
+            description="The original image that makes the banner",
+        ),
+        bannerFull2: nextcord.Attachment = SlashOption(
+            name="bannerfull2",
+            required=False,
+            description="The second image that makes the banner",
+        ),
+        bannerFull4: nextcord.Attachment = SlashOption(
+            name="bannerfull3",
+            required=False,
+            description="The third image that makes the banner",
+        ),
+        bannerFull8: nextcord.Attachment = SlashOption(
+            name="bannerfull4",
+            required=False,
+            description="The fourth image that makes the banner",
+        ),
+        bannerFull1OG: nextcord.Attachment = SlashOption(
+            name="bannerfull1-og",
+            required=False,
+            description="The original image that makes the banner but for othergames channel",
+        ),
+        bannerFull2OG: nextcord.Attachment = SlashOption(
+            name="bannerfull2-og",
+            required=False,
+            description="The second image that makes the banner but for othergames channel",
+        ),
+        bannerFull4OG: nextcord.Attachment = SlashOption(
+            name="bannerfull3-og",
+            required=False,
+            description="The third image that makes the banner but for othergames channel",
+        ),
+        bannerFull8OG: nextcord.Attachment = SlashOption(
+            name="bannerfull4-og",
+            required=False,
+            description="The fourth image that makes the banner but for othergames channel",
+        ),
+        note: str = SlashOption(
+            name="note",
+            required=False,
+            description="If the theme has any restrictions or tips. Overrides existing.",
+        ),
+        prize: str = SlashOption(
+            name="prize",
+            required=False,
+            description="If the is a prize round, what is it?",
+        ),
+        prizeUser: nextcord.Member = SlashOption(
+            name="prize-giver",
+            required=False,
+            description="Who is providing the prize. Format is 'prize' provided by 'prize giver'",
+        ),
+        ignoreWinner: bool = SlashOption(
+            name="ignore-winner",
+            required=False,
+            default=bool(False),
+            description="For special rounds where SSCManager would like everyone to participate.",
+        ),
     ):
         """To start the screenshot competition. SSCManager Only"""
         if not await blacklistCheck(ctx=interaction):
             return
-        if not hasRole(role=interaction.guild.get_role(int(sscConfig.sscmanager)), userRoles=interaction.user.roles):
+        if not hasRole(
+            role=interaction.guild.get_role(int(sscConfig.sscmanager)),
+            userRoles=interaction.user.roles,
+        ):
             await interaction.send("Must have SSC Manager role", ephemeral=True)
             return
         log.debug(
@@ -273,27 +275,27 @@ class ssc(commands.Cog, name="SSC"):
                 giver = f" provided by {prizeUser.mention}"
             else:
                 giver = ""
-            ebed.add_field(name=txt_CompGift,
-                           value=f"{prize}{giver}", inline=False)
+            ebed.add_field(name=txt_CompGift, value=f"{prize}{giver}", inline=False)
         else:
             configuration["General"]["SSC_Data"]["isPrize"] = False
             sscConfig.isPrize = False
         ebed.add_field(name=txt_CompTheme, value=f"{theme}", inline=True)
-        ebed.add_field(name=txt_CompEnd,
-                       value=f"<t:{nextstamp}:f>", inline=True)
+        ebed.add_field(name=txt_CompEnd, value=f"<t:{nextstamp}:f>", inline=True)
         try:
             configSSC["allThemes"][theme]
         except Exception:
             log.exception(f"Theme not found")
         else:
             if note is not None:
-                ebed.add_field(name="**Note**",
-                               value=f"\n```\n{note}\n```", inline=False)
+                ebed.add_field(
+                    name="**Note**", value=f"\n```\n{note}\n```", inline=False
+                )
             elif configSSC["allThemes"][theme] is not None:
                 ebed.add_field(
                     name="**Note**",
                     value=f"\n```\n{configSSC['allThemes'][theme]}\n```",
-                    inline=False,)
+                    inline=False,
+                )
         if not writeJSON(data=configuration, filename="config"):
             try:
                 await interaction.send("Failed to write to config", ephemeral=True)
@@ -362,8 +364,7 @@ class ssc(commands.Cog, name="SSC"):
         for item in bannerFullAll:
             if item is not None:
                 await sendSS(ssChan, item)
-        bannerFullAllOG = [bannerFull1OG,
-                           bannerFull2OG, bannerFull4OG, bannerFull8OG]
+        bannerFullAllOG = [bannerFull1OG, bannerFull2OG, bannerFull4OG, bannerFull8OG]
         ogChan = self.bot.get_channel(int(sscConfig.OGssChan))
         for item in bannerFullAllOG:
             if item is not None:
@@ -373,7 +374,7 @@ class ssc(commands.Cog, name="SSC"):
         log.debug(f"{k=}")
         sscConfig.update()
 
-    @ slash_command(
+    @slash_command(
         name="delete",
         default_member_permissions=Permissions(manage_messages=True),
         guild_ids=[
@@ -382,34 +383,33 @@ class ssc(commands.Cog, name="SSC"):
         ],
     )
     async def sscDelete(
-            self,
-            interaction: Interaction,
-            messID: str = SlashOption(
-                name="message-id",
-                required=True,
-                description="The ID of the message to delete.",
-            ),
-            reason: str = SlashOption(
-                name="reason-preset",
-                required=False,
-                description="Preset reason for deletion",
-                choices={
-                    "Incorrect Theme": "1",
-                    "Reposted": "2",
-                    "Edited": "3",
-                    "Too many submissions": "4"
-                },
-            ),
-            customReason: str = SlashOption(
-                name="reason-custom",
-                required=False,
-                description="Custom reason for deletion? Note that your nick will be appended.",
-            ),
+        self,
+        interaction: Interaction,
+        messID: str = SlashOption(
+            name="message-id",
+            required=True,
+            description="The ID of the message to delete.",
+        ),
+        reason: str = SlashOption(
+            name="reason-preset",
+            required=False,
+            description="Preset reason for deletion",
+            choices={
+                "Incorrect Theme": "1",
+                "Reposted": "2",
+                "Edited": "3",
+                "Too many submissions": "4",
+            },
+        ),
+        customReason: str = SlashOption(
+            name="reason-custom",
+            required=False,
+            description="Custom reason for deletion? Note that your nick will be appended.",
+        ),
     ):
         """Deletes message informs author of reason."""
         print("sscDelete")
-        log.debug(
-            f"{interaction.user.id=}, {messID=}, {reason=}|{customReason=}")
+        log.debug(f"{interaction.user.id=}, {messID=}, {reason=}|{customReason=}")
         if reason is None and customReason is None:
             interaction.send("A reason must be given.", ephemeral=True)
 
@@ -430,7 +430,8 @@ class ssc(commands.Cog, name="SSC"):
             txt.append("It has been edited.")
         elif reason == "4":
             txt.append(
-                "Too many submissions. There is a limit on number of submissions per user.\nPlease refer to rules.")
+                "Too many submissions. There is a limit on number of submissions per user.\nPlease refer to rules."
+            )
 
         cusRea = f"```\n{customReason}\n```\n-{interaction.user.display_name}"
         if reason and customReason:
@@ -475,29 +476,29 @@ class ssc(commands.Cog, name="SSC"):
             return True
         return True
 
-    @ slash_command(name="themevote")
+    @slash_command(name="themevote")
     async def themeVote(
-            self,
-            interaction: Interaction,
-            update: bool = SlashOption(
-                name="update",
-                description="Whether to pull from GSheet or not. SSCManager Only.",
-                required=False,
-                default=bool(False),
-            ),
-            ops: int = SlashOption(
-                name="options",
-                description="Number of options to be picked",
-                min_value=2,
-                max_value=9,
-                required=False,
-                default=3,
-            ),
-            themes: str = SlashOption(
-                name="themes",
-                required=False,
-                description="Manually set theme options. Separate with : First item being completion of 'Vote for '",
-            ),
+        self,
+        interaction: Interaction,
+        update: bool = SlashOption(
+            name="update",
+            description="Whether to pull from GSheet or not. SSCManager Only.",
+            required=False,
+            default=bool(False),
+        ),
+        ops: int = SlashOption(
+            name="options",
+            description="Number of options to be picked",
+            min_value=2,
+            max_value=9,
+            required=False,
+            default=3,
+        ),
+        themes: str = SlashOption(
+            name="themes",
+            required=False,
+            description="Manually set theme options. Separate with : First item being completion of 'Vote for '",
+        ),
     ):
         """Pull a number of themes for community to vote on. Can be used to vote on anything."""
         if not await blacklistCheck(ctx=interaction):
@@ -505,7 +506,8 @@ class ssc(commands.Cog, name="SSC"):
         log.debug(f"{interaction.user.id=} | {update=}")
         # configuration = readJSON(filename="config")
         log.debug(
-            f"exp: {interaction.is_expired()} | {interaction.expires_at.timestamp}")
+            f"exp: {interaction.is_expired()} | {interaction.expires_at.timestamp}"
+        )
         if update:
             await interaction.response.defer()
             role = interaction.guild.get_role(int(sscConfig.sscmanager))
@@ -573,7 +575,7 @@ class ssc(commands.Cog, name="SSC"):
             except Exception:
                 log.exception(f"Themevote Send")
 
-    @ commands.Cog.listener()
+    @commands.Cog.listener()
     async def on_message(self, ctx: nextcord.ext.commands.Context):
         """Check if message has attachment or link, if 1 add reaction
         if not 1 delete and inform user, set/check prize round state, ignore SSCmanager,"""
@@ -581,8 +583,7 @@ class ssc(commands.Cog, name="SSC"):
             return
         if int(ctx.channel.id) != int(sscConfig.sscChan):
             return
-        log.debug(
-            f"SSC listener {int(ctx.channel.id)} | {int(sscConfig.sscChan)}")
+        log.debug(f"SSC listener {int(ctx.channel.id)} | {int(sscConfig.sscChan)}")
         if ctx.author.bot:
             if int(ctx.author.id) == int(gxConfig.botID):
                 return
@@ -618,6 +619,7 @@ class ssc(commands.Cog, name="SSC"):
             except Exception:
                 log.exception("SSC Bad Submission")
                 return False
+
         idName = f"{ctx.author.id},{ctx.author.display_name}"
         delTime = sscConfig.delTime
         if len(ctx.attachments) == 0 and h == "n":
@@ -625,8 +627,7 @@ class ssc(commands.Cog, name="SSC"):
             \n{delTime}sec *self-destruct*"""
             try:
                 await ctx.reply(content, delete_after=delTime)
-                log.info(
-                    f"Deletion_noImg: {idName}")
+                log.info(f"Deletion_noImg: {idName}")
                 await delete(ctx=ctx, delay=delTime)
             except Exception:
                 log.exception(f"SSC on_message")
@@ -635,8 +636,7 @@ class ssc(commands.Cog, name="SSC"):
             {delTime}sec *self-destruct*"""
             try:
                 await ctx.reply(content, delete_after=delTime)
-                log.info(
-                    f"Deletion_multiImg: {idName}")
+                log.info(f"Deletion_multiImg: {idName}")
                 await delete(ctx=ctx, delay=delTime)
             except Exception:
                 log.exception(f"SSC on_message")
@@ -666,7 +666,8 @@ class ssc(commands.Cog, name="SSC"):
                     return
             elif sscConfig.isPrize is False:
                 if ctx.author.get_role(int(sscConfig.winner)) or ctx.author.get_role(
-                        int(sscConfig.runnerUp)):
+                    int(sscConfig.runnerUp)
+                ):
                     log.debug("w")
                     content = f"""You're a SSC Winner/Runner Up, so can't participate in this round.
                     {delTime}sec *self-destruct*"""
@@ -684,8 +685,7 @@ class ssc(commands.Cog, name="SSC"):
                         log.exception(f"SSC add_reaction")
                     return
             else:
-                log.warning(
-                    f"Star: Mhmm: {idName}")
+                log.warning(f"Star: Mhmm: {idName}")
         else:
             log.debug("HUH")
 

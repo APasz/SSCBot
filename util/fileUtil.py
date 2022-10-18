@@ -138,4 +138,15 @@ def readFile(directory: str, filename: str, extenstion: str = "txt") -> str | bo
     return data
 
 
+def sepExt(file: str) -> tuple[str]:
+    "Separates the extension from a filename. Return False if no . is found"
+    if "." in file:
+        sep1, sep2 = file.rsplit(".", 1)
+        sep = (sep1, sep2)
+        # log.debug(f"{type(sep)} : {sep=}")
+        return sep
+    else:
+        return False
+
+
 # MIT APasz
