@@ -543,7 +543,7 @@ Modder intern gives access to special channels full of useful info.""",
             required=True,
             description="Name of the Reactor you with to create/override.",
         ),
-        messageID=SlashOption(
+        messageID: str = SlashOption(
             required=False,
             name="template-message-id",
             description="Which message is the template. URL is accepted. If no ID is provided, a template message is created",
@@ -567,12 +567,19 @@ Modder intern gives access to special channels full of useful info.""",
         guildID = int(interaction.guild_id)
         log.debug(f"Subcommand {reactor=} {guildID=}")
         setReactor = bool(messageID)
+        if setReactor:
+            if (messageID.startswith("https")) and ("discord" in messageID):
+                url, urlChan, urlMess = messageID.rsplit("/", 2)
+                channelID = int(urlChan)
+                messageID = int(urlMess)
+            else:
+                channelID = int(interaction.channel.id)
+                messageID = int(messageID)
         deleteAR = bool(deleteAR)
 
         logSys.debug(
             f"{guildID=} | {setReactor=} | {messageID=} | {strictMatch=} | {extraChannel=} | {deleteAR=}"
         )
-
         from config import dataObject as data
 
         data.auditChan = getChan(self=self, guild=guildID, chan="Audit", admin=True)
@@ -582,12 +589,12 @@ Modder intern gives access to special channels full of useful info.""",
             logSys.debug(f"{obj=} | {nameOnly=}")
             objList = []
             if isinstance(obj, str | int):
-                return obj
+                return str(obj)
             elif isinstance(obj, list | tuple):
                 for item in obj:
                     logSys.debug(f"{type(item)=}")
                     if isinstance(item, list | tuple):
-                        if nameOnly:
+                        if nameOnly or (len(item) == 1):
                             objList.append(f"{item[0]}")
                         else:
                             objList.append(f"{item[0]} ({item[1]})")
@@ -635,8 +642,13 @@ Modder intern gives access to special channels full of useful info.""",
             oldReactorDict = False
 
         if setReactor:
+            if channelID != interaction.channel.id:
+                chan = self.bot.get_channel(channelID)
+            else:
+                chan = interaction.channel
             try:
-                mess = await interaction.channel.fetch_message(int(messageID))
+
+                mess = await chan.fetch_message(int(messageID))
             except nextcord.NotFound:
                 logSys.exception(f"Message Not Found")
                 await interaction.send("Message Not Found", ephemeral=True)
@@ -663,7 +675,7 @@ Modder intern gives access to special channels full of useful info.""",
             if len(reactsAll.Unk) > 0:
                 await interaction.send(f"Unknown issue;\n{reactsAll.Unk}")
                 return
-            chanID = [(interaction.channel.name, getChannelID(interaction))]
+            chanID = [(chan.name, chan.id)]
             if extraChannel:
                 chanID.append((extraChannel.name, extraChannel.id))
             reactorDict = {}
