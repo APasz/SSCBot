@@ -1,0 +1,9 @@
+{
+    "MISC": {
+        "Prefix": null,
+        "Description": "A Transport Fever server to bring 3 small TpF communities together, the Australian, Linux, and MacOS people, though everyone is welcome.",
+        "Welcome": "{user}, Welcome to {guild}",
+        "Rules": "Please keep {rules} in mind",
+        "Language": "en"
+    }
+}

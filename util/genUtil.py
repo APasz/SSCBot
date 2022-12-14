@@ -1,5 +1,4 @@
 import asyncio
-from collections import namedtuple
 import logging
 import time
 from dataclasses import dataclass
@@ -7,8 +6,9 @@ import inspect
 
 from config import genericConfig as gxConfig
 from config import botInformation as botInfo
+from config import localeConfig as lcConfig
 
-from util.fileUtil import readJSON
+from util.fileUtil import readJSON, writeJSON
 
 print("UtilGen")
 
@@ -19,7 +19,8 @@ try:
     import nextcord
     from nextcord import Guild as ncGuild
     from nextcord import Role, Emoji, PartialEmoji
-    from nextcord.ext.commands import EmojiConverter, EmojiNotFound
+    from nextcord import Interaction, Message
+    from nextcord.ext.commands import Context
 except Exception:
     logSys.exception("UTIL_GEN IMPORT MODUELS")
 
@@ -31,6 +32,8 @@ def getCol(col: str) -> nextcord.Color:
     """Gets the colour RGB list from config and returns colour object"""
     func = inspect.stack()[1][3]
     logSys.debug(f"{func=} | {col=}")
+    if col == "nexus":
+        col = "nexusmods"
 
     red, green, blue = configGen["EmbedColours"][col]
     colour = nextcord.Colour.from_rgb(red, green, blue)
@@ -141,7 +144,7 @@ class formatTime:
     """Turn seconds into more human readable"""
 
     func = inspect.stack()[1][3]
-    log.debug(f"{func=}")
+    logSys.debug(f"{func=}")
 
     def _strPluralise(num: int, word: str) -> str:
         num = int(num)
@@ -199,7 +202,7 @@ class formatTime:
 async def blacklistCheck(ctx, blklstType: str = "gen") -> bool:
     """Checks if user in the blacklist"""
     func = inspect.stack()[1][3]
-    log.debug(f"{func=} | {blklstType=}")
+    logSys.debug(f"{func=} | {blklstType=}")
 
     def check():
         if blklstType == "gen":
@@ -234,7 +237,7 @@ If you believe this to be error, please contact a server Admin/Moderator."""
 
 async def _ping(self, api: bool = False, testNum: int = 1) -> list[int]:
     """Get latency to Discord"""
-    log.debug(f"_ping {api=} | {testNum=}")
+    logSys.debug(f"_ping {api=} | {testNum=}")
     testNumGate = testNumAPI = testNum
 
     async def apiPing(chan) -> int:
@@ -337,30 +340,112 @@ def getNameID(k: list | tuple | set, name: bool = True) -> str | int:
     return False
 
 
-def getLocale(locale: str) -> dict:
-    "Returns dict associated with a lang code. Defaults to en"
-    logSys.debug(f"{locale=}")
-    if locale.startswith("en"):
-        locale = "en"
-    if locale not in gxConfig.langs:
-        locale = "en"
-    return readJSON(filename=locale, directory=["strings"])
-
-
-def getLocaleText(
-    locale: str = "en", category: str = "undefined", key: str = "undefined"
-) -> str:
-    "Returns localised text for the key provided. Defaults to en"
+def getUserConf(userID: int | str, option: str, group: str = None):
+    """Retrieves the value of a userConf option
+    returns None if user doesn't have a value set"""
     func = inspect.stack()[1][3]
-    logSys.debug(f"{func=} | {locale=} | {category=} | {key=}")
-    if category == "undefined" or key == "undefined":
-        return None
-    try:
-        return getLocale(locale)[category][key]
-    except Exception as xcp:
-        if "KeyError" not in str(xcp):
-            logSys.exception("Locale Text")
-        return getLocale("en")[category][key]
+    logSys.debug(f"{func=} | {userID=} | {group=} | {option=}")
+    userID = str(userID)
+    userConf = readJSON("user", ["configs"])
+    if group is None:
+        try:
+            return userConf[userID][option]
+        except Exception:
+            return None
+    else:
+        group = str(group)
+        try:
+            return userConf[userID][group][option]
+        except Exception:
+            return None
+
+
+def setUserConf(userID: int | str, option: str, value):
+    """Sets the value of an option of a user"""
+    func = inspect.stack()[1][3]
+    logSys.debug(f"{func=} | {userID=} | {option=} | {value=}")
+    userID = str(userID)
+    userConf = readJSON("user", ["configs"])
+    oldValue = None
+    if userID not in userConf:
+        userConf[userID] = {}
+    if option in userConf[userID]:
+        oldValue = userConf[userID][option]
+    userConf[userID][option] = value
+    logSys.debug(f"userConf updated! {userID=} | {option=} | {oldValue} -> {value}")
+    return writeJSON(userConf, "user", ["configs"])
+
+
+def getServConf(guildID: int | str, option: str, group: str = None):
+    """Retrieves the value of a servConf option
+    returns None if server doesn't have a value set"""
+    func = inspect.stack()[1][3]
+    logSys.debug(f"{func=} | {guildID=} | {group=} |  {option=}")
+    guildID = str(guildID)
+    option = str(option)
+    servConf = readJSON(guildID, ["configs"])
+    if group is None:
+        try:
+            return servConf[option]
+        except Exception:
+            return None
+    else:
+        group = str(group)
+        try:
+            return servConf[group][option]
+        except Exception:
+            return None
+
+
+def commonData(obj: Context | Interaction):
+    """Takes either a command Context or application Interaction
+    returns object with"""
+    func = inspect.stack()[1][3]
+    logSys.debug(f"{func=} | {type(obj)}")
+
+    class data:
+        intGuild = int(obj.guild.id)
+        "int of the guild id"
+        strGuild = str(obj.guild.id)
+        "str of the guild id"
+        guildID_Name = f"GuildID: {obj.guild.id} | GuildName: {obj.guild.name}"
+        "For log convince, Guild ID | Guild name"
+        intChan = int(obj.channel.id)
+        "int of the channel id"
+        strChan = str(obj.channel.id)
+        "str of the channel id"
+        chanID_Name = f"ChanID: {obj.channel.id} | ChanName: {obj.channel.name}"
+        "For log convince, channel ID | channel name"
+        intUser: int
+        "int of the member id"
+        strUser: str
+        "str of the member id"
+        userID_Name: str
+        "For log convince, member ID | member display_name"
+        locale: str
+
+    if isinstance(obj, Context | Message):  # Context type
+        data.intUser = int(obj.author.id)
+        data.strUser = str(obj.author.id)
+        data.userID_Name = (
+            f"UserID: {obj.author.id} | UserName: {obj.author.display_name}"
+        )
+        data.locale = lcConfig.getGuildLC(data.intGuild)
+        if data.locale in lcConfig.sameyLangs:
+            data.locale = lcConfig.sameyLangs[data.locale][0]
+
+    elif isinstance(obj, Interaction):  # Interacton type
+        data.intUser = int(obj.user.id)
+        data.strUser = str(obj.user.id)
+        data.userID_Name = f"UserID: {obj.user.id} | UserName: {obj.user.display_name}"
+        data.locale = obj.locale
+
+    if data.intGuild in gxConfig.GUILD_BOT_PREFIX:
+        data.prefix = gxConfig.GUILD_BOT_PREFIX[data.intGuild]
+    else:
+        data.prefix = gxConfig.BOT_PREFIX
+
+    return data
 
 
 # MIT APasz

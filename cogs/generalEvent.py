@@ -1,15 +1,21 @@
 import asyncio
-from code import interact
 import logging
 import time
 
 from config import generalEventConfig as geConfig
 from config import genericConfig as gxConfig
+from config import localeConfig as lcConfig
 from util.fileUtil import readJSON, writeJSON
-from util.genUtil import getChan, getChannelID, getGuildID, getRole, getUserID
+from util.genUtil import (
+    getChan,
+    getGuildID,
+    getRole,
+    getServConf,
+    commonData,
+)
 
 from cogs.auditLog import auditLogger
-from cogs.modding import modding
+
 
 print("CogGeneralEvent")
 
@@ -24,6 +30,8 @@ try:
     from nextcord.ext import commands
 except Exception:
     logSys.exception("GENERAL_EVENT IMPORT MODULES")
+
+_ = lcConfig.getLC
 
 
 class generalEvent(commands.Cog, name="GeneralEvent"):
@@ -47,11 +55,16 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
             geConfig.update()
         except Exception:
             log.exception("Event List")
+            return False
         else:
             log.info("events updated")
+            return True
 
     @slash_command(
-        name="toggleevents",
+        name=_("COMM_TOGGLEEVENT_NAME", gxConfig.defaultLang),
+        name_localizations=_("COMM_TOGGLEEVENT_NAME"),
+        description=_("COMM_TOGGLEEVENT_DESC", gxConfig.defaultLang),
+        description_localizations=_("COMM_TOGGLEEVENT_DESC"),
         default_member_permissions=Permissions(administrator=True),
         guild_ids=gxConfig.slashServers,
     )
@@ -59,36 +72,40 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
         self,
         interaction: Interaction,
         event: str = SlashOption(
-            name="event", required=True, description="Which event you want to toggle?"
+            name=_("COMM_TOGGLEEVENT_EVENT_NAME", gxConfig.defaultLang),
+            name_localizations=_("COMM_TOGGLEEVENT_EVENT_NAME"),
+            description=_("COMM_TOGGLEEVENT_EVENT_DESC", gxConfig.defaultLang),
+            description_localizations=_("COMM_TOGGLEEVENT_EVENT_DESC"),
+            required=True,
         ),
         newState: bool = SlashOption(
-            name="newstate",
+            name=_("COMM_TOGGLEEVENT_STATE_NAME", gxConfig.defaultLang),
+            name_localizations=_("COMM_TOGGLEEVENT_STATE_NAME"),
+            description=_("COMM_TOGGLEEVENT_STATE_DESC", gxConfig.defaultLang),
+            description_localizations=_("COMM_TOGGLEEVENT_STATE_DESC"),
+            default=bool(True),
             required=True,
-            description="Whether to allow or disallow the event.",
-            default=True,
         ),
     ):
         """Finds and changes specified event config value"""
-        guildID = int(interaction.guild_id)
-        log.debug(f"{guildID=}")
-        event = event.removeprefix("O | ")
-        event = event.removeprefix("X | ")
+        cd = commonData(interaction)
+        log.debug(f"{cd.intGuild=}")
+        event = (event.removeprefix("O | ")).removeprefix("X | ")
         configuraton = readJSON("config")
         try:
-            oldState = configuraton[str(guildID)]["Events"][event]
+            oldState = configuraton[cd.strGuild]["Events"][event]
         except KeyError:
-            await interaction.send(
-                "This item is not avaliable for this guild", ephemeral=True
-            )
+            txt = _("COMM_TOGGLEEVENT_UNAVALIBLE", cd.locale)
+            await interaction.send(txt.format(event=f"**{event}**"), ephemeral=True)
             return
         except Exception:
             log.exception("Toggle Event")
-        configuraton[str(guildID)]["Events"][event] = newState
+        configuraton[cd.strGuild]["Events"][event] = newState
         from config import dataObject
 
         dataObject.TYPE = "CommandToggleEvent"
         dataObject.auditChan = getChan(
-            self=self, guild=guildID, chan="Audit", admin=True
+            self=self, guild=cd.intGuild, chan="Audit", admin=True
         )
         dataObject.category = event
         dataObject.commandArg1 = oldState
@@ -96,19 +113,28 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
         dataObject.userObject = interaction.user
         print(dataObject)
         await auditLogger.logEmbed(self, dataObject)
-        log.warning(f"{event}, {guildID}, {oldState}|{newState}")
+        log.warning(f"{event}, {cd.intGuild}, {oldState}|{newState}")
         writeJSON(data=configuraton, filename="config")
-        if await generalEvent.updateEventList(self, interaction):
+        k = await generalEvent.updateEventList(self, interaction)
+        logSys.debug(f"updateEventList {k}")
+        await asyncio.sleep(0.05)
+        if k:
             try:
+                txt = _("COMM_TOGGLEEVENT_UPDATE_SUCCESS", cd.locale)
                 await interaction.send(
-                    f"Event: **{event}** was {oldState}, set to **{newState}**"
+                    txt.format(
+                        event=f"**{event}**",
+                        oldState=oldState,
+                        newState=f"**{newState}**",
+                    )
                 )
             except Exception:
                 log.exception(f"Toggle Event Send")
         else:
             try:
+                txt = _("COMM_TOGGLEEVENT_UPDATE_FAIL", cd.locale)
                 await interaction.send(
-                    f"An error occured. Event: **{event}** is still {oldState}"
+                    txt.format(event=f"**{event}**", oldState=f"**{oldState}**")
                 )
             except Exception:
                 log.exception(f"Toggle Event Error Send")
@@ -120,11 +146,11 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
     @toggleevents.on_autocomplete("event")
     async def eventList(self, interaction: Interaction, event: str):
         """Toggle event command autocomplete for event"""
-        guildID = int(getGuildID(obj=interaction))
-        if guildID is None:
+        cd = commonData(interaction)
+        if cd.intGuild is None:
             return
-        log.debug(f"{guildID=} | {event=} | {type(event)=} | {len(event)=}")
-        guildEvents = geConfig.eventConfigID[guildID]
+        log.debug(f"{cd.intGuild=} | {event=} | {type(event)=} | {len(event)=}")
+        guildEvents = geConfig.eventConfigID[cd.intGuild]
         globalEvents = geConfig.globalEventAll
         log.debug(f"{guildEvents=} | {globalEvents=}")
         enabledEvents = []
@@ -148,17 +174,17 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
         log.debug(f"{finalEventList=}")
         if len(finalEventList) >= 25:
             finalEventList = finalEventList[0:25]
-            finalEventList[0] = "**Options Truncated**"
+            finalEventList[0] = _("COMM_TOGGLEEVENT_TRUNCATED", cd.locale)
         try:
             await interaction.response.send_autocomplete(finalEventList)
         except Exception:
             log.exception(f"EventList Autocomplete")
 
     @commands.Cog.listener()
-    async def on_member_join(self, member):
+    async def on_member_join(self, member: nextcord.Member):
         """Send welcome message when new user joins"""
         await self.bot.wait_until_ready()
-        guildID = int(getGuildID(obj=member))
+        guildID = member.guild.id
         if member.bot:
             return
         if guildID is None:
@@ -217,7 +243,7 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
     async def on_member_update(self, before, after: nextcord.Member):
         """Check if new user has passed membership or display name changes."""
         await self.bot.wait_until_ready()
-        guildID = getGuildID(obj=after)
+        guildID = after.guild.id
         if guildID is None:
             return
         log.debug(f"{guildID=}")
@@ -239,14 +265,18 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
                 dataObject.userObject = after
                 dataObject.count = after.guild.member_count
                 await auditLogger.logEmbed(self, dataObject)
+
             if "MemberWelcome" in geConfig.eventConfigID[guildID]:
                 log.info(f"MemberWelcome: {logMess}")
                 guild = after.guild
                 if guild.system_channel is None:
                     return
-                strServ = readJSON(filename="strings")["en"]["Server"]
-                welcome = strServ["Common"]["Welcome"]
-                rules = strServ["Common"]["Rules"]
+                welcome = getServConf(
+                    guildID=after.guild.id, group="MISC", option="Welcome"
+                )
+                rules = getServConf(
+                    guildID=after.guild.id, group="MISC", option="Rules"
+                )
                 try:
                     ruleChan = int(getChan(guildID, "Rules"))
                 except Exception:
@@ -264,11 +294,21 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
                     log.exception(f"Send Guild Welcome")
             if "MemberVerifiedRole" in geConfig.eventConfigID[guildID]:
                 log.info(f"MemberVerifiedRole: {logMess}")
+                roles = []
                 role = getRole(guild=after.guild, role="Verified")
-                if role is not None:
+                if role:
+                    roles.append(role)
+                if "SSC_NotifyRole_Assignment" in geConfig.eventConfigID[guildID]:
+                    role = getRole(guild=after.guild, role="SSC_Notify_General")
+                    if role:
+                        roles.append(role)
+                    role = getRole(guild=after.guild, role="SSC_Notify_Prize")
+                    if role:
+                        roles.append(role)
+                if len(roles) > 0:
                     try:
                         await after.add_roles(
-                            role, reason="Passed Membership Screen.", atomic=True
+                            *roles, reason="Passed Membership Screen.", atomic=True
                         )
                     except Exception:
                         log.exception(f"Add Verified")
@@ -289,7 +329,7 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
     async def on_member_remove(self, member):
         """Log to audit-log channel when member leaves."""
         await self.bot.wait_until_ready()
-        guildID = getGuildID(obj=member)
+        guildID = member.guild.id
         if guildID is None:
             return
         log.debug(f"{guildID=} | {member.id=}")
@@ -319,8 +359,12 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
         """Create an auditlog entry when a member leaves and isn't in cache"""
         await self.bot.wait_until_ready()
         await asyncio.sleep(1.5)
-        guildID = getGuildID(obj=payload)
+        if hasattr(payload, "guild"):
+            guildID = payload.guild.id
+        else:
+            guildID = payload.guild_id
         if guildID is None:
+            logSys.warning("GuildID None")
             return
         log.debug(f"{guildID=} | {payload.user=}")
         if self.onMemberFired:
@@ -335,7 +379,7 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
             from config import dataObject
 
             dataObject.TYPE = "RawMemberLeave"
-            dataObject.userObject = guildData
+            dataObject.userObject = payload.user
             dataObject.count = guildData.member_count
             dataObject.auditChan = getChan(
                 self=self, guild=guildID, chan="Audit", admin=True
@@ -348,10 +392,10 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
                 log.exception(f"Del RMR")
 
     @commands.Cog.listener()
-    async def on_member_ban(self, guild, usr):
+    async def on_member_ban(self, guild: nextcord.Guild, usr):
         """Log to audit-log channel when member is banned."""
         await self.bot.wait_until_ready()
-        guildID = str(guild.id)
+        guildID = int(guild.id)
         log.debug(f"{guildID=} | {usr.id=} | {usr.display_name=}")
         if guildID not in geConfig.guildListID:
             return
@@ -374,23 +418,22 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
                 log.exception(f"Del MB")
 
     @commands.Cog.listener()
-    async def on_member_unban(self, guild, usr):
+    async def on_member_unban(self, guild: nextcord.Guild, usr):
         """Log to audit-log channel when member is unbanned."""
         await self.bot.wait_until_ready()
-        guildID = int(guild.id)
-        log.debug(f"{guildID=} | {usr.id=} | {usr.display_name=}")
-        if guildID not in geConfig.guildListID:
+        log.debug(f"{guild.id=} | {usr.id=} | {usr.display_name=}")
+        if guild.id not in geConfig.guildListID:
             return
-        if "MemberUnban" in geConfig.eventConfigID[guildID]:
+        if "MemberUnban" in geConfig.eventConfigID[guild.id]:
             log.info(
-                f"MemberUnban: {geConfig.guildListID[str(guildID)]}, {usr.id=}, {usr.display_name=}"
+                f"MemberUnban: {geConfig.guildListID[guild.id]}, {usr.id=}, {usr.display_name=}"
             )
             from config import dataObject
 
             dataObject.TYPE = "MemberUnban"
             dataObject.userObject = usr
             dataObject.auditChan = getChan(
-                self=self, guild=guildID, chan="Audit", admin=True
+                self=self, guild=guild.id, chan="Audit", admin=True
             )
             await auditLogger.logEmbed(self, dataObject)
             try:
@@ -402,9 +445,14 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
     async def on_raw_message_delete(self, payload):
         """Create an auditlog entry when a message is deleted and isn't in the cache"""
         await self.bot.wait_until_ready()
-        guildID = int(getGuildID(obj=payload))
+        if hasattr(payload, "guild"):
+            guildID = payload.guild.id
+        else:
+            guildID = payload.guild_id
         if guildID is None:
+            logSys.warning("GuildID None")
             return
+
         log.debug(f"{guildID=}")
         if guildID not in geConfig.guildListID:
             return
@@ -438,35 +486,25 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
                 log.exception(f"Del RMD")
 
     @commands.Cog.listener()
-    async def on_message(self, ctx: commands.Context):
-        """Check for Author in message and adds heart reaction. Restricted to artwork channel in TpF server.
-        Check if a mod link and create a mod mod preview embed.
-        Check for certain emoji in the Battles channel and add those emoji"""
+    async def on_message(self, ctx: nextcord.Message):
+        """Check for AutoReacts"""
         await self.bot.wait_until_ready()
-        guildID = getGuildID(obj=ctx)
-        chanID = int(getChannelID(obj=ctx))
-        userID = getUserID(ctx)
-        if guildID is None:
-            logSys.debug(f"Guild ID None")
-            logSys.debug(f"{ctx.guild.name}")
-            logSys.debug(f"{ctx.guild.id}")
+        cd = commonData(ctx)
+        if cd.intUser == gxConfig.botID:
             return
-        else:
-            guildID = int(guildID)
-        if userID == 762054632510849064:  # pub id
-            if guildID == gxConfig.ownerGuild:
-                return
-        if userID == gxConfig.botID:
+        if cd.intGuild == gxConfig.ownerGuild:
             return
         cfName = "**"
-        if guildID in list(geConfig.guildListID):
-            cfName = geConfig.guildListID[guildID]
+        if cd.intGuild in list(geConfig.guildListID):
+            cfName = geConfig.guildListID[cd.intGuild]
         else:
             return
 
-        log.debug(f"GE_on_message; {cfName}: {guildID=} | {chanID=} | {ctx.author.id=}")
+        log.debug(
+            f"GE_on_message; {cfName}: {cd.intGuild=} | {cd.chanID_Name} | {cd.userID_Name}"
+        )
         event = False
-        if "AutoReact" in geConfig.eventConfigID[guildID]:
+        if "AutoReact" in geConfig.eventConfigID[cd.intGuild]:
 
             async def addReact(emoji):
                 """Adds a reaction to a message"""
@@ -479,14 +517,14 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
                     logSys.exception(f"Add Reaction")
 
             log.debug(
-                f"AutoReact: {guildID=} | {chanID=} | {list(geConfig.autoReactsChans)}"
+                f"AutoReact: {cd.intGuild=} | {cd.intChan=} | {list(geConfig.autoReactsChans)}"
             )
-            if guildID in list(geConfig.autoReactsChans):
-                if chanID in list(geConfig.autoReactsChans[guildID]):
-                    reactorList = geConfig.autoReactsChans[guildID][chanID]
+            if cd.intGuild in list(geConfig.autoReactsChans):
+                if cd.intChan in list(geConfig.autoReactsChans[cd.intGuild]):
+                    reactorList = geConfig.autoReactsChans[cd.intGuild][cd.intChan]
                     emojiAdd = []
                     for item in reactorList:
-                        reactor = geConfig.autoReacts[guildID][item]
+                        reactor = geConfig.autoReacts[cd.intGuild][item]
                         match = False
                         log.debug(f"{reactor=}")
                         for element in reactor["Contains"]:
@@ -508,50 +546,6 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
                     for emo in emojiAdd:
                         await addReact(emo)
                     event = True
-
-        if "ModPreview" in geConfig.eventConfigID[guildID]:
-            nmrChan = int(getChan(guildID, "NewModRelease"))
-            log.debug(f"{nmrChan=} {chanID == nmrChan} | bot {ctx.author.bot}")
-            if (chanID == nmrChan) and (ctx.author.bot is False):
-                try:
-                    nmpChan = int(getChan(guildID, "NewModPreview"))
-                    globalnmpChan = int(
-                        getChan(geConfig.guildListName["TPFGuild"], "NewModPreview")
-                    )
-                except Exception:
-                    logSys.exception(f"Get NMP Chans")
-                log.debug(f"NMR listener | {nmpChan=} | {globalnmpChan=}")
-                try:
-                    nmp = await self.bot.fetch_channel(int(nmpChan))
-                except Exception:
-                    logSys.exception(f"Fetch NMP Chan")
-                logSys.debug(f"{geConfig.eventConfigID[guildID]=}")
-                globalPreview = False
-                if "ModPreviewGlobal" not in geConfig.eventConfigID[guildID]:
-                    if nmpChan != globalnmpChan:
-                        globalPreview = True
-                try:
-                    await modding.modRelease(
-                        self=self,
-                        ctx=ctx,
-                        chan=nmp,
-                        globalPreview=globalPreview,
-                    )
-                except Exception:
-                    log.exception(f"ModRelease Obj Send")
-                    okSend = False
-                else:
-                    okSend = True
-                delTrig = False
-                if "ModPreview_DeleteTrigger" in geConfig.eventConfigID[guildID]:
-                    delTrig = True
-                logSys.info(f"modReleaseSent | {delTrig=} {okSend=}")
-                if delTrig and okSend:
-                    try:
-                        await ctx.delete()
-                    except Exception:
-                        logSys.exception(f"Delete Trig")
-                event = True
 
         if not event:
             log.debug(f"GE on_message: No event.")

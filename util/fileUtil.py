@@ -26,7 +26,7 @@ def parentDir() -> str:
 def writeJSON(data: dict, filename: str, directory: list = None) -> bool:
     """Creates a JSON file contain data."""
     func = inspect.stack()[1][3]
-    logSys.debug(f"{func=} | {filename=}")
+    logSys.debug(f"{func=} | {filename=} | {directory=}")
     if not filename.casefold().endswith(".json"):
         filename = filename + ".json"
     botDir = parentDir()
@@ -35,6 +35,7 @@ def writeJSON(data: dict, filename: str, directory: list = None) -> bool:
     else:
         fileDir = filename
     fullDir = os.path.join(botDir, fileDir)
+    logSys.debug(fullDir)
     try:
         with open(fullDir, "w") as file:
             json.dump(obj=data, fp=file, indent=4)
@@ -62,7 +63,7 @@ def readJSON(filename: str, directory: list = None, cache: bool = True) -> dict 
     """Read a JSON file. By default caches all files to memory.
     If files doesn't exist, it'll be created and return an empty dict"""
     func = inspect.stack()[1][3]
-    logSys.debug(f"{func=} | {filename=}")
+    logSys.debug(f"{func=} | {filename=} | {directory=}")
     if not filename.casefold().endswith(".json"):
         filename = filename + ".json"
     if isinstance(directory, list):

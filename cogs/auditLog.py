@@ -66,19 +66,21 @@ class auditLogger(commands.Cog, name="AuditLogging"):
                     reason = None
                 dataObj.reason = reason
                 usr = dataObj.userObject
-                if "kick" in auditLog.action:
+                log.debug(str(auditLog.action))
+                if "kick" in str(auditLog.action).lower():
                     log.info(f"MemberKick: {usr.id}: {usr.name}: {reason=}")
                     dataObj.TYPE = "MemberKick"
                     log.debug(f"{dataObj.TYPE=}")
                     await auditLogger.logEmbed(self, dataObj)
-                if uR == 1:
+                    # if uR == 1:
+                    #    log.debug(f"{uR=}")
                     return
-                elif "ban" in auditLog.action:
+                if "ban" in str(auditLog.action).lower():
                     log.info(f"MemberBan: {usr.id}: {usr.display_name}: {reason=}")
                     dataObj.TYPE = "MemberBan"
-                    log.debug(f"{dataObj=}")
-                    await auditLogger.logEmbed(self, dataObj)
+                    log.debug(f"{dataObj.TYPE=}")
                     uR = 0
+                    await auditLogger.logEmbed(self, dataObj)
 
     async def logEmbed(self, auditInfo: dataObject):
         """Format each type of entry and send to the appropriate audit channel"""

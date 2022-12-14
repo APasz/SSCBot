@@ -1,0 +1,14 @@
+{
+    "548932321781219365": {
+        "SSC_Notify_Prize": true,
+        "SSC_Notify_General": true
+    },
+    "375547210760454145": {
+        "SSC_Notify_General": false,
+        "SSC_Notify_Prize": false
+    },
+    "227901060390453248": {
+        "SSC_Notify_General": true,
+        "SSC_Notify_Prize": true
+    }
+}

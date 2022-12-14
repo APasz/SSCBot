@@ -3,16 +3,29 @@ import logging
 import random
 import time
 
-from config import genericConfig as gxConfig
-from config import screenShotCompConfig as sscConfig
-from util.apiUtil import GSheetGet
-from util.fileUtil import readJSON, writeJSON
-from util.genUtil import blacklistCheck, getChan, getCol, hasRole
-
 print("CogSSC")
 
 log = logging.getLogger("discordGeneral")
 logSys = logging.getLogger("discordSystem")
+
+try:
+    from config import genericConfig as gxConfig
+    from config import generalEventConfig as geConfig
+    from config import screenShotCompConfig as sscConfig
+    from util.apiUtil import GSheetGet
+    from util.fileUtil import readJSON, writeJSON
+    from util.genUtil import (
+        blacklistCheck,
+        getChan,
+        getCol,
+        hasRole,
+        getUserConf,
+        setUserConf,
+        commonData,
+    )
+except Exception:
+    logSys.exception(f"SSC LOCAL MODULES")
+
 try:
     logSys.debug("TRY SSC IMPORT MODULES")
     import datetime
@@ -105,8 +118,7 @@ class ssc(commands.Cog, name="SSC"):
             chan = getChan(self=self, guild=sscConfig.tpfID, chan="SSC_Comp")
             try:
                 await chan.send(
-                    f"""Reminder that the competiton ends soon;\n**<t:{nex}:R>**
-                    Get your images and votes in. 🇻 🇴 🇹 🇪 @{alert}"""
+                    f"""Reminder that the competiton ends soon;\n**<t:{nex}:R>**\nGet your images and votes in. 🇻 🇴 🇹 🇪 @{alert}"""
                 )
             except Exception:
                 log.exception(f"SSC Reminder")
@@ -575,10 +587,56 @@ class ssc(commands.Cog, name="SSC"):
             except Exception:
                 log.exception(f"Themevote Send")
 
+    @classmethod
+    async def checkNotifyRole(cls, ctx: nextcord.ext.commands.Context):
+        """Check if user is in the user config
+        If so check if they have either SSC notify role, if not add them"""
+        user = ctx.author
+        if user.bot:
+            return
+        cd = commonData(ctx)
+        logSys.debug(f"{cd.intUser=} | {cd.guildID_Name}")
+        configuration = readJSON("config")[str(sscConfig.tpfID)]["Roles"]
+
+        addRoles = []
+
+        genNotify = getUserConf(cd.intUser, "SSC_Notify_General")
+        genNotifyID = configuration["SSC_Notify_General"]
+        genRole = ctx.guild.get_role(genNotifyID)
+        if genNotify is None:
+            addRoles.append(genRole)
+            setUserConf(cd.intUser, "SSC_Notify_General", True)
+        elif (genNotify is True) and (genRole not in user.roles):
+            addRoles.append(genRole)
+
+        priNotify = getUserConf(cd.intUser, "SSC_Notify_Prize")
+        priNotifyID = configuration["SSC_Notify_Prize"]
+        priRole = ctx.guild.get_role(priNotifyID)
+        if priNotify is None:
+            addRoles.append(priRole)
+            setUserConf(cd.intUser, "SSC_Notify_Prize", True)
+        elif (priNotify is True) and (priRole not in user.roles):
+            addRoles.append(priRole)
+
+        logSys.debug(f"Roles: {genNotify=} | {priNotify=}")
+        if len(addRoles) > 0:
+            logSys.debug(f"{addRoles=}")
+            try:
+                await user.add_roles(*addRoles)
+                return True
+            except Exception:
+                logSys.exception(f"Add SSC Notify Roles")
+                return False
+
     @commands.Cog.listener()
     async def on_message(self, ctx: nextcord.ext.commands.Context):
         """Check if message has attachment or link, if 1 add reaction
-        if not 1 delete and inform user, set/check prize round state, ignore SSCmanager,"""
+        if not 1 delete and inform user, set/check prize round state, ignore SSCmanager"""
+        if ctx.guild.id != sscConfig.tpfID:
+            return
+        if "SSC_NotifyRole_Assignment" in geConfig.eventConfigID[sscConfig.tpfID]:
+            if await ssc.checkNotifyRole(ctx) is False:
+                log.error("CheckNotifyRoles Error")
         if ctx.content.startswith(f"{gxConfig.BOT_PREFIX}"):
             return
         if int(ctx.channel.id) != int(sscConfig.sscChan):

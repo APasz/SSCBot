@@ -5,6 +5,7 @@ from config import botInformation as botInfo
 from config import generalEventConfig as geConfig
 from config import genericConfig as gxConfig
 from config import screenShotCompConfig as sscConfig
+from config import localeConfig as lcConfig
 from config import syncCommands
 from util.fileUtil import cacheWrite, parentDir, writeJSON
 from util.genUtil import blacklistCheck
@@ -19,7 +20,7 @@ try:
     from discord import Permissions
     from nextcord import Interaction, SlashOption, slash_command
     from nextcord.ext import commands
-except Exception:  # pylint: disable=broad-except
+except Exception:
     logSys.exception("BOT_MANAGE IMPORT MODULES")
 
 
@@ -217,6 +218,12 @@ class botManage(commands.Cog, name="BotManagement"):
                 botInfo.update()
             except Exception:
                 logSys.exception(f"Reload botInformation")
+                err = True
+            logSys.info("Reload localeConfig")
+            try:
+                lcConfig.update()
+            except Exception:
+                logSys.exception(f"Reload localeConfig")
                 err = True
 
         elif "-s" in arg:

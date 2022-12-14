@@ -1,0 +1,9 @@
+{
+    "MISC": {
+        "Prefix": null,
+        "Description": null,
+        "Welcome": "{user}, Welcome to {guild}",
+        "Rules": "Please keep {rules} in mind",
+        "Language": "fr"
+    }
+}

@@ -1,0 +1,9 @@
+{
+    "MISC": {
+        "Prefix": null,
+        "Description": "The original Transport Fever Discord server. Originally known as the Reddit server but these days is generally known as the Global server.",
+        "Welcome": "{user}, Welcome to {guild}",
+        "Rules": "Please keep {rules} in mind",
+        "Language": "en"
+    }
+}

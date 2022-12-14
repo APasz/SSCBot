@@ -1,5 +1,6 @@
 import logging
 import time
+import inspect
 
 
 print("UtilViews")
@@ -12,7 +13,7 @@ try:
     from config import genericConfig as gxConfig
 
     from util.fileUtil import readJSON, writeJSON
-    from util.genUtil import hasRole, getChan
+    from util.genUtil import hasRole, setUserConf
     from cogs.auditLog import auditLogger
     import nextcord
     from nextcord import Interaction
@@ -32,35 +33,55 @@ async def clicky(
     action="both",
 ) -> None:
     """Do the role action=(add|remove)"""
+    func = inspect.stack()[1][3]
+    logSys.debug(f"{func=} | {role.id=} {role.name=} | {action=}")
     Rtxt = "*undefinded*"
 
     async def add():
         """Actually add the role"""
         await interaction.user.add_roles(role)
         txt = "role added!"
-        log.debug(f"clickyADD: {interaction.user.id=} | {button.label=}")
+        logSys.debug(f"clickyADD: {interaction.user.id=} | {button.label=}")
         return txt
 
     async def remove():
         """Actually remove the role"""
         await interaction.user.remove_roles(role)
         txt = "role removed!"
-        log.debug(f"clickyRMV: {interaction.user.id=} | {button.label=}")
+        logSys.debug(f"clickyRMV: {interaction.user.id=} | {button.label=}")
         return txt
 
     roly = hasRole(role=role, userRoles=interaction.user.roles)
+    mod = False
     if roly:
         if action == "add":
             Rtxt = "role can not be removed."
         else:
             Rtxt = await remove()
+            mod = 0
     else:
         if action == "remove":
             Rtxt = "role can not be added."
         else:
             Rtxt = await add()
+            mod = 1
     Etxt = f"**{button.label}** {Rtxt}"
     await interaction.response.send_message(Etxt, ephemeral=True)
+    return mod
+
+
+def getRole(guild: str, roleName: str, group: str = "Roles"):
+    func = inspect.stack()[1][3]
+    logSys.debug(f"{func=} | {guild=} | {group=} | {roleName=}")
+    configuration = readJSON(filename="config")
+    guildNames = geConfig.guildListName
+    if guild in guildNames:
+        guild = str(guildNames[guild])
+    if guild in configuration:
+        if group in configuration[guild]:
+            if roleName in configuration[guild][group]:
+                return int(configuration[guild][group][roleName])
+    return None
 
 
 class tpfroles(nextcord.ui.View):
@@ -72,14 +93,14 @@ class tpfroles(nextcord.ui.View):
 
     @nextcord.ui.button(
         label="Verified",
-        style=nextcord.ButtonStyle.blurple,
+        style=nextcord.ButtonStyle.green,
         custom_id="TPF|ROLE|VERIFIED",
     )
     async def TPFVERIFIED(self, button: nextcord.ui.Button, interaction):
         """Add/remove the Verified role, and remove Unverified role."""
-        role = interaction.guild.get_role(int(configTPF["Verified"]))
+        role = interaction.guild.get_role(getRole("TPFGuild", "Verified"))
         await clicky(role, button, interaction, "add")
-        role = interaction.guild.get_role(int(configTPF["Unverified"]))
+        role = interaction.guild.get_role(getRole("TPFGuild", "Unverified"))
         await clicky(role, button, interaction, "remove")
 
     @nextcord.ui.button(
@@ -89,7 +110,7 @@ class tpfroles(nextcord.ui.View):
     )
     async def NEWMODDER(self, button: nextcord.ui.Button, interaction):
         """Add/remove the Modder Intern role"""
-        role = interaction.guild.get_role(int(configTPF["ModderNew"]))
+        role = interaction.guild.get_role(getRole("TPFGuild", "ModderNew"))
         await clicky(role, button, interaction)
 
     @nextcord.ui.button(
@@ -99,7 +120,7 @@ class tpfroles(nextcord.ui.View):
     )
     async def TPFPLAYER(self, button: nextcord.ui.Button, interaction):
         """Add/remove the TpF Player role"""
-        role = interaction.guild.get_role(int(configTPF["Player_TPF"]))
+        role = interaction.guild.get_role(getRole("TPFGuild", "Player_TPF"))
         await clicky(role, button, interaction)
 
     @nextcord.ui.button(
@@ -109,7 +130,7 @@ class tpfroles(nextcord.ui.View):
     )
     async def CSLPLAYER(self, button: nextcord.ui.Button, interaction):
         """Add/remove the Cities: Skylines Player role"""
-        role = interaction.guild.get_role(int(configTPF["Player_CSL"]))
+        role = interaction.guild.get_role(getRole("TPFGuild", "Player_CSL"))
         await clicky(role, button, interaction)
 
     @nextcord.ui.button(
@@ -119,7 +140,7 @@ class tpfroles(nextcord.ui.View):
     )
     async def TTDPLAYER(self, button: nextcord.ui.Button, interaction):
         """Add/remove the Transport Tycoon Player role"""
-        role = interaction.guild.get_role(int(configTPF["Player_TTD"]))
+        role = interaction.guild.get_role(getRole("TPFGuild", "Player_TTD"))
         await clicky(role, button, interaction)
 
     @nextcord.ui.button(
@@ -129,8 +150,63 @@ class tpfroles(nextcord.ui.View):
     )
     async def FCTPLAYER(self, button: nextcord.ui.Button, interaction):
         """Add/remove the Factorio Player role"""
-        role = interaction.guild.get_role(int(configTPF["Player_FCT"]))
+        role = interaction.guild.get_role(getRole("TPFGuild", "Player_FCT"))
         await clicky(role, button, interaction)
+
+
+class sscroles(nextcord.ui.View):
+    """Buttons for assign roles for ssc"""
+
+    def __init__(self):
+        super().__init__(timeout=None)
+        self.value = None
+
+    def updateConf(userID: int, role: str):
+        "If user not in config,"
+
+    @nextcord.ui.button(
+        label="General Noification",
+        style=nextcord.ButtonStyle.blurple,
+        custom_id="SSC|ROLE|NOTIFIY_GENERAL",
+    )
+    async def SSCNOTIFY(self, button: nextcord.ui.Button, interaction: Interaction):
+        """Add/remove the SSC Notify role"""
+        role = interaction.guild.get_role(
+            getRole("General", "SSC_Notify_General", "SSC_Data")
+        )
+        mod = await clicky(role, button, interaction)
+        logSys.debug(f"{mod=}")
+        if mod == 0:
+            setUserConf(
+                userID=interaction.user.id, option="SSC_Notify_General", value=False
+            )
+        elif mod == 1:
+            setUserConf(
+                userID=interaction.user.id, option="SSC_Notify_General", value=True
+            )
+
+    @nextcord.ui.button(
+        label="Prize Noification",
+        style=nextcord.ButtonStyle.blurple,
+        custom_id="SSC|ROLE|NOTIFIY_PRIZE",
+    )
+    async def SSCNOTIFYPRIZE(
+        self, button: nextcord.ui.Button, interaction: Interaction
+    ):
+        """Add/remove the SSC Notify Prize role"""
+        role = interaction.guild.get_role(
+            getRole("General", "SSC_Notify_Prize", "SSC_Data")
+        )
+        mod = await clicky(role, button, interaction)
+        logSys.debug(f"{mod=}")
+        if mod == 0:
+            setUserConf(
+                userID=interaction.user.id, option="SSC_Notify_Prize", value=False
+            )
+        elif mod == 1:
+            setUserConf(
+                userID=interaction.user.id, option="SSC_Notify_Prize", value=True
+            )
 
 
 class nixroles(nextcord.ui.View):
@@ -145,7 +221,9 @@ class nixroles(nextcord.ui.View):
     )
     async def NIXLINUX(self, button: nextcord.ui.Button, interaction):
         """Add/remove the Linux role"""
-        role = nextcord.utils.get(interaction.guild.roles, id=int(configNIX["Linux"]))
+        role = nextcord.utils.get(
+            interaction.guild.roles, id=getRole("NIXGuild", "Linux")
+        )
         await clicky(role, button, interaction)
 
     @nextcord.ui.button(
@@ -153,7 +231,9 @@ class nixroles(nextcord.ui.View):
     )
     async def NIXMACOS(self, button: nextcord.ui.Button, interaction):
         """Add/remove the MacOS role"""
-        role = nextcord.utils.get(interaction.guild.roles, id=int(configNIX["MacOS"]))
+        role = nextcord.utils.get(
+            interaction.guild.roles, id=getRole("NIXGuild", "MacOS")
+        )
         await clicky(role, button, interaction)
 
     @nextcord.ui.button(
@@ -163,7 +243,9 @@ class nixroles(nextcord.ui.View):
     )
     async def NIXWINDOWS(self, button: nextcord.ui.Button, interaction):
         """Add/remove the Windows role"""
-        role = nextcord.utils.get(interaction.guild.roles, id=int(configNIX["Windows"]))
+        role = nextcord.utils.get(
+            interaction.guild.roles, id=getRole("NIXGuild", "Windows")
+        )
         await clicky(role, button, interaction)
 
     @nextcord.ui.button(
@@ -171,7 +253,9 @@ class nixroles(nextcord.ui.View):
     )
     async def NIXAUSSIE(self, button: nextcord.ui.Button, interaction):
         """Add/remove the Aussie role"""
-        role = nextcord.utils.get(interaction.guild.roles, id=int(configNIX["AUS"]))
+        role = nextcord.utils.get(
+            interaction.guild.roles, id=getRole("NIXGuild", "AUS")
+        )
         await clicky(role, button, interaction)
 
     @nextcord.ui.button(
@@ -179,7 +263,7 @@ class nixroles(nextcord.ui.View):
     )
     async def NIXKIWI(self, button: nextcord.ui.Button, interaction):
         """Add/remove the Kiwi role"""
-        role = nextcord.utils.get(interaction.guild.roles, id=int(configNIX["NZ"]))
+        role = nextcord.utils.get(interaction.guild.roles, id=getRole("NIXGuild", "NZ"))
         await clicky(role, button, interaction)
 
 
@@ -196,7 +280,7 @@ class nixrolesCOL(nextcord.ui.View):
     async def NIXBLACK(self, button: nextcord.ui.Button, interaction):
         """Add/remove the Black role"""
         role = nextcord.utils.get(
-            interaction.guild.roles, id=int(configNIX["COL_black"])
+            interaction.guild.roles, id=getRole("NIXGuild", "COL_black")
         )
         await clicky(role, button, interaction)
 
@@ -206,7 +290,7 @@ class nixrolesCOL(nextcord.ui.View):
     async def NIXBLUE(self, button: nextcord.ui.Button, interaction):
         """Add/remove the Blue role"""
         role = nextcord.utils.get(
-            interaction.guild.roles, id=int(configNIX["COL_blue"])
+            interaction.guild.roles, id=getRole("NIXGuild", "COL_blue")
         )
         await clicky(role, button, interaction)
 
@@ -218,7 +302,7 @@ class nixrolesCOL(nextcord.ui.View):
     async def NIXBLUEDARK(self, button: nextcord.ui.Button, interaction):
         """Add/remove the Dark Blue role"""
         role = nextcord.utils.get(
-            interaction.guild.roles, id=int(configNIX["COL_blueDark"])
+            interaction.guild.roles, id=getRole("NIXGuild", "COL_blueDark")
         )
         await clicky(role, button, interaction)
 
@@ -228,7 +312,7 @@ class nixrolesCOL(nextcord.ui.View):
     async def NIXBROWN(self, button: nextcord.ui.Button, interaction):
         """Add/remove the Brown role"""
         role = nextcord.utils.get(
-            interaction.guild.roles, id=int(configNIX["COL_brown"])
+            interaction.guild.roles, id=getRole("NIXGuild", "COL_brown")
         )
         await clicky(role, button, interaction)
 
@@ -238,7 +322,7 @@ class nixrolesCOL(nextcord.ui.View):
     async def NIXGREEN(self, button: nextcord.ui.Button, interaction):
         """Add/remove the Green role"""
         role = nextcord.utils.get(
-            interaction.guild.roles, id=int(configNIX["COL_green"])
+            interaction.guild.roles, id=getRole("NIXGuild", "COL_green")
         )
         await clicky(role, button, interaction)
 
@@ -250,7 +334,7 @@ class nixrolesCOL(nextcord.ui.View):
     async def NIXGREENDARK(self, button: nextcord.ui.Button, interaction):
         """Add/remove the Dark Green role"""
         role = nextcord.utils.get(
-            interaction.guild.roles, id=int(configNIX["COL_greenDark"])
+            interaction.guild.roles, id=getRole("NIXGuild", "COL_greenDark")
         )
         await clicky(role, button, interaction)
 
@@ -260,7 +344,7 @@ class nixrolesCOL(nextcord.ui.View):
     async def NIXLILAC(self, button: nextcord.ui.Button, interaction):
         """Add/remove the Lilac role"""
         role = nextcord.utils.get(
-            interaction.guild.roles, id=int(configNIX["COL_lilac"])
+            interaction.guild.roles, id=getRole("NIXGuild", "COL_lilac")
         )
         await clicky(role, button, interaction)
 
@@ -270,7 +354,7 @@ class nixrolesCOL(nextcord.ui.View):
     async def NIXORANGE(self, button: nextcord.ui.Button, interaction):
         """Add/remove the Orange role"""
         role = nextcord.utils.get(
-            interaction.guild.roles, id=int(configNIX["COL_orange"])
+            interaction.guild.roles, id=getRole("NIXGuild", "COL_orange")
         )
         await clicky(role, button, interaction)
 
@@ -280,7 +364,7 @@ class nixrolesCOL(nextcord.ui.View):
     async def NIXPINK(self, button: nextcord.ui.Button, interaction):
         """Add/remove the Pink role"""
         role = nextcord.utils.get(
-            interaction.guild.roles, id=int(configNIX["COL_pink"])
+            interaction.guild.roles, id=getRole("NIXGuild", "COL_pink")
         )
         await clicky(role, button, interaction)
 
@@ -290,7 +374,7 @@ class nixrolesCOL(nextcord.ui.View):
     async def NIXREDDARK(self, button: nextcord.ui.Button, interaction):
         """Add/remove the Dark Red role"""
         role = nextcord.utils.get(
-            interaction.guild.roles, id=int(configNIX["COL_redDark"])
+            interaction.guild.roles, id=getRole("NIXGuild", "COL_redDark")
         )
         await clicky(role, button, interaction)
 
@@ -300,7 +384,7 @@ class nixrolesCOL(nextcord.ui.View):
     async def NIXWHITE(self, button: nextcord.ui.Button, interaction):
         """Add/remove the White role"""
         role = nextcord.utils.get(
-            interaction.guild.roles, id=int(configNIX["COL_white"])
+            interaction.guild.roles, id=getRole("NIXGuild", "COL_white")
         )
         await clicky(role, button, interaction)
 
@@ -310,7 +394,7 @@ class nixrolesCOL(nextcord.ui.View):
     async def NIXYELLOW(self, button: nextcord.ui.Button, interaction):
         """Add/remove the Yellow role"""
         role = nextcord.utils.get(
-            interaction.guild.roles, id=int(configNIX["COL_yellow"])
+            interaction.guild.roles, id=getRole("NIXGuild", "COL_yellow")
         )
         await clicky(role, button, interaction)
 

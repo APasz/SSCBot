@@ -1,11 +1,13 @@
+import gettext
 import inspect
 import logging
 import math
 import os
 import platform
 from dataclasses import dataclass
+from pathlib import Path as Pathy
 
-from util.fileUtil import readJSON, writeJSON, sepExt
+from util.fileUtil import readJSON, writeJSON
 
 print("Config")
 
@@ -15,7 +17,8 @@ try:
     logSys.debug("TRY CONFIG IMPORT MODULES")
     import nextcord
     import psutil
-    from packaging import version
+    from nextcord import Locale
+    from packaging import version as packVersion
 except Exception:
     logSys.exception("CONFIG IMPORT MODULES")
 
@@ -52,7 +55,7 @@ def verifyConfigJSON() -> bool:
             try:
                 configuration[item]["MISC"]["Language"]
             except KeyError:
-                configuration[item]["MISC"]["Language"] = "en"
+                configuration[item]["MISC"]["Language"] = "en-GB"
 
             try:
                 configuration[item]["SlashCommands"]
@@ -65,27 +68,20 @@ def verifyConfigJSON() -> bool:
                 configuration[item]["Events"]["AutoReact"] = True
 
             try:
-                del configuration[item]["Events"]["Artwork"]
-            except Exception:
-                logSys.exception(f"Could Not Delete Artwork Event {item=}")
-
-            try:
                 configuration[item]["AutoReact"]
             except KeyError:
                 configuration[item]["AutoReact"] = {}
 
-            if "ModPreview" in configuration[item]["Events"]:
-                try:
-                    configuration[item]["Events"]["ModPreview_DeleteTrigger"]
-                except KeyError:
-                    configuration[item]["Events"]["ModPreview_DeleteTrigger"] = True
-            if "MemberJoinRecentCreation" in configuration[item]["Events"]:
-                try:
-                    val = configuration[item]["Events"]["MemberJoinRecentCreation"]
-                    configuration[item]["Events"]["MemberJoin_RecentCreation"] = val
-                    del configuration[item]["Events"]["MemberJoinRecentCreation"]
-                except Exception:
-                    log.exception("MemberJoin_RecentCreation")
+            k = readJSON(filename=item, directory=["configs"])
+            data = {
+                "MISC": {
+                    "Prefix": None,
+                    "Description": None,
+                    "Welcome": "{user}, Welcome to {guild}",
+                    "Rules": "Please keep {rules} in mind",
+                }
+            }
+            writeJSON(data=data | k, filename=item, directory=["configs"])
 
     if writeJSON(data=configuration, filename="config.json"):
         logSys.debug("Updated Config")
@@ -136,6 +132,20 @@ class genericConfig(metaclass=_singleton_):
         return list(slashes)
 
     @classmethod
+    def getGuildLangs(cls) -> dict[str, str]:
+        """Gets the configured lang for each guild and adds to dict"""
+        configuration = readJSON(filename="config")
+        langs = {}
+        for item in configuration:
+            if not item.isdigit():
+                continue
+            try:
+                langs[item] = configuration[item]["MISC"]["Language"]
+            except Exception:
+                langs[item] = cls.defaultLang
+        return langs
+
+    @classmethod
     def update(cls):
         "Reassign default class attributes from their source"
         cls.slashServers = cls.slashList()
@@ -151,15 +161,28 @@ class genericConfig(metaclass=_singleton_):
         else:
             cls.botID = 764270771350142976
             "ID of the bot"
-        cls.langs = []
-        _allStringFiles = os.listdir(os.path.join(genericConfig.botDir, "strings"))
-        for item in _allStringFiles:
-            if (item).upper().endswith("JSON"):
-                cls.langs.append(sepExt(item)[0])
-        log.debug(f"{cls.langs=}")
+        cls.langs = cls.getGuildLangs
+
+        configsDir = Pathy().parent.absolute().joinpath("configs")
+        cls.GUILD_BOT_PREFIX = {}
+
+        for item in configsDir.iterdir():
+            if not (item.stem).isdigit():
+                continue
+            logSys.debug(f"prefix get {item.stem=} {item=}")
+            guildConf = readJSON(str(item), ["configs"])
+            try:
+                prefix = guildConf["MISC"]["Prefix"]
+                logSys.debug(f"{prefix=}")
+                if prefix is None:
+                    prefix = cls.BOT_PREFIX
+                cls.GUILD_BOT_PREFIX[int(item.stem)] = prefix
+            except Exception:
+                logSys.exception(f"guild prefix")
+                continue
+
         return True
 
-    emoNotifi = None
     emoHeart = "❤️"
     emoStar = "⭐"
     emoTmbUp = "👍"
@@ -183,7 +206,12 @@ class genericConfig(metaclass=_singleton_):
     Wiki2gameFiles = Wiki2 + "?id=gamemanual:gamefilelocations"
 
     BOT_PREFIX = "~"
-    "Prefix the bot listens to"
+    "Default prefix the bot listens to"
+    GUILD_BOT_PREFIX: dict
+    "Guild specific prefixes the bot listens to"
+    defaultLang = Locale.en_GB.value
+    """Lang to use when only one must be used. /command name for example.
+    Must be Nextcord locale"""
 
     configCommGroupWhitelist = ["Channels", "Channels_Admin", "Roles", "MISC"]
     "Groups of the config JSON that are accessible by the configuration command"
@@ -194,6 +222,9 @@ class genericConfig(metaclass=_singleton_):
     pingingChan = 1018012984053870622
     "Channel ID to use for API pinging"
     botDir = os.path.dirname(os.path.realpath(__file__))
+    "Real path directory of the bot"
+    changelog = "changelog2"
+    "Filename of the changelog"
 
     ownerID = 375547210760454145
     "Discord user ID of owner"
@@ -266,7 +297,6 @@ genericConfig.update()
 def bytesMagnitude(byteNum: int, magnitude: str, bi: bool, bit: bool) -> float:
     """Turns an int into a more friendly magnitude
     magnitude=['K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y']"""
-    magnitude = magnitude.upper()
     if bi:
         bi = 1024
     else:
@@ -275,7 +305,7 @@ def bytesMagnitude(byteNum: int, magnitude: str, bi: bool, bit: bool) -> float:
         byteNum = byteNum * 8
     ratios = {"K": 1, "M": 2, "G": 3, "T": 4, "P": 5, "E": 6, "Z": 7, "Y": 8}
     try:
-        return round(byteNum / math.pow(bi, ratios[magnitude]), 3)
+        return round(byteNum / math.pow(bi, ratios[magnitude.upper()]), 3)
     except Exception:
         log.exception("BytesMag")
         return False
@@ -552,10 +582,11 @@ class generalEventConfig(metaclass=_singleton_):
             "ModPreviewGlobal",
             "ModPreview_DeleteTrigger",
             "AutoReact",
+            "SSC_NotifyRole_Assignment",
         ]
         "All recognised events"
         cls.autoReacts = cls.getAutoReacts()
-        logSys.debug(f"{cls.autoReacts=}")
+        # logSys.debug(f"{cls.autoReacts=}")
         cls.autoReactsChans = cls.getAutoReactChannels(cls.autoReacts)
         logSys.debug(f"{cls.autoReactsChans=}")
         return True
@@ -569,25 +600,51 @@ class botInformation(metaclass=_singleton_):
     """Store various bits of info about the bot and what it's running on"""
 
     @classmethod
+    def verParse(cls, data: str) -> packVersion:
+        "Packing.version.parse function. False on InvalidVersion, else return arg"
+        try:
+            return packVersion.parse(str(data))
+        except packVersion.InvalidVersion:
+            logSys.exception("Version.parse Invalid")
+            return False
+        except Exception:
+            log.exception(f"Version.parse")
+            return data
+
+    @classmethod
+    def _parseVer(cls) -> packVersion:
+        "Gets latest version as verison object and attaches extra bits of info"
+        _cgLog = readJSON(filename=genericConfig.changelog)
+        _BotVer = "2"
+        _allMajor = list(_cgLog.keys())
+        _min = str(_allMajor[0])
+        _mic = str(list(_cgLog[_min].keys())[1])
+        logSys.debug(f"BotVer: {_BotVer=}.{_min=}.{_mic=}")
+        _var = cls.verParse(f"{_BotVer}.{_min}.{_mic}")
+        _var.title = _cgLog[_min]["Title"]
+        "Name current version"
+        _var.date = _cgLog[_min][_mic][0]
+        "Date current released"
+
+        def listVer() -> list:
+            _verList = []
+            for _minVer in _cgLog:
+                for _micVer in _cgLog[_minVer]:
+                    if _micVer.isdigit():
+                        _verList.append(f"{_BotVer}.{_minVer}.{_micVer}")
+            return _verList
+
+        _var.all = listVer()
+
+        return _var
+
+    @classmethod
     def update(cls):
         "Reassign default class attributes from their source"
-        _data = readJSON(filename="changelog")
-        _verKey = str(list(_data.keys())[-1])
-        cls.name = _data[_verKey][0].split("::")[0]
-        "Name of current version"
-        cls.date = _data[_verKey][0].split("::")[1]
-        "Date update was published"
-        _ver = version.parse(_verKey)
-        cls.major = _ver.major
-        "Major number of the bot version"
-        cls.minor = _ver.minor
-        "Minor number of the bot version"
-        cls.micro = _ver.micro
-        "Point/Micro number of the bot version"
-        cls.base = _ver.base_version
-        "Str of the bot version"
-        cls.release = _ver.release
-        "Tuple of the bot version"
+
+        cls.version = cls._parseVer()
+        "Packing.version object with extras"
+
         cls.nextcordVer = nextcord.__version__
         "Version of Nextcord installed"
         cls.hostname = platform.node()
@@ -620,13 +677,156 @@ class botInformation(metaclass=_singleton_):
     "Provider of the hardware"
     hostLocation = "Sydney"
     "Where is the hardware"
-    linePyCount = 5480
+    linePyCount = 6238
     "Appox count of Python lines"
-    lineJSONCount = 1600
+    lineJSONCount = 1730
     "Appox count of JSON lines"
+    repoLink = "https://github.com/APasz/SSCBot"
+    repoNice = f"[Github]({repoLink})"
+
+    @classmethod
+    def memMiB(cls):
+        try:
+            processBot = psutil.Process(cls.processPID)
+            memB = processBot.memory_info().rss
+            return bytesToHuman(byteNum=memB, magnitude="M")
+        except Exception:
+            log.exception("InfoCommand_mem")
+            return "*undefined*"
 
 
 botInformation.update()
+
+
+@dataclass(slots=True)
+class localeConfig(metaclass=_singleton_):
+    """Class for locale stuffs"""
+
+    sameyLangs = {"en": [Locale.en_GB, Locale.en_US]}
+    """Locales that are interchangable. English GB and US for example
+    common locale : [nextcord.Locale]
+    The first in the list will be the one used if a specific locale is required"""
+
+    localeDict = {}
+    ""
+
+    _localePath = Pathy().parent.absolute().joinpath("locale")
+    _enLoc = _localePath.joinpath("en", "LC_MESSAGES", "base.po")
+
+    @classmethod
+    def _findPOfiles(cls):
+        "Look for po files and add their locale code to a dict with gettext.translation"
+        cls._localGettext = {}
+        for file in cls._localePath.iterdir():
+            itemPO = file.joinpath("LC_MESSAGES", "base.po")
+            print(itemPO)
+            lang = str(file.stem)
+            if not itemPO.exists():
+                logSys.error(f"Missing base.po file {lang=}")
+                continue
+            trans = gettext.translation(
+                domain="base", localedir=cls._localePath, languages=[lang]
+            )
+            langs = []
+            if lang[:2] in cls.sameyLangs:
+                for item in cls.sameyLangs[lang[:2]]:
+                    if isinstance(item, Locale):
+                        langs.append(str(item.value))
+                    else:
+                        langs.append(str(item))
+            else:
+                langs.append(lang)
+            for element in langs:
+                cls._localGettext[element] = trans
+        logSys.debug(f"{cls._localGettext=}")
+
+    @classmethod
+    def _findEnMSGID(cls):
+        "Get all MSGIDs from the en po file and add to the localeDict with empty dict"
+        with cls._enLoc.open("r") as file:
+            file = file.read().splitlines()
+            for stringKey in file:
+                if stringKey.startswith("msgid") and len(stringKey) > 8:
+                    stringKey = stringKey.removeprefix('msgid "').removesuffix('"')
+                    cls.localeDict[stringKey] = {}
+        logSys.debug(f"{cls.localeDict=}")
+
+    @classmethod
+    def _buildLocaleDict(cls):
+        "Using the gettext from _findPOfiles, fill localeDict empty dicts with locale code and translated text"
+        defLang = genericConfig.defaultLang
+        langList = []
+        for stringKey in cls.localeDict:
+            for item in Locale:
+                lang = item.value
+                if lang not in langList:
+                    langList.append(lang)
+
+                if lang in cls._localGettext:
+                    stringValue = cls._localGettext[lang].gettext(stringKey)
+                else:
+                    stringValue = cls._localGettext[defLang].gettext(stringKey)
+                stringValue: str
+
+                # if the translation doesn't exist, fetch default lang translation
+                if stringKey == stringValue and lang != defLang:
+                    stringValue = cls._localGettext[defLang].gettext(stringKey)
+
+                # Ensure name and title translations fit Discords 32 char limit
+                if stringKey.endswith(("NAME")):
+                    stringValue = stringValue.casefold()[:32]
+                    stringValue = stringValue.replace(" ", "_")
+                if stringKey.endswith(("TITLE")):
+                    stringValue = stringValue[:32]
+
+                cls.localeDict[stringKey][lang] = stringValue
+        logSys.debug(f"locs: {langList}")
+        # logSys.debug(f"locDict: {cls.localeDict=}")
+
+    @classmethod
+    def getLC(cls, key: str, lang: str = False) -> str:
+        "Returns dict of all locale codes with translated text for specified key"
+        func = inspect.stack()[1][3]
+        logSys.debug(f"{func=} | {key=} | {lang=}")
+        if key is None:
+            return "***undefined***"
+        if key.upper() in cls.localeDict:
+            cls.localeDict: dict[str, dict[str, str]]
+            if lang:
+                if lang in cls.sameyLangs:
+                    lang = cls.sameyLangs[lang][0].value
+                k = cls.localeDict[key.upper()][lang]
+            else:
+                k = cls.localeDict[key.upper()]
+        else:
+            k = key.lower()[:32]
+        # logSys.debug(f"{k=}")
+        return k
+
+    def getGuildLC(guildID: int) -> str:
+        "With an id, retrieves the configured lang for the guild"
+        func = inspect.stack()[1][3]
+        logSys.debug(f"{func=} | {guildID=}")
+        guildID = str(guildID)
+        configuration = readJSON("config")
+        try:
+            return configuration[guildID]["MISC"]["Language"]
+        except KeyError:
+            log.exception("Guild doesn't have lang set")
+            return genericConfig.defaultLang
+        except Exception:
+            log.exception("UNK ERR guild lang")
+            return genericConfig.defaultLang
+
+    @classmethod
+    def update(cls):
+        "Reassign default class attributes from their source"
+        cls._findPOfiles()
+        cls._findEnMSGID()
+        cls._buildLocaleDict()
+
+
+localeConfig.update()
 
 
 @dataclass(slots=True)

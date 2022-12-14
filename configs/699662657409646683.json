@@ -1,0 +1,9 @@
+{
+    "MISC": {
+        "Prefix": null,
+        "Description": "A Transport Fever Modding server meant to bring together all modders of North America.",
+        "Welcome": "{user}, Welcome to {guild}",
+        "Rules": "Please keep {rules} in mind",
+        "Language": "en"
+    }
+}

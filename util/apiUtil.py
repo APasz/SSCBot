@@ -3,6 +3,7 @@ import os
 
 import requests
 from config import NEXUSAPI, STEAMAPI
+from util.fileUtil import writeJSON
 
 print("UtilAPI")
 
@@ -24,13 +25,11 @@ def steamWSGet(wsID) -> int | dict:
     except Exception:
         log.exception(f"steamWSGet | {res.status_code=}")
     log.info(f"steamWSGet | {res.status_code=}")
-    dets = None
     if res:
         data = res.json()
-        dets = data["response"]["publishedfiledetails"][0]
+        return data["response"]["publishedfiledetails"][0]
     else:
         return res.status_code
-    return dets
 
 
 def steamUsrGet(usrID) -> int | dict:
@@ -42,13 +41,11 @@ def steamUsrGet(usrID) -> int | dict:
     except Exception:
         log.exception(f"steamUsrGet | {res.status_code=}")
     log.info(f"steamUsrGet | {res.status_code=}")
-    author = None
     if res:
         data = res.json()
-        author = data["response"]["players"][0]
+        return data["response"]["players"][0]
     else:
         return res.status_code
-    return author
 
 
 def nexusModGet(game, modID) -> int | dict:
@@ -60,12 +57,10 @@ def nexusModGet(game, modID) -> int | dict:
     except Exception:
         log.exception(f"nexusModGet | {res.status_code=}")
     log.info(f"nexusModGet | {res.status_code=}")
-    data = None
     if res:
-        data = res.json()
+        return res.json()
     else:
         return res.status_code
-    return data
 
 
 def tpfnetModGet(data) -> int | dict:
@@ -82,7 +77,7 @@ def tpfnetModGet(data) -> int | dict:
     return
 
 
-def parseURL(url) -> dict | None:
+def parseURL(url) -> tuple | None:
     log.debug(f"parseURL: {url=}")
     game = None
     cont = url.split("https://")[-1]
@@ -110,7 +105,7 @@ def parseURL(url) -> dict | None:
             game = stuff[1]
     else:
         return None
-    data = {"ID": cont, "game": game, "platform": plat}
+    data = (cont, game, plat)
     log.debug(f"{data=}")
     return data
 

@@ -6,11 +6,21 @@ from config import botInformation as botInfo
 from config import bytesToHuman
 from config import generalEventConfig as geConfig
 from config import genericConfig as gxConfig
+from config import localeConfig as lcConfig
 from util.fileUtil import readJSON
-from util.genUtil import _ping, blacklistCheck, getCol, formatTime
+from util.genUtil import (
+    _ping,
+    blacklistCheck,
+    formatTime,
+    getCol,
+    commonData,
+    getServConf,
+)
 from util.views import factSubmit
 
 print("CogGeneral")
+
+_ = lcConfig.getLC
 
 log = logging.getLogger("discordGeneral")
 logSys = logging.getLogger("discordSystem")
@@ -19,6 +29,7 @@ try:
     import nextcord
     import pint
     import psutil
+    from discord import Permissions
     from nextcord import Embed, Interaction, SlashOption, slash_command
     from nextcord.ext import commands
 except Exception:
@@ -48,7 +59,10 @@ class general(commands.Cog, name="General"):
             log.exception(f"Fact Submit Modal")
 
     async def factGet(
-        self, index: int = -1, metadata: bool = False
+        self,
+        cd: commonData,
+        index: int = -1,
+        metadata: bool = False,
     ) -> str | nextcord.Embed:
         """Retrieves a fact from the facts JSON file."""
         log.debug(f"run| {index=}| {metadata=}")
@@ -67,7 +81,8 @@ class general(commands.Cog, name="General"):
                 index = str(random.choice(keys))
         factDic = facts[index]
         log.debug(str(factDic))
-        ID = f"Fact #{index}"
+        ID = _("COMM_FACT_ID", cd.locale).format(index=index)
+        # TODO support content in multiple languages.
         content = factDic["content"]
         source = factDic["source"]
         sourceLink = factDic["sourceLink"]
@@ -105,11 +120,14 @@ class general(commands.Cog, name="General"):
 
     @commands.command(name="fact", aliases=["randomFact"])
     @commands.cooldown(1, 1, commands.BucketType.user)
-    async def factCommand(self, ctx, index: int = -1, metadata: bool = False):
+    async def factCommand(
+        self, ctx: commands.Context, index: int = -1, metadata: bool = False
+    ):
         """Serves Random Facts"""
         log.debug("factCommand")
         async with ctx.typing():
-            fact = await self.factGet(index=index, metadata=metadata)
+            cd = commonData(ctx)
+            fact = await self.factGet(cd=cd, index=index, metadata=metadata)
             try:
                 if isinstance(fact, Embed):
                     await ctx.send(embed=fact)
@@ -117,31 +135,41 @@ class general(commands.Cog, name="General"):
                     await ctx.send(fact)
             except Exception:
                 log.exception("factCOMM")
-            log.info(f"Fact: {ctx.author.id},{ctx.author.display_name}")
+            log.info(f"Fact: {cd.userID_Name}")
 
-    @slash_command(name="fact")
+    @slash_command(
+        name=_("COMM_FACT_NAME", gxConfig.defaultLang),
+        name_localizations=_("COMM_FACT_NAME"),
+        description=_("COMM_FACT_DESC", gxConfig.defaultLang),
+        description_localizations=_("COMM_FACT_DESC"),
+    )
     @commands.cooldown(1, 1, commands.BucketType.user)
     async def factSlash(
         self,
         interaction: Interaction,
         index: int = SlashOption(
-            name="index",
+            name=_("COMM_FACT_INDEX_NAME", gxConfig.defaultLang),
+            name_localizations=_("COMM_FACT_INDEX_NAME"),
+            description=_("COMM_FACT_INDEX_DESC", gxConfig.defaultLang),
+            description_localizations=_("COMM_FACT_INDEX_DESC"),
             required=False,
             default=-1,
-            description="When looking for a specific fact. If in an invalid index is given, one will be picked at random",
         ),
         metadata: bool = SlashOption(
-            name="metadata",
+            name=_("COMM_FACT_METADATA_NAME", gxConfig.defaultLang),
+            name_localizations=_("COMM_FACT_METADATA_NAME"),
+            description=_("COMM_FACT_METADATA_DESC", gxConfig.defaultLang),
+            description_localizations=_("COMM_FACT_METADATA_DESC"),
             required=False,
             default=bool(False),
-            description="Whether to show addition information such as who submitted a fact and when.",
         ),
     ):
         """Serves Random Facts"""
         if not await blacklistCheck(ctx=interaction, blklstType="gen"):
             return
         log.debug("factSlash")
-        fact = await self.factGet(index=index, metadata=metadata)
+        cd = commonData(interaction)
+        fact = await self.factGet(cd=cd, index=index, metadata=metadata)
         try:
             if isinstance(fact, Embed):
                 await interaction.response.send_message(embed=fact)
@@ -149,16 +177,18 @@ class general(commands.Cog, name="General"):
                 await interaction.response.send_message(fact)
         except Exception:
             log.exception("factSLASH")
-        log.info(f"Fact: {interaction.user.id},{interaction.user.display_name}")
+        log.info(f"Fact: {cd.userID_Name}")
 
-    async def pingDo(self, ctx, api: bool, testNum: int):
+    async def pingDo(self, ctx, api: bool, testNum: int, cd: commonData):
         """Sends a formated string containing the latency"""
         log.debug("run")
         tests = await _ping(self, api=api, testNum=testNum)
         if api:
-            txt = f"Gateway: {tests[0]}ms   API: {tests[1]}ms"
+            txt = _("COMM_PING_BOTH", cd.locale)
+            txt = txt.format(gw=tests[0], api=tests[1])
         else:
-            txt = f"I'm ping ponging at {tests[0]}ms"
+            txt = _("COMM_PING_GATEWAY", cd.locale)
+            txt = txt.format(ping=tests[0])
         log.debug(txt)
         try:
             await ctx.send(txt)
@@ -174,28 +204,39 @@ class general(commands.Cog, name="General"):
         if api is None:
             api = False
         log.debug(f"pingCommand {testNum=} | {api=}")
-        await self.pingDo(ctx=ctx, api=api, testNum=testNum)
-        log.info(f"Ping: {ctx.author.id=},{ctx.author.display_name=}")
+        cd = commonData(ctx)
+        await self.pingDo(ctx=ctx, api=api, testNum=testNum, cd=cd)
+        log.info(f"Ping: {cd.userID_Name}")
 
-    @slash_command(name="ping")
+    @slash_command(
+        name=_("COMM_PING_NAME", gxConfig.defaultLang),
+        name_localizations=_("COMM_PING_NAME"),
+        description=_("COMM_PING_DESC", gxConfig.defaultLang),
+        description_localizations=_("COMM_PING_DESC"),
+    )
     async def pingSlash(
         self,
         interaction: Interaction,
         api: bool = SlashOption(
-            name="api",
-            description="Do you want to check API latency?",
+            name=_("COMM_PING_API_NAME", gxConfig.defaultLang),
+            name_localizations=_("COMM_PING_API_NAME"),
+            description=_("COMM_PING_API_DESC", gxConfig.defaultLang),
+            description_localizations=_("COMM_PING_API_DESC"),
             required=False,
             default=bool(False),
         ),
         testNum: int = SlashOption(
-            name="test-count",
-            description="How many tests to do?",
+            name=_("COMM_PING_TESTNUM_NAME", gxConfig.defaultLang),
+            name_localizations=_("COMM_PING_TESTNUM_NAME"),
+            description=_("COMM_PING_TESTNUM_DESC", gxConfig.defaultLang),
+            description_localizations=_("COMM_PING_TESTNUM_DESC"),
             default=1,
             max_value=5,
         ),
     ):
         """Gives ping to server the bot is running on"""
-        log.debug(interaction.user.id)
+        cd = commonData(interaction)
+        log.debug(cd.strUser)
         BL = await blacklistCheck(ctx=interaction, blklstType="gen")
         if BL is False:
             return
@@ -203,92 +244,222 @@ class general(commands.Cog, name="General"):
             api = False
         log.debug(f"pingCommand {testNum=} | {api=}")
         await interaction.response.defer()
-        await self.pingDo(ctx=interaction, api=api, testNum=testNum)
-        log.info(f"Ping: {interaction.user.id=},{interaction.user.display_name=}")
+        await self.pingDo(ctx=interaction, api=api, testNum=testNum, cd=cd)
+        log.info(f"Ping: {cd.userID_Name}")
 
-    @slash_command(name="info", guild_ids=gxConfig.slashServers)
-    async def info(
+    @slash_command(
+        guild_ids=gxConfig.slashServers,
+        name=_("COMM_INFO_BASE_NAME", gxConfig.defaultLang),
+        name_localizations=_("COMM_INFO_BASE_NAME"),
+    )
+    async def infoBASE(self, interaction: Interaction):
+        log.debug(f"infoBASE {interaction.user.id}")
+
+    @infoBASE.subcommand(
+        name=_("COMM_INFO_BOT_NAME", gxConfig.defaultLang),
+        name_localizations=_("COMM_INFO_BOT_NAME"),
+        description=_("COMM_INFO_BOT_DESC", gxConfig.defaultLang),
+        description_localizations=_("COMM_INFO_BOT_DESC"),
+    )
+    async def infoBOT(
         self,
         interaction: Interaction,
         category: str = SlashOption(
-            name="category",
-            required=True,
-            choices=["Bot", "Server", "Member"],
-            description="What sort of info are you looking for?",
+            name=_("COMM_INFO_BOT_CATEGORY_NAME", gxConfig.defaultLang),
+            name_localizations=_("COMM_INFO_BOT_CATEGORY_NAME"),
+            description=_("COMM_INFO_BOT_CATEGORY_DESC", gxConfig.defaultLang),
+            description_localizations=_("COMM_INFO_BOT_CATEGORY_DESC"),
+            required=False,
+            choices={
+                "Description": _(
+                    "COMM_INFO_BOT_CATEGORY_CHOICE_DESC", gxConfig.defaultLang
+                ),
+                "System": _(
+                    "COMM_INFO_BOT_CATEGORY_CHOICE_SYSTEM", gxConfig.defaultLang
+                ),
+            },
+            choice_localizations={
+                "Description": _("COMM_INFO_BOT_CATEGORY_CHOICE_DESC"),
+                "System": _("COMM_INFO_BOT_CATEGORY_CHOICE_SYSTEM"),
+            },
         ),
     ):
-        """Get info about the bot or current server."""
-        guildID = int(interaction.guild_id)
+        """Gathers and returns info regarding the bot"""
+        cd = commonData(interaction)
+        logSys.debug(f"{cd.locale=}")
         await interaction.response.defer()
-        if category == "Bot":
-            strBot = readJSON(filename="strings")["en"]["Bot"]
-            # generate description
-            if botInfo.botName == "SSCBot":
-                desc = strBot["InfoNameSame"]
-            else:
+
+        def _embed_desc():
+            "Return an embed containing a general description of the bot"
+            title = _("BOT_INFO_INTRO", cd.locale)
+            title = title.format(botName=f"**{botInfo.botName}**")
+            desc = _("BOT_INFO_DESC", cd.locale)
+            desc = desc.format(
+                creator="**APasz**",
+                repo=f"**{botInfo.repoNice}**",
+                prefix=gxConfig.BOT_PREFIX,
+            )
+            emb = nextcord.Embed(
+                title=title, description=desc, colour=getCol("botInfo")
+            )
+            return emb
+
+        async def _embed_sys():
+            "Returns an embed containing system info"
+            emb = nextcord.Embed(
+                title=_("COMM_INFO_BOT_SYSTEM_TITLE", cd.locale),
+                colour=getCol("botInfo"),
+            )
+
+            emb.add_field(
+                name=_("BOT_INFO_HOST_TITLE", cd.locale),
+                value=_("BOT_INFO_HOST_BODY", cd.locale).format(
+                    hostname=botInfo.hostname,
+                    os=botInfo.hostOS,
+                    hoster=f"{botInfo.hostProvider} {botInfo.hostLocation}",
+                ),
+                inline=False,
+            )
+
+            emb.add_field(
+                name=_("BOT_INFO_RAM_TITLE", cd.locale),
+                value=_("BOT_INFO_RAM_BODY", cd.locale).format(
+                    total=botInfo.hostRAM,
+                    used=psutil.virtual_memory().percent,
+                    bot=botInfo.memMiB(),
+                ),
+                inline=False,
+            )
+
+            emb.add_field(
+                name=_("BOT_INFO_CPU_TITLE", cd.locale),
+                value=_("BOT_INFO_CPU_BODY", cd.locale).format(
+                    cores=botInfo.hostCores,
+                    freq=round(psutil.cpu_freq()[0]),
+                    usage=psutil.cpu_percent(),
+                ),
+                inline=False,
+            )
+
+            def uptime():
                 try:
-                    desc = "\n".join([strBot["InfoNameDiff"], strBot["InfoDesc"]])
-                    desc = desc.format(name=botInfo.botName, prefix=gxConfig.BOT_PREFIX)
+                    bootTime = int(psutil.boot_time())
+                    utc = int(time.time())
+                    return formatTime.time_format(total=(utc - bootTime))
                 except Exception:
-                    log.exception("InfoComand_desc")
-            embd = nextcord.Embed(
-                title="Bot Info", description=desc, colour=getCol(col="botInfo")
+                    log.exception("InfoCommand_boot")
+                    return _("ERROR_UNKNOWN", cd.locale)
+
+            emb.add_field(
+                name=_("BOT_INFO_UPTIME_TITLE", cd.locale),
+                value=_("BOT_INFO_UPTIME_BODY", cd.locale).format(time=uptime()),
+                inline=False,
             )
-            # generate memory info
-            try:
-                processBot = psutil.Process(botInfo.processPID)
-                memB = processBot.memory_info().rss
-                memMiB = bytesToHuman(byteNum=memB, magnitude="M")
-            except Exception:
-                log.exception("InfoCommand_mem")
-                memMiB = "*undefined*"
-            # generate time since sys boot
-            try:
-                bootTime = int(psutil.boot_time())
-            except Exception:
-                log.exception("InfoCommand_boot")
-                sinceBoot = "*undefined*"
-            else:
-                utc = int(time.time())
-                sinceBoot = formatTime.time_format(total=(utc - bootTime))
-            # generate latency string
+
             latency = await _ping(self=self, api=True)
-            latencyTxt = f"Gateway: {latency[0]}ms, API: {latency[1]}ms"
-            # add field to embed
-            embd.add_field(
-                name="Host System",
-                value=f"""Hostname: {botInfo.hostname} | OS: {botInfo.hostOS} | Host: {botInfo.hostProvider} {botInfo.hostLocation}
-RAM; Total: {botInfo.hostRAM} | Used: {psutil.virtual_memory().percent}% | Process: {memMiB}
-CPU; Cores: {botInfo.hostCores} | Frequency: {round(psutil.cpu_freq()[0])}Mhz | Sys Usage: {psutil.cpu_percent()}%
-Uptime: {sinceBoot}
-Latency; {latencyTxt}
-Python: {botInfo.hostPython} | Nextcord: {botInfo.nextcordVer} | Bot: {botInfo.base}
-Line Count; Python: ~{botInfo.linePyCount} | JSON: ~{botInfo.lineJSONCount}
-Guilds: {botInfo.guildCount}""",
+            emb.add_field(
+                name=_("BOT_INFO_LATENCY_TITLE", cd.locale),
+                value=_("BOT_INFO_LATENCY_BODY", cd.locale).format(
+                    gateway=latency[0], api=latency[1]
+                ),
+                inline=False,
             )
-        elif category == "Server":
-            try:
-                strServ = readJSON(filename="strings")["en"]["Server"]
-                desc = strServ[geConfig.guildListID[str(guildID)]]["Description"]
-            except Exception:
-                log.exception("InfoCommand_desc")
-                desc = f"There is no description for this server yet.\nPlease contact {gxConfig.ownerName}"
-            embd = nextcord.Embed(
-                title="Server Info",
-                description=desc,
-                colour=getCol(col="neutral_Light"),
+
+            emb.add_field(
+                name=_("BOT_INFO_LINES_TITLE", cd.locale),
+                value=_("BOT_INFO_LINES_BODY", cd.locale).format(
+                    py=botInfo.linePyCount, json=botInfo.lineJSONCount
+                ),
+                inline=False,
             )
-            embd.add_field(
+            return emb
+
+        toSend = []
+        if category == "Description" or category is None:
+            toSend.append(_embed_desc())
+        if category == "System" or category is None:
+            toSend.append(await _embed_sys())
+
+        if len(toSend) > 0:
+            for item in toSend:
+                try:
+                    await interaction.send(embed=item)
+                except Exception:
+                    log.exception(f"Send Info {category=}")
+
+    @infoBASE.subcommand(
+        name=_("COMM_INFO_GUILD_NAME", gxConfig.defaultLang),
+        name_localizations=_("COMM_INFO_GUILD_NAME"),
+        description=_("COMM_INFO_GUILD_DESC", gxConfig.defaultLang),
+        description_localizations=_("COMM_INFO_GUILD_DESC"),
+    )
+    async def infoGUILD(
+        self,
+        interaction: Interaction,
+        category: str = SlashOption(
+            name=_("COMM_INFO_GUILD_CATEGORY_NAME", gxConfig.defaultLang),
+            name_localizations=_("COMM_INFO_GUILD_CATEGORY_NAME"),
+            description=_("COMM_INFO_GUILD_CATEGORY_DESC", gxConfig.defaultLang),
+            description_localizations=_("COMM_INFO_GUILD_CATEGORY_DESC"),
+            required=False,
+            choices={
+                "Description": _(
+                    "COMM_INFO_GUILD_CATEGORY_CHOICE_DESC", gxConfig.defaultLang
+                ),
+                "Stats": _(
+                    "COMM_INFO_GUILD_CATEGORY_CHOICE_STATS", gxConfig.defaultLang
+                ),
+            },
+            choice_localizations={
+                "Description": _("COMM_INFO_GUILD_CATEGORY_CHOICE_DESC"),
+                "Stats": _("COMM_INFO_GUILD_CATEGORY_CHOICE_STATS"),
+            },
+        ),
+    ):
+        """Gathers and returns info regarding the current guild"""
+        cd = commonData(interaction)
+        logSys.debug(f"{cd.locale=}")
+        await interaction.response.defer()
+
+        def _embed_desc():
+
+            emb = nextcord.Embed(
+                title=_("COMM_INFO_GUILD_DESC_TITLE", cd.locale),
+                colour=getCol("botInfo"),
+            )
+            servDesc = getServConf(
+                guildID=cd.strGuild, group="MISC", option="Description"
+            )
+            if servDesc is None:
+                servDesc = f"There is no description for this server.\nTo add one please contact {gxConfig.ownerName}"
+            emb.description = servDesc
+            return emb
+
+        def _embed_stats():
+
+            emb = nextcord.Embed(
+                title=_("COMM_INFO_GUILD_STATS_TITLE", cd.locale),
+                colour=getCol("botInfo"),
+            )
+            emb.add_field(
                 name="Stats",
-                value=f"""Member Count: {interaction.user.guild.member_count}\n *WIP*""",
+                value=f"Member Count: {interaction.guild.member_count}",
+                inline=False,
             )
-        elif category == "Member":
-            await self.profile(interaction=interaction, usr=interaction.user)
-            return
-        try:
-            await interaction.send(embed=embd)
-        except Exception:
-            log.exception(f"SendInfo_embed {category=}")
+            return emb
+
+        toSend = []
+        if category == "Description" or category is None:
+            toSend.append(_embed_desc())
+        if category == "Stats" or category is None:
+            toSend.append(_embed_stats())
+
+        if len(toSend) > 0:
+            for item in toSend:
+                try:
+                    await interaction.send(embed=item)
+                except Exception:
+                    log.exception(f"Send Info {category=}")
 
     @commands.command(name="MemberCount", aliases=["GuildCount", "UserCount"])
     @commands.cooldown(1, 1, commands.BucketType.user)
@@ -357,8 +528,12 @@ Guilds: {botInfo.guildCount}""",
         ),
     ):
         """Converts between units using pint."""
+        logSys.debug("convert comm")
         if not await blacklistCheck(ctx=interaction):
             return
+        logSys.debug(
+            f"{value=} | {fromMetric=} | {fromImperialUS=} | {fromTime=} | {toMetric=} | {toImperialUS=} | {toTime=}"
+        )
         if fromMetric and fromImperialUS:
             try:
                 await interaction.send(
@@ -377,8 +552,9 @@ Guilds: {botInfo.guildCount}""",
             except Exception:
                 log.exception(f"Convert /Command Conflict To")
             return
-        fromUnit = "".join(filter(None, [fromMetric, fromImperialUS]))
-        toUnit = "".join(filter(None, [toMetric, toImperialUS]))
+        fromUnit = "".join(filter(None, [fromMetric, fromImperialUS, fromTime]))
+        toUnit = "".join(filter(None, [toMetric, toImperialUS, toTime]))
+        logSys.debug(f"{fromUnit=} | {toUnit=}")
         if len(fromUnit) == 0 or len(toUnit) == 0:
             try:
                 await interaction.send(
@@ -393,9 +569,11 @@ Guilds: {botInfo.guildCount}""",
             toTime = "/" + toTime
         u = pint.UnitRegistry()
         Q = u.Quantity
+
         try:
             orig = Q(value, ("".join(filter(None, [fromUnit, fromTime]))))
             new = round(orig.to("".join(filter(None, [toUnit, toTime]))), 3)
+            logSys.debug(f"{orig=} | {new=}")
         except Exception as xcp:
             if "cannot convert" in str(xcp).casefold():
                 try:
@@ -421,62 +599,69 @@ Guilds: {botInfo.guildCount}""",
         except Exception:
             log.exception(f"Convert /Command")
 
-    @slash_command(name="changelog")
+    @slash_command(
+        name=_("COMM_CHANGELOG_NAME", gxConfig.defaultLang),
+        name_localizations=_("COMM_CHANGELOG_NAME"),
+        description=_("COMM_CHANGELOG_DESC", gxConfig.defaultLang),
+        description_localizations=_("COMM_CHANGELOG_DESC"),
+    )
     async def changelog(
         self,
         interaction: Interaction,
-        ver=SlashOption(
-            name="version",
+        _version: str = SlashOption(
+            name=_("COMM_CHANGELOG_VERSION_NAME", gxConfig.defaultLang),
+            name_localizations=_("COMM_CHANGELOG_VERSION_NAME"),
+            description=_("COMM_CHANGELOG_VERSION_DESC", gxConfig.defaultLang),
+            description_localizations=_("COMM_CHANGELOG_VERSION_DESC"),
             required=False,
-            description="If looking for specific version; x.x.x or list",
         ),
     ):
         """Provides the changelog"""
         BL = await blacklistCheck(ctx=interaction, blklstType="gen")
         if BL is False:
             return
-        log.debug(
-            f"changelog: {ver} | {interaction.user.id},{interaction.user.display_name}"
-        )
-        data = readJSON(filename="changelog")
-        keys = data.keys()
-        if ver is not None:
-            if "list" not in ver:
-                ver2 = ver.split(".")
-                print(len(ver2))
-                if len(ver2) == 2:
-                    ver = ver + ".0"
-                elif len(ver2) == 1:
-                    ver = ver + ".0.0"
-            else:
-                ver = "List"
-        if ver is None:
-            ver = list(data)[-1]  # default to last ver in changelog
+        cd = commonData(interaction)
+        logSys.debug(f"changelog: {_version} | {cd.userID_Name}")
 
-        async def sendMess(version: str, content: str):
-            await interaction.response.send_message(
-                f"Version {version}```\n{content}\n```"
-            )
+        async def sendMess(vers: str, content: str, number: int = None):
+            "Send a message with changelog format for consistency"
+            toSend = [f"Version {vers}", f"\n```\n{content}\n```"]
+            if number is not None:
+                toSend.insert(1, f"      Items: {number} ")
+            try:
+                await interaction.response.send_message("".join(toSend))
+            except Exception:
+                logSys.exception(f"Send Changelog Message")
 
-        txt = "Undefinded"
-        if "list" in ver.casefold():
-            txt = " | ".join(list(keys))
-            try:
-                await sendMess(version=ver, content=txt)
-            except Exception:
-                log.exception(f"Changelog /Command")
+        if _version is None:
+            version = botInfo.version
+        elif "list" in _version.casefold():
+            await sendMess(vers="List", content=" | ".join(botInfo.version.all))
             return
-        elif ver not in keys:
-            txt = "Version not in changelog."
-            try:
-                await sendMess(version=ver, content=txt)
-            except Exception:
-                log.exception(f"Changelog /Command")
-            return
-        else:
-            verNameDate = str(data[f"{ver}"][0]).split("::")
-            changeList = data[f"{ver}"][1:]
-        version = f"{ver} | {verNameDate[0]}\nDate: {verNameDate[1]}"
+            # txt = " | ".join(botInfo.allVersions)
+        elif "." in _version:
+            if _version.replace(".", "").isdigit():
+                if len(_version.split(".")) == 2:
+                    _version = _version + ".0"
+                elif _v := len(_version.split(".")) < 3:
+                    _version = ".".join(_v[0:2])
+                _ver = botInfo.verParse(_version)
+                if str(_ver.base_version) not in botInfo.version.all:
+                    logSys.debug(f"not in {_ver=}")
+                    await sendMess(
+                        vers=_ver,
+                        content=_("COMM_CHANGELOG_VERSION_NOTFOUND", cd.locale),
+                    )
+                    return
+                else:
+                    version = _ver
+        logSys.debug(f"{version=}")
+
+        chLog = readJSON(filename=gxConfig.changelog)
+
+        version.title = chLog[str(version.minor)]["Title"]
+        version.date = chLog[str(version.minor)][str(version.micro)][0]
+        changeList = chLog[str(version.minor)][str(version.micro)][1:]
 
         def chunkList(maxChars: int, txtList: list):
             logLength = 0
@@ -499,15 +684,16 @@ Guilds: {botInfo.guildCount}""",
             if interaction.response.is_done():
                 log.debug("Followup")
                 toSend = f"... continued ... \n```\n{txt}\n```"
+                try:
+                    await interaction.send(content=toSend)
+                except Exception:
+                    log.exception(f"Send Changelog Continue")
             else:
                 log.debug("Response")
-                toSend = (
-                    f"Version {version}      Items: {len(changeList)} ```\n{txt}\n```"
+                verDate = (
+                    f"{version.base_version} | {version.title}\nDate: {version.date}"
                 )
-            try:
-                await interaction.send(content=toSend)
-            except Exception:
-                log.exception(f"Send Changelog")
+                await sendMess(vers=verDate, number=len(changeList), content=txt)
 
     @slash_command(name="profile", guild_ids=gxConfig.slashServers)
     async def profile(
@@ -520,9 +706,8 @@ Guilds: {botInfo.guildCount}""",
         """Provides an embed with information about a user."""
         if not await blacklistCheck(ctx=interaction, blklstType="gen"):
             return
-        log.debug(
-            f"profile: {usr} | {interaction.user.id},{interaction.user.display_name}"
-        )
+        cd = commonData(interaction)
+        log.debug(f"profile: {usr} | {cd.userID_Name}")
         if usr is None:
             usr = interaction.user
         try:

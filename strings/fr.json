@@ -3,6 +3,8 @@
         "Ready": "**v{baseVer} | {name}**\nDémarré dans {boot}s | Nextcord v{ncVer} **Prêt**\nUtiliser le /changelog pour voir les changements"
     },
     "Commands_admin": {
-        "AutoReact_Desc": "Ajoutez ou configurez des réacteurs autoReact."
+        "AutoReact_Desc": "Ajoutez ou configurez des réacteurs autoReact.",
+        "ConfigurationServer_Name": "bonjour",
+        "ConfigurationServer_Desc": "Si amour"
     }
 }

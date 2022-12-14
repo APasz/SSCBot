@@ -489,8 +489,28 @@
         "sourceLink": "https://en.wikipedia.org/wiki/Channel_Tunnel",
         "source": "Wikipedia"
     },
+    "057": {
+        "content": "The Toei shinjuku line is the only subway line in the world to use the 1,372mm scotch gauge originating from scotland",
+        "extraLinks": [],
+        "initialAdd": "20221204",
+        "lastUpdate": "20221204",
+        "providerID": 890887468797267968,
+        "providerName": "Toei 10-300 (3rd batch)",
+        "sourceLink": "https://en.wikipedia.org/wiki/Toei_Shinjuku_Line",
+        "source": "Wikipedia"
+    },
+    "058": {
+        "content": "The SAR MetroBlitz Test Train holds the world record for fastest narrow gauge (3\"6'/1067mm) train. Achieving 245km/152mi on the 31st of October 1978. During service the MetroBlitz was limited to 150km/93mi.",
+        "extraLinks": [],
+        "initialAdd": "20221122",
+        "lastUpdate": "20221122",
+        "providerID": 285709173092777987,
+        "providerName": "iino",
+        "sourceLink": "https://en.wikipedia.org/wiki/MetroBlitz",
+        "source": "Wikipedia"
+    },
     "059": {
-        "content": "The Queensland Rail Tilt Train is the fastest narrow gauge (3\"6'/1067mm) train. Achieving 215km/130mi during testing. During service it's limited to 160km/99mi.",
+        "content": "The Queensland Rail Tilt Train is the fastest narrow gauge (3\"6'/1067mm) train in Australia. Achieving 210km/130mi during testing. During service it's limited to 160km/99mi.",
         "extraLinks": [],
         "initialAdd": "20210514",
         "lastUpdate": "20210514",

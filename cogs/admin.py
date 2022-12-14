@@ -2,21 +2,15 @@ import asyncio
 import logging
 import os
 
+from cogs.auditLog import auditLogger
 from config import generalEventConfig as geConfig
 from config import genericConfig as gxConfig
+from config import localeConfig as lcConfig
 from util.fileUtil import readJSON, writeJSON
-from util.genUtil import (
-    blacklistCheck,
-    getChan,
-    getCol,
-    getChannelID,
-    getLocaleText,
-    sortReactions,
-)
-from util.views import nixroles, nixrolesCOL, tpfroles
+from util.genUtil import blacklistCheck, getChan, getChannelID, getCol, sortReactions
+import util.views as views
 
-from cogs.auditLog import auditLogger
-
+_ = lcConfig.getLC
 print("CogAdmin")
 
 log = logging.getLogger("discordGeneral")
@@ -32,8 +26,8 @@ except Exception:
 
 
 def auditChanGet(guildID) -> int:
-    """With the ID of a server, returns either it's auditlog channel
-    or if it has none specified, the owner server auditlog channel"""
+    """With the ID of a guild, returns either it's auditlog channel
+    or if it has none specified, the owner guild auditlog channel"""
     log.debug("auditGet")
     audit = gxConfig.auditChan
     if str(guildID) in audit.keys():
@@ -43,16 +37,17 @@ def auditChanGet(guildID) -> int:
 
 
 class admin(commands.Cog, name="Admin"):
-    """Class containing commands and functions related to administration of servers (not bot config)"""
+    """Class containing commands and functions related to administration of guilds (not bot config)"""
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.bot.add_view(tpfroles())
-        self.bot.add_view(nixroles())
-        self.bot.add_view(nixrolesCOL())
+        self.bot.add_view(views.tpfroles())
+        self.bot.add_view(views.sscroles())
+        self.bot.add_view(views.nixroles())
+        self.bot.add_view(views.nixrolesCOL())
         logSys.debug(f"{self.__cog_name__} Ready")
 
     async def purge(self, ctx: commands.Context, limit: int) -> bool:
@@ -345,81 +340,90 @@ class admin(commands.Cog, name="Admin"):
             try:
                 await ctx.send(
                     """File not found. Please include the extension.
-  If in a folder please include the foldername followed by a slash. eg [ foldername/filename ]"""
+If in a folder please include the foldername followed by a slash. eg [ foldername/filename ]"""
                 )
             except Exception:
                 log.exception(f"AuditGet No File")
 
     @commands.command()
     @commands.has_permissions(manage_messages=True)
-    async def rolebuttons(self, ctx: commands.Context):
-        """Trigger the role button messages for the server the command was invoked from."""
+    async def rolebuttons(self, ctx: commands.Context, viewArg: str):
+        """Trigger the role button messages for the guild the command was invoked from."""
         if not await blacklistCheck(ctx=ctx):
             return
-        guildID = str(ctx.guild.id)
+        guildID = int(ctx.guild.id)
+        log.debug(f"{guildID=} | usr={ctx.author.id} | {viewArg=}")
         await ctx.message.delete()
-        nix = False
-        guilds = geConfig.guildListID
-        print(guilds)
-        if "TPFGuild" == guilds[guildID]:
+        viewsDict = {
+            "tpfroles": views.tpfroles(),
+            "sscroles": views.sscroles(),
+            "nixroles": views.nixroles(),
+            "nixcols": views.nixrolesCOL(),
+        }
+        descDict = {
+            "tpfroles": "Pick which roles you'd like.\nModder intern gives access to special channels full of useful info.",
+            "sscroles": "Opt in/out of the SSC notifications",
+            "nixroles": "Pick which roles you'd like.",
+        }
+        if viewArg not in viewsDict:
+            raise commands.ArgumentParsingError
+        if viewArg in descDict:
+            desc = descDict[viewArg]
             e = nextcord.Embed(
                 title="Roles",
-                description="""Pick which roles you'd like.
-Modder intern gives access to special channels full of useful info.""",
+                description=desc,
                 colour=getCol("neutral_Light"),
             )
-            view = tpfroles()
-        elif "NIXGuild" == guilds[guildID]:
-            nix = True
-            e = nextcord.Embed(
-                title="Roles",
-                description="""Pick which roles you'd like.""",
-                colour=getCol("neutral_Light"),
-            )
-            view = nixroles()
-            view2 = nixrolesCOL()
-        else:
-            ctx.send("This guild does not have any buttons.")
-            return
         try:
-            await ctx.send(embed=e, view=view)
-            if nix:
-                await ctx.send(view=view2)
-            await view.wait()
+            if e:
+                await ctx.send(embed=e, view=viewsDict[viewArg])
+            else:
+                await ctx.send(view=viewsDict[viewArg])
         except Exception:
-            log.exception(f"Views {ctx.guild.id}")
+            chan = ctx.channel
+            log.exception(f"View {viewArg} | {guildID=} | chan={chan.id}:{chan.name}")
 
     @slash_command(
-        name="configuration",
+        name=_("COMM_CONFIG_BASE_NAME", gxConfig.defaultLang),
+        name_localizations=_("COMM_CONFIG_BASE_NAME"),
         default_member_permissions=Permissions(administrator=True),
         guild_ids=gxConfig.slashServers,
     )
-    async def configurationBASE():
-        log.debug(f"configurationBASE {Interaction.user.id}")
+    async def configurationBASE(self, interaction: Interaction):
+        log.debug(f"configurationBASE {interaction.user.id}")
 
     @configurationBASE.subcommand(
-        name="server", description="Server configurator for server admins"
+        name=_("COMM_CONFIG_GUILD_NAME", gxConfig.defaultLang),
+        name_localizations=_("COMM_CONFIG_GUILD_NAME"),
+        description=_("COMM_CONFIG_GUILD_DESC", gxConfig.defaultLang),
+        description_localizations=_("COMM_CONFIG_GUILD_DESC"),
     )
     async def configurationCOMM(
         self,
         interaction: Interaction,
         group: str = SlashOption(
-            name="group",
+            name=_("COMM_CONFIG_GUILD_GROUP_NAME", gxConfig.defaultLang),
+            name_localizations=_("COMM_CONFIG_GUILD_GROUP_NAME"),
+            description=_("COMM_CONFIG_GUILD_GROUP_DESC", gxConfig.defaultLang),
+            description_localizations=_("COMM_CONFIG_GUILD_GROUP_DESC"),
             required=True,
-            description="Which group of config do you want to edit?",
         ),
         option: str = SlashOption(
-            name="option",
+            name=_("COMM_CONFIG_GUILD_OPTION_NAME", gxConfig.defaultLang),
+            name_localizations=_("COMM_CONFIG_GUILD_OPTION_NAME"),
+            description=_("COMM_CONFIG_GUILD_OPTION_DESC", gxConfig.defaultLang),
+            description_localizations=_("COMM_CONFIG_GUILD_OPTION_DESC"),
             required=True,
-            description="Which option do you want to change?",
         ),
         value: str = SlashOption(
-            name="value",
+            name=_("COMM_CONFIG_GUILD_VALUE_NAME", gxConfig.defaultLang),
+            name_localizations=_("COMM_CONFIG_GUILD_VALUE_NAME"),
+            description=_("COMM_CONFIG_GUILD_VALUE_DESC", gxConfig.defaultLang),
+            description_localizations=_("COMM_CONFIG_GUILD_VALUE_DESC"),
             required=True,
-            description="^^^ = Current. What is the new ID/Value you wish to input? int | false",
         ),
     ):
-        """Server admins can change bot configuration for their server."""
+        """Guild admins can change bot configuration for their guild."""
         guildID = int(interaction.guild_id)
         if value.lower() in ("false", "none"):
             value = None
@@ -521,47 +525,65 @@ Modder intern gives access to special channels full of useful info.""",
         try:
             item = str(configuration[group][option])
             if item is None:
-                item = "Undefined Value"
+                item = "***Undefined Value***"
             configItem.append(item)
         except KeyError:
-            configItem.append("Undefined Key")
+            configItem.append("***Undefined Key***")
         except Exception:
             log.exception("Config Command Autocomplete")
         if len(configItem) == 0:
-            configItem.append("Undefined Error")
+            configItem.append("***Undefined Error***")
         if len(value) >= 1:
             configItem.append(value)
         await interaction.response.send_autocomplete(configItem)
 
     @configurationBASE.subcommand(
-        name="autoreact", description="Add or configure autoReact Reactors."
+        name=_("COMM_CONFIG_AUTOREACT_NAME", gxConfig.defaultLang),
+        name_localizations=_("COMM_CONFIG_AUTOREACT_NAME"),
+        description=_("COMM_CONFIG_AUTOREACT_DESC", gxConfig.defaultLang),
+        description_localizations=_("COMM_CONFIG_AUTOREACT_DESC"),
     )
     async def configurationAutoReact(
         self,
         interaction: Interaction,
         reactor: str = SlashOption(
             required=True,
-            description="Name of the Reactor you with to create/override.",
+            name=_("COMM_CONFIG_AUTOREACT_REACTOR_NAME", gxConfig.defaultLang),
+            name_localizations=_("COMM_CONFIG_AUTOREACT_REACTOR_NAME"),
+            description=_("COMM_CONFIG_AUTOREACT_REACTOR_DESC", gxConfig.defaultLang),
+            description_localizations=_("COMM_CONFIG_AUTOREACT_REACTOR_DESC"),
         ),
         messageID: str = SlashOption(
             required=False,
-            name="template-message-id",
-            description="Which message is the template. URL is accepted. If no ID is provided, a template message is created",
+            name=_("COMM_CONFIG_AUTOREACT_MESSAGEID_NAME", gxConfig.defaultLang),
+            name_localizations=_("COMM_CONFIG_AUTOREACT_MESSAGEID_NAME"),
+            description=_("COMM_CONFIG_AUTOREACT_MESSAGEID_DESC", gxConfig.defaultLang),
+            description_localizations=_("COMM_CONFIG_AUTOREACT_MESSAGEID_DESC"),
         ),
         strictMatch: bool = SlashOption(
-            name="strict-matching",
             required=False,
-            description="If not set to True, False is assumed",
+            name=_("COMM_CONFIG_AUTOREACT_STRICTMATCH_NAME", gxConfig.defaultLang),
+            name_localizations=_("COMM_CONFIG_AUTOREACT_STRICTMATCH_NAME"),
+            description=_(
+                "COMM_CONFIG_AUTOREACT_STRICTMATCH_DESC", gxConfig.defaultLang
+            ),
+            description_localizations=_("COMM_CONFIG_AUTOREACT_STRICTMATCH_DESC"),
         ),
         extraChannel: nextcord.TextChannel = SlashOption(
-            name="extra-channel-to-watch",
             required=False,
-            description="If an additional channel should watched",
+            name=_("COMM_CONFIG_AUTOREACT_EXTRACHANNEL_NAME", gxConfig.defaultLang),
+            name_localizations=_("COMM_CONFIG_AUTOREACT_EXTRACHANNEL_NAME"),
+            description=_(
+                "COMM_CONFIG_AUTOREACT_EXTRACHANNEL_DESC", gxConfig.defaultLang
+            ),
+            description_localizations=_("COMM_CONFIG_AUTOREACT_EXTRACHANNEL_DESC"),
         ),
         deleteAR: bool = SlashOption(
-            name="delete-autoreact",
             required=False,
-            description="If True, the reactor will be deleted. This action is IRREVERSIBLE",
+            name=_("COMM_CONFIG_AUTOREACT_DELETE_NAME", gxConfig.defaultLang),
+            name_localizations=_("COMM_CONFIG_AUTOREACT_DELETE_NAME"),
+            description=_("COMM_CONFIG_AUTOREACT_DELETE_DESC", gxConfig.defaultLang),
+            description_localizations=_("COMM_CONFIG_AUTOREACT_DELETE_DESC"),
         ),
     ):
         guildID = int(interaction.guild_id)

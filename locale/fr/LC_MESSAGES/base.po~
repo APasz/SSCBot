@@ -1,0 +1,649 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+# APasz apasz96@gmail.com, 2022.
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2022-11-10 11:00+1100\n"
+"PO-Revision-Date: 2022-12-10 13:13+1100\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Generator: Poedit 3.2.2\n"
+
+#. 200 char.
+#. Bot version and version name are prepended on previous line
+#. {boot} is the time in seconds it took the bot to start, eg 5
+#. {ncVer} is the version of Nextcord the bot is using.
+msgid "BOT_ONREADY"
+msgstr ""
+"Démarré dans {boot} | Nextcord {ncVer} **Prêt**\n"
+"Utiliser le /changelog pour voir les changements"
+
+#. 32 char.
+#. {botName} is the name of the bot
+msgid "BOT_INFO_INTRO"
+msgstr ""
+
+#. 750 char.
+#. {creator} is me, APasz
+#. {repo} is the link to the repository where the bot's code can be viewed. Unless something substainal happens, this'll be Github
+#. {prefix} the prefix the bot uses for old style commands a.k.a text commands
+msgid "BOT_INFO_DESC"
+msgstr ""
+
+#. 32 char. Lowercase
+msgid "COMM_CONFIG_BASE_NAME"
+msgstr "configuration"
+
+#. 32 char. Lowercase
+msgid "COMM_CONFIG_GUILD_NAME"
+msgstr "guilde"
+
+#. 100 char.
+msgid "COMM_CONFIG_GUILD_DESC"
+msgstr "Configurateur de guilde pour les administrateurs de guilde"
+
+#. 32 char. Lowercase
+msgid "COMM_CONFIG_GUILD_GROUP_NAME"
+msgstr "groupe"
+
+#. 100 char.
+msgid "COMM_CONFIG_GUILD_GROUP_DESC"
+msgstr "Quel groupe de configuration voulez-vous modifier?"
+
+#. 32 char. Lowercase
+msgid "COMM_CONFIG_GUILD_OPTION_NAME"
+msgstr "option"
+
+#. 100 char.
+msgid "COMM_CONFIG_GUILD_OPTION_DESC"
+msgstr "Quelle option souhaitez-vous modifier?"
+
+#. 32 char. Lowercase
+msgid "COMM_CONFIG_GUILD_VALUE_NAME"
+msgstr "évaluer"
+
+#. 100 char.
+msgid "COMM_CONFIG_GUILD_VALUE_DESC"
+msgstr ""
+"^^^ = Aktuell. Was ist die neue ID/der neue Wert, den Sie eingeben möchten? "
+"int | false"
+
+#. 32 char. Lowercase
+msgid "COMM_CONFIG_AUTOREACT_NAME"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_CONFIG_AUTOREACT_DESC"
+msgstr ""
+
+#. 32 char. Lowercase
+msgid "COMM_CONFIG_AUTOREACT_REACTOR_NAME"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_CONFIG_AUTOREACT_REACTOR_DESC"
+msgstr ""
+
+#. 32 char. Lowercase
+msgid "COMM_CONFIG_AUTOREACT_MESSAGEID_NAME"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_CONFIG_AUTOREACT_MESSAGEID_DESC"
+msgstr ""
+
+#. 32 char. Lowercase
+msgid "COMM_CONFIG_AUTOREACT_STRICTMATCH_NAME"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_CONFIG_AUTOREACT_STRICTMATCH_DESC"
+msgstr ""
+
+#. 32 char. Lowercase
+msgid "COMM_CONFIG_AUTOREACT_EXTRACHANNEL_NAME"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_CONFIG_AUTOREACT_EXTRACHANNEL_DESC"
+msgstr ""
+
+#. 32 char. Lowercase
+msgid "COMM_CONFIG_AUTOREACT_DELETE_NAME"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_CONFIG_AUTOREACT_DELETE_DESC"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_CONFIG_AUTOREACT_DELETE_SUCCESS"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_CONFIG_AUTOREACT_DELETE_FAIL"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_CONFIG_AUTOREACT_MESSAGE_NOTFOUND"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_CONFIG_AUTOREACT_MESSAGE_FORBIDDEN"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_CONFIG_AUTOREACT_MESSAGE_REACTION_NONE"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_CONFIG_AUTOREACT_MESSAGE_REACTION_UNUSABLE"
+msgstr ""
+
+#. 100 char.
+#. {reactor} is the name of autoReact reactor that is being updated
+msgid "COMM_CONFIG_AUTOREACT_UPDATE_SUCCESS"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_CONFIG_AUTOREACT_UPDATE_FAIL"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_CONFIG_AUTOREACT_RETRIEVE_WATCH"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_CONFIG_AUTOREACT_RETRIEVE_FAIL"
+msgstr ""
+
+#. 32 char. Lowercase
+msgid "COMM_CHANGELOG_NAME"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_CHANGELOG_DESC"
+msgstr ""
+
+#. 32 char. Lowercase
+msgid "COMM_CHANGELOG_VERSION_NAME"
+msgstr ""
+
+#. 100 char.
+#. Please note that the the input must be either "list" or "x.x.x" where x is a number, eg 2.7.0
+msgid "COMM_CHANGELOG_VERSION_DESC"
+msgstr ""
+
+#. 32 char. Lowercase
+msgid "COMM_CONVERT_NAME"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_CONVERT_DESC"
+msgstr ""
+
+#. 32 char. Lowercase
+msgid "COMM_CONVERT_VALUE_NAME"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_CONVERT_VALUE_DESC"
+msgstr ""
+
+#. 32 char. Lowercase
+msgid "COMM_CONVERT_FROM_METRIC_NAME"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_CONVERT_FROM_METRIC_DESC"
+msgstr ""
+
+#. 32 char. Lowercase
+msgid "COMM_CONVERT_FROM_IMPERIAL_NAME"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_CONVERT_FROM_IMPERIAL_DESC"
+msgstr ""
+
+#. 32 char. Lowercase
+msgid "COMM_CONVERT_FROM_TIME_NAME"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_CONVERT_FROM_TIME_DESC"
+msgstr ""
+
+#. 32 char. Lowercase
+msgid "COMM_CONVERT_TO_METRIC_NAME"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_CONVERT_TO_METRIC_DESC"
+msgstr ""
+
+#. 32 char. Lowercase
+msgid "COMM_CONVERT_TO_IMPERIAL_NAME"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_CONVERT_TO_IMPERIAL_DESC"
+msgstr ""
+
+#. 32 char. Lowercase
+msgid "COMM_CONVERT_TO_TIME_NAME"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_CONVERT_TO_TIME_DESC"
+msgstr ""
+
+#. 75 char.
+msgid "COMM_CONVERT_CONFLICT_FROM"
+msgstr ""
+
+#. 75 char.
+msgid "COMM_CONVERT_CONFLICT_TO"
+msgstr ""
+
+#. 75 char.
+msgid "COMM_CONVERT_CONFLICT_NEITHER"
+msgstr ""
+
+#. 75 char.
+#. {from} is the original conflicting unit
+#. {to}
+msgid "COMM_CONVERT_CONFLICT_UNIT"
+msgstr ""
+
+#. 75 char.
+#. {from} is the original value, eg 5.0 Metre
+#. {to} is the new value, eg 16.4 Feet
+msgid "COMM_CONVERT_TEXT"
+msgstr ""
+
+#. 32 char. Lowercase
+msgid "COMM_FACT_NAME"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_FACT_DESC"
+msgstr ""
+
+#. 32 char. Lowercase
+msgid "COMM_FACT_INDEX_NAME"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_FACT_INDEX_DESC"
+msgstr ""
+
+#. 32 char. Lowercase
+msgid "COMM_FACT_METADATA_NAME"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_FACT_METADATA_DESC"
+msgstr ""
+
+#. 15 char.
+#. {index} is the number of the fact that has been fetched, eg 100
+#. Expected format is "Fact #{index}"
+msgid "COMM_FACT_ID"
+msgstr ""
+
+#. 32 char. Lowercase
+msgid "COMM_INFO_BASE_NAME"
+msgstr ""
+
+#. 32 char. Lowercase
+msgid "COMM_INFO_BOT_NAME"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_INFO_BOT_DESC"
+msgstr ""
+
+#. 32 char. Lowercase
+msgid "COMM_INFO_BOT_CATEGORY_NAME"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_INFO_BOT_CATEGORY_DESC"
+msgstr ""
+
+#. 32 char.
+msgid "COMM_INFO_BOT_CATEGORY_CHOICE_DESC"
+msgstr ""
+
+#. 32 char.
+msgid "COMM_INFO_BOT_CATEGORY_CHOICE_SYSTEM"
+msgstr ""
+
+#. 32 char.
+msgid "COMM_INFO_BOT_SYSTEM_TITLE"
+msgstr ""
+
+#. 32 char.
+msgid "BOT_INFO_HOST_TITLE"
+msgstr ""
+
+#. 75 char.
+#. {hostname} is the hostname/computer-name of the host system
+#. {os} is the operating system of the host system
+#. {hoster} is who is providing the server the bot is running on
+msgid "BOT_INFO_HOST_BODY"
+msgstr ""
+
+#. 32 char.
+msgid "BOT_INFO_RAM_TITLE"
+msgstr ""
+
+#. 75 char.
+#. {total} is the total RAM of the host system
+#. {used} is the amount of RAM used system-wide
+#. {bot} is the amount of RAM used only by the bot
+msgid "BOT_INFO_RAM_BODY"
+msgstr ""
+
+#. 32 char.
+msgid "BOT_INFO_CPU_TITLE"
+msgstr ""
+
+#. 75 char.
+#. {cores} is the number of cores the host system has
+#. {freq} is the number of the frequency (in Mhz) of the CPU
+#. {usage} is the appoximate utilisation % number of the CPU
+msgid "BOT_INFO_CPU_BODY"
+msgstr ""
+
+#. 32 char.
+msgid "BOT_INFO_UPTIME_TITLE"
+msgstr ""
+
+#. 75 char.
+#. {time} is weeks, days, hours, minutes, and seconds in English
+#. So until full suport is added, please keep this in mind
+msgid "BOT_INFO_UPTIME_BODY"
+msgstr ""
+
+#. 32 char.
+msgid "BOT_INFO_LATENCY_TITLE"
+msgstr ""
+
+#. 75 char.
+#. {gateway} is the number of ms it takes to ping the Discord servers directly
+#. {api} is the number of ms it takes to ping the Discord API gateway
+msgid "BOT_INFO_LATENCY_BODY"
+msgstr ""
+
+#. 32 char.
+msgid "BOT_INFO_LINES_TITLE"
+msgstr ""
+
+#. 75 char.
+#. {py} is the number of Python lines of code the bot has
+#. {json} is the number of JSON lines of config the bot has
+msgid "BOT_INFO_LINES_BODY"
+msgstr ""
+
+#. 32 char. Lowercase
+msgid "COMM_INFO_GUILD_NAME"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_INFO_GUILD_DESC"
+msgstr ""
+
+#. 32 char. Lowercase
+msgid "COMM_INFO_GUILD_CATEGORY_NAME"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_INFO_GUILD_CATEGORY_DESC"
+msgstr ""
+
+#. 32 char.
+msgid "COMM_INFO_GUILD_CATEGORY_CHOICE_DESC"
+msgstr ""
+
+#. 32 char.
+msgid "COMM_INFO_GUILD_CATEGORY_CHOICE_STATS"
+msgstr ""
+
+#. 32 char.
+msgid "COMM_INFO_GUILD_DESC_TITLE"
+msgstr ""
+
+#. 32 char.
+msgid "COMM_INFO_GUILD_STATS_TITLE"
+msgstr ""
+
+#. 32 char.
+msgid "COMM_INFO_GUILD_STATS_MEMBERS"
+msgstr ""
+
+#. 32 char. Lowercase
+msgid "COMM_INFO_GUILD_STATS_MESSAGES"
+msgstr ""
+
+#. 32 char. Lowercase
+msgid "COMM_PING_NAME"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_PING_DESC"
+msgstr ""
+
+#. 32 char. Lowercase
+msgid "COMM_PING_API_NAME"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_PING_API_DESC"
+msgstr ""
+
+#. 32 char. Lowercase
+msgid "COMM_PING_TESTNUM_NAME"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_PING_TESTNUM_DESC"
+msgstr ""
+
+#. 100 char.
+#. {gw} is the number of ms to the Gateway
+#. {api} is the number of ms to the API
+msgid "COMM_PING_BOTH"
+msgstr ""
+
+#. 100 char.
+#. {ping} is the number of ms
+msgid "COMM_PING_GATEWAY"
+msgstr ""
+
+#. 100 char.
+#. {ping} is the number of ms
+msgid "COMM_PING_API"
+msgstr ""
+
+#. 32 char. Lowercase
+msgid "COMM_PROFILE_NAME"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_PROFILE_DESC"
+msgstr ""
+
+#. 32 char. Lowercase
+msgid "COMM_PROFILE_MEMBER_NAME"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_PROFILE_MEMBER_DESC"
+msgstr ""
+
+#. 125 char.
+#. {mention} is a mention of the user
+#. {account} is the account name and descriminator of the user
+#. {id} is the account ID of the user
+msgid "COMM_PROFILE_EMBED_BASIC"
+msgstr ""
+
+#.
+msgid "COMM_PROFILE_EMBED_REGISTERED"
+msgstr ""
+
+#.
+msgid "COMM_PROFILE_EMBED_LASTJOIN"
+msgstr ""
+
+#.
+msgid "COMM_PROFILE_EMBED_BOOSTER"
+msgstr ""
+
+#.
+msgid "COMM_PROFILE_EMBED_ROLES"
+msgstr ""
+
+#.
+msgid "COMM_PROFILE_EMBED_ATTRIBUTES"
+msgstr ""
+
+#.
+msgid "COMM_PROFILE_EMBED_ISBOT"
+msgstr ""
+
+#. 32 char. Lowercase
+msgid "COMM_REACT_NAME"
+msgstr ""
+
+#. 32 char. Lowercase
+msgid "COMM_REACT_DESC"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_REACT_EMOJI_UNKNOWN"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_REACT_EMOJI_INACCESSIBLE"
+msgstr ""
+
+#. 32 char. Lowercase
+msgid "COMM_PURGE_NAME"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_PURGE_DESC"
+msgstr ""
+
+#. 32 char. Lowercase
+msgid "COMM_PURGE_LIMIT_NAME"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_PURGE_LIMIT_DESC"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_PURGE_LIMIT_OVERLIMIT"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_PURGE_SUCCESS"
+msgstr ""
+
+#. 100 char.
+msgid "COMM_PURGE_FAIL"
+msgstr ""
+
+#. 32 char.
+#. {type} is the type of item it is
+msgid "MODDING_PREVIEW_STEAM_TITLE"
+msgstr ""
+
+#. 32 char.
+#. {type} is the type of item it is
+msgid "MODDING_PREVIEW_NEXUS_TITLE"
+msgstr ""
+
+#. 32 char.
+#. {type} is the type of item it is
+msgid "MODDING_PREVIEW_TPFNET_TITLE"
+msgstr ""
+
+#. 8 char.
+msgid "MODDING_PREVIEW_TYPE_MOD"
+msgstr ""
+
+#. 8 char.
+msgid "MODDING_PREVIEW_TYPE_MAP"
+msgstr ""
+
+#. 32 char.
+msgid "MODDING_PREVIEW_DESC_TITLE"
+msgstr ""
+
+#. 32 char.
+msgid "MODDING_PREVIEW_PUBLISHED_TITLE"
+msgstr ""
+
+#. 32 char.
+msgid "MODDING_PREVIEW_UPDATED_TITLE"
+msgstr ""
+
+#. 32 char.
+msgid "MODDING_PREVIEW_TAGS_TITLE"
+msgstr ""
+
+#. 32 char.
+msgid "MODDING_PREVIEW_NSFW_TITLE"
+msgstr ""
+
+#. 75 char.
+#. Excpected format is "An Unknown Error Occured."
+msgid "ERROR_UNKNOWN"
+msgstr ""
+
+#. 75 char.
+#. {key} is where the x info is put
+#. Excpected format is "A Key Error Occured.\n{key}"
+#. Please note that the {key} may not actually be put into the text
+msgid "ERROR_KEY"
+msgstr ""
+
+#. 75 char.
+#. {val} is where the x info is put
+#. Excpected format is "A Value Err"or Occured.\n{val}"
+#. Please note that the {val} may not actually be put into the text
+msgid "ERROR_VALUE"
+msgstr ""
+
+#. 75 char.
+#. {xcp} is where the exception info is put
+#. Expected format is "An Exception Error Occured.\n{xcp}"
+#. Please note that the {xcp} may not actually be put into the text
+msgid "ERROR_EXCEPTION"
+msgstr ""
+
+#. 8 char.
+#. Generic positive, good, agree
+#. Eg. Yes, True, Affirmative
+msgid "TRUE"
+msgstr ""
+
+#. 8 char.
+#. Generic negative, bad, disagree
+#. Eg. No, False, Negative
+msgid "FALSE"
+msgstr ""
