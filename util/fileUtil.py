@@ -1,7 +1,7 @@
 import json
 import logging
-import os
 import inspect
+from pathlib import Path as Pathy
 
 print("UtilFile")
 
@@ -13,32 +13,36 @@ try:
 except Exception:
     logSys.exception("UTIL_FILE IMPORT MODUELS")
 
+
+class paths:
+    "Central location of all useful paths as path objects"
+
+    work = Pathy(__file__).absolute().parent.parent
+    "Directory where the primary bot file should be"
+    log = work.joinpath("logs")
+    cog = work.joinpath("cogs")
+    util = work.joinpath("util")
+    conf = work.joinpath("configs")
+    dump = work.joinpath("dump")
+    locale = work.joinpath("locale")
+    secret = work.joinpath("secrets")
+
+
 cacheJSON = {}
 
 
-def parentDir() -> str:
-    """Assuming this function is where it's meant to be, returns the folder of the main script."""
-    curDir = os.path.dirname(os.path.realpath(__file__))
-    parDir = os.path.abspath(os.path.join(curDir, os.pardir))
-    return parDir
-
-
-def writeJSON(data: dict, filename: str, directory: list = None) -> bool:
+def writeJSON(data: dict, file: Pathy, sort=False) -> bool:
     """Creates a JSON file contain data."""
     func = inspect.stack()[1][3]
-    logSys.debug(f"{func=} | {filename=} | {directory=}")
-    if not filename.casefold().endswith(".json"):
-        filename = filename + ".json"
-    botDir = parentDir()
-    if isinstance(directory, list):
-        fileDir = os.path.join(*directory, filename)
-    else:
-        fileDir = filename
-    fullDir = os.path.join(botDir, fileDir)
-    logSys.debug(fullDir)
+    logSys.debug(f"{func=} | {file=}")
+    if not (file.name).casefold().endswith(".json"):
+        file = Pathy(f"{file}.json").absolute()
+
+    if file.exists():
+        logSys.warning(f"Exists: {file=}")
     try:
-        with open(fullDir, "w") as file:
-            json.dump(obj=data, fp=file, indent=4)
+        with open(file, "w") as f:
+            json.dump(obj=data, fp=f, indent=4, separators=(", ", ": "), sort_keys=sort)
             return True
     except Exception:
         logSys.exception("WriteJSON")
@@ -48,39 +52,38 @@ def writeJSON(data: dict, filename: str, directory: list = None) -> bool:
 def cacheWrite() -> bool:
     logSys.debug(f"writeCache")
     global cacheJSON
-    dumpPath = os.path.join(parentDir(), "dump")
+
+    dmpDir = paths.dump
     try:
-        os.mkdir(dumpPath)
+        dmpDir.mkdir()
     except FileExistsError:
         pass
     except Exception:
         logSys.exception(f"Make Dump Folder")
     logSys.info("Dumping CacheJSON")
-    return writeJSON(data=cacheJSON, filename="cacheJSON", directory=["dump"])
+    return writeJSON(data=cacheJSON, file=dmpDir.joinpath("cacheJSON"))
 
 
-def readJSON(filename: str, directory: list = None, cache: bool = True) -> dict | bool:
+def readJSON(file: Pathy, cache: bool = True) -> dict | bool:
     """Read a JSON file. By default caches all files to memory.
     If files doesn't exist, it'll be created and return an empty dict"""
     func = inspect.stack()[1][3]
-    logSys.debug(f"{func=} | {filename=} | {directory=}")
-    if not filename.casefold().endswith(".json"):
-        filename = filename + ".json"
-    if isinstance(directory, list):
-        fileDir = os.path.join(*directory, filename)
-    else:
-        fileDir = filename
-    fullDir = os.path.join(parentDir(), fileDir)
+    logSys.debug(f"{func=} | {file=}")
     global cacheJSON
 
-    def read() -> dict | bool:
+    if not (file.name).casefold().endswith(".json"):
+        file = Pathy(f"{file}.json").absolute()
+
+    def read(file) -> dict | bool:
+        # logSys.debug(f"read {file=}")
         data = {}
         try:
-            with open(fullDir, "r") as file:
-                data = json.load(file)
+            with open(file, "r") as f:
+                data = json.load(f)
         except FileNotFoundError:
-            if writeJSON(data=data, directory=directory, filename=filename) is False:
-                logSys.error(f"| writeJSON: {fullDir=}")
+            logSys.error(f"File not Found {file=}")
+            if writeJSON(data=data, file=file) is False:
+                logSys.error(f"| writeJSON")
                 return False
         except Exception:
             logSys.exception("readJSON")
@@ -89,65 +92,31 @@ def readJSON(filename: str, directory: list = None, cache: bool = True) -> dict 
             return data
 
     if cache is False:
-        return read()
-    if os.path.exists(fullDir):
-        newModTime = int(os.path.getmtime(fullDir))
-        # logSys.debug(f"exists:, {fullDir=}, {newModTime=}")
+        return read(file)
+
+    if file.exists():
+        newModTime = int(file.stat().st_mtime)
+        # logSys.debug(f"exists:, {file=}, {newModTime=}")
     else:
         newModTime = 0
-    if fileDir in cacheJSON:
+
+    relFile = file.relative_to(paths.work)
+    print(relFile)
+    if relFile in cacheJSON:
         # logSys.debug("fileInCache")
-        oldModTime = cacheJSON[fileDir]["modTime"]
+        oldModTime = cacheJSON[relFile]["modTime"]
         if oldModTime != newModTime:
-            data = read()
+            data = read(file)
             meta = {"modTime": newModTime, "content": data}
-            cacheJSON[fileDir] = meta
+            cacheJSON[relFile] = meta
         else:
-            data = cacheJSON[fileDir]["content"]
+            data = cacheJSON[relFile]["content"]
     else:
-        logSys.debug("fileNotInCache")
-        data = read()
+        # logSys.debug("fileNotInCache")
+        data = read(file)
         meta = {"modTime": newModTime, "content": data}
-        cacheJSON[fileDir] = meta
+        cacheJSON[relFile] = meta
     return data
-
-
-def newFile(data, directory: str, filename: str, extenstion: str = "txt") -> bool:
-    """Creates a file"""
-    logSys.debug(f"{type(data)} | {directory=}, {filename=} {extenstion=}")
-    try:
-        file = os.path.join(directory, f"{filename}.{extenstion}")
-        f = open(file, "w")
-        f.write(str(data))
-        f.close()
-    except Exception:
-        logSys.exception("newFile")
-        return False
-    return True
-
-
-def readFile(directory: str, filename: str, extenstion: str = "txt") -> str | bool:
-    """Reads any sort of file and returns its content"""
-    logSys.debug(f"{directory=}, {filename=} {extenstion=}")
-    try:
-        file = os.path.join(directory, f"{filename}.{extenstion}")
-        f = open(file, "r")
-        data = f.read()
-        f.close()
-    except Exception:
-        logSys.exception("readFile")
-    return data
-
-
-def sepExt(file: str) -> tuple[str]:
-    "Separates the extension from a filename. Return False if no . is found"
-    if "." in file:
-        sep1, sep2 = file.rsplit(".", 1)
-        sep = (sep1, sep2)
-        # log.debug(f"{type(sep)} : {sep=}")
-        return sep
-    else:
-        return False
 
 
 # MIT APasz

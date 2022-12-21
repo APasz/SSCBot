@@ -1,9 +1,98 @@
 {
+    "AutoReact": {
+        "Artwork": {
+            "Channel": [
+                705946607543255091
+            ],
+            "Contains": [
+                "author"
+            ],
+            "Emoji": [
+                "\u2764\ufe0f"
+            ],
+            "isExactMatch": false
+        },
+        "tpf": {
+            "Channel": [
+                335767575973593099
+            ],
+            "Contains": [
+                "tpf"
+            ],
+            "Emoji": [
+                [
+                    "UGlogo",
+                    968406217191981086
+                ]
+            ],
+            "isExactMatch": false
+        }
+    },
+    "Channels": {
+        "NewModPreview": 642719565951795240,
+        "NewModRelease": 330528874612129793,
+        "ReadyMessage": 335767575973593099,
+        "Rules": 634007370770415616,
+        "SSC_Comp": 699849958102138970,
+        "SSC_Remind": 699849958102138970,
+        "ScreenshotsGames": 777062195073777666,
+        "ScreenshotsTPF": 763468981452800002,
+        "Welcome": 634725723751448576
+    },
+    "Channels_Admin": {
+        "Admin": 395524726719643648,
+        "Audit": 382371100690219028,
+        "Moderator": 768978553202802718,
+        "Notify": 395524726719643648
+    },
+    "Config_Name": "TPFGuild",
+    "Description": "The original Transport Fever Discord server. Originally known as the Reddit server but these days is generally known as the Global server.",
+    "Events": {
+        "AutoReact": true,
+        "MemberAccept": true,
+        "MemberBan": true,
+        "MemberJoin": true,
+        "MemberJoin_RecentCreation": true,
+        "MemberKick": true,
+        "MemberLeave": true,
+        "MemberNameChange": true,
+        "MemberUnban": true,
+        "MemberVerifiedRole": true,
+        "MemberWelcome": true,
+        "MessageDelete": true,
+        "ModPreview": true,
+        "ModPreviewGlobal": true,
+        "ModPreview_DeleteTrigger": false,
+        "ModPreview_Global": false,
+        "ReadyMessage": true,
+        "SSC_NotifyRole_Assignment": true
+    },
     "MISC": {
+        "Language": "en-GB",
+        "MemberJoin_RecentCreationHours": 48,
         "Prefix": null,
-        "Description": "The original Transport Fever Discord server. Originally known as the Reddit server but these days is generally known as the Global server.",
-        "Welcome": "{user}, Welcome to {guild}",
         "Rules": "Please keep {rules} in mind",
-        "Language": "en"
-    }
+        "Welcome": "{user}, Welcome to {guild}"
+    },
+    "PrefixCommands": true,
+    "Roles": {
+        "Admin": 246195489681178624,
+        "Mapper": 761555813004214272,
+        "Modder": 246196856596463617,
+        "ModderNew": 426550263130882048,
+        "Moderator": 910170191252574250,
+        "Player_CSL": 426450131865305128,
+        "Player_FCT": 426450295170793483,
+        "Player_TPF": 426450029054525451,
+        "Player_TTD": 463857804344819712,
+        "SSC_Manager": 723602126294614157,
+        "SSC_Notify_General": 1052624160418971658,
+        "SSC_Notify_Prize": 1052624600749584384,
+        "SSC_Runnerup": 884228483000205392,
+        "SSC_Winner": 830938606896939049,
+        "SSC_WinnerPrize": 830938902432710737,
+        "Unverified": 634730253855752203,
+        "Verified": 634733792518733825
+    },
+    "SlashCommands": true
 }

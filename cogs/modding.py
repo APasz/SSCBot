@@ -54,25 +54,20 @@ class modding(commands.Cog, name="Modding"):
         for item in content:
             if not re.search(r"https:", item):
                 continue
-            urlTup = parseURL(item)
+            urlDict = parseURL(item)
             try:
-                if urlTup[2] == tpfnet:
+                if urlDict["platform"] == tpfnet:
                     if not re.search(r"filebase", item):
                         continue
-                URLs[urlTup[0]] = {
-                    "game": urlTup[1],
-                    "platform": urlTup[2],
-                }
+                URLs[urlDict["ID"]] = urlDict
             except Exception:
-                log.exception(f"urlTup")
+                log.exception(f"urlDict")
                 continue
 
-        if len(URLs) == 0:
+        uLen = len(URLs)
+        if uLen == 0:
             URLs = None
-            u = 0
-        else:
-            u = len(URLs)
-        logSys.debug(f"{u} {URLs=}")
+        logSys.debug(f"{uLen} {URLs=}")
         return URLs
 
     @classmethod
@@ -299,7 +294,7 @@ class modding(commands.Cog, name="Modding"):
         return dets
 
     @classmethod
-    def _buildEmbed(cls, dets: modDetails, lang: str) -> nextcord.Embed:
+    def _buildEmbed(cls, dets: modDetails, lang: str, cd: commonData) -> nextcord.Embed:
         """Takes a single detsDict and builds an embed with the lang"""
         logSys.debug(f"Build Embed {lang=} | modID: {dets.modID}")
 
@@ -311,17 +306,17 @@ class modding(commands.Cog, name="Modding"):
         else:
             dets.tags = []
 
-        if "Map" in dets.tags:
+        if "Map" in dets.tags or "Savegame" in dets.tags:
             modType = _("MODDING_PREVIEW_TYPE_MAP", lang)
         else:
             modType = _("MODDING_PREVIEW_TYPE_MOD", lang)
 
         titles = {
-            steam: _("MODDING_PREVIEW_STEAM_TITLE", lang).format(type=modType),
-            nexus: _("MODDING_PREVIEW_NEXUS_TITLE", lang).format(type=modType),
-            tpfnet: _("MODDING_PREVIEW_TPFNET_TITLE", lang).format(type=modType),
+            steam: "MODDING_PREVIEW_STEAM_TITLE",
+            nexus: "MODDING_PREVIEW_NEXUS_TITLE",
+            tpfnet: "MODDING_PREVIEW_TPFNET_TITLE",
         }
-        title = f"{titles[dets.platform]}\n{dets.modName}"
+        title = f"{_(titles[dets.platform], lang).format(type=modType)}\n{dets.modName}"
 
         emb = nextcord.Embed(title=title, colour=getCol(dets.platform), url=dets.modURL)
         logSys.debug("Embed Initial")
@@ -336,12 +331,21 @@ class modding(commands.Cog, name="Modding"):
             emb.set_author(name=dets.authorName)
         else:
             pass
+
         if dets.modDesc:
             emb.add_field(
                 name=_("MODDING_PREVIEW_DESC_TITLE", lang),
                 value=f"\n```\n{dets.modDesc}\n```",
                 inline=False,
             )
+
+        if cd.authorNote:
+            emb.add_field(
+                name=_("MODDING_PREVIEW_AUTHORNOTE_TITLE", lang),
+                value=f"\n```\n{cd.authorNote}\n```",
+                inline=False,
+            )
+
         if dets.createdAt:
             emb.add_field(
                 name=_("MODDING_PREVIEW_PUBLISHED_TITLE", lang),
@@ -355,14 +359,18 @@ class modding(commands.Cog, name="Modding"):
                         value=f"<t:{dets.updatedAt}:R>",
                         inline=True,
                     )
+
         if dets.modTags:
             emb.add_field(
                 name=_("MODDING_PREVIEW_TAGS_TITLE", lang),
                 value=dets.modTags,
                 inline=False,
             )
+        if cd.imageURL:
+            dets.modThumb = cd.imageURL
         if dets.modThumb:
             emb.set_image(url=dets.modThumb)
+
         if dets.NSFW:
             emb.set_image(None)
             emb.insert_field_at(
@@ -371,10 +379,12 @@ class modding(commands.Cog, name="Modding"):
                 value=_("TRUE", lang),
                 inline=False,
             )
+
         if dets.modFileSize:
             mib = bytesToHuman(byteNum=dets.modFileSize, magnitude="M")
             txt = _("MODDING_PREVIEW_FILESIZE_TITLE", lang)
             emb.set_footer(text=txt.format(size=mib))
+
         logSys.debug("Embed Built")
         return emb
 
@@ -383,17 +393,29 @@ class modding(commands.Cog, name="Modding"):
         logSys.debug(f"{cd.intGuild=} | {cd.chanID_Name}")
 
         cd.globalPreview = False
-        if "ModPreviewGlobal" in geConfig.eventConfigID[cd.intGuild]:
+        if "ModPreview_Global" in geConfig.eventConfigID[cd.intGuild]:
             if cd.previewChan != self.globalPreviewChan:
                 cd.globalPreview = True
 
         cd.content = ctx.content.replace("\n", " ").split(" ")
 
-        cd.URLs = self._findURL(cd.content)
+        cd.URLs: dict = self._findURL(cd.content)
         if cd.URLs is None:
             logSys.info("URLs None")
             return False
-        logSys.debug("URLs Found")
+        logSys.debug(f"{len(cd.URLs)} URLs Found")
+
+        firstID: str = list(cd.URLs.keys())[0]
+        firstURL = cd.URLs[firstID]["url"]
+        print(firstURL)
+
+        cd.authorNote: str = ""
+        cd.authorNote: str = ctx.content.split(firstURL)[0]
+        logSys.debug(f"authorNote {len(cd.authorNote) > 0}")
+        for element in (firstURL, " ", ":", ";", ".", "|"):
+            cd.authorNote = cd.authorNote.removesuffix(element)
+        if not len(cd.authorNote) > 0:
+            cd.authorNote = None
 
         detailsDict = {}
         detailsDict[cd.locale] = await self._fetchDets(URLs=cd.URLs, lang=cd.locale)
@@ -420,7 +442,9 @@ class modding(commands.Cog, name="Modding"):
         globalEmb = []
         for modDets in detailsDict[cd.locale]:
             localEmb.append(
-                self._buildEmbed(dets=detailsDict[cd.locale][modDets], lang=cd.locale)
+                self._buildEmbed(
+                    dets=detailsDict[cd.locale][modDets], lang=cd.locale, cd=cd
+                )
             )
         if cd.globalPreview:
             for modDets in detailsDict[gxConfig.defaultLang]:
@@ -428,6 +452,7 @@ class modding(commands.Cog, name="Modding"):
                     self._buildEmbed(
                         dets=detailsDict[gxConfig.defaultLang][modDets],
                         lang=gxConfig.defaultLang,
+                        cd=cd,
                     )
                 )
         logSys.debug(f"{len(localEmb)}|{len(globalEmb)} Local|Global Embeds Ready.")
@@ -452,12 +477,14 @@ class modding(commands.Cog, name="Modding"):
     async def on_message(self, ctx):
         """Check for modRelease"""
         await self.bot.wait_until_ready()
+        if not gxConfig.Prod:
+            return
+        if ctx.guild is None:
+            return
         cd = commonData(ctx)
         if cd.intUser == gxConfig.botID:
             print(f"User Match BotID | User: {cd.intUser} Bot: {gxConfig.botID}")
             return
-        # if cd.intGuild == gxConfig.ownerGuild:
-        #    return
         cfName = "**"
         if cd.intGuild in geConfig.guildListID:
             cfName = geConfig.guildListID[cd.intGuild]
@@ -472,7 +499,14 @@ class modding(commands.Cog, name="Modding"):
             log.debug(f"{nmrChan=} {cd.intChan == nmrChan} | bot {ctx.author.bot}")
             if (cd.intChan == nmrChan) and (ctx.author.bot is False):
                 cd.previewChan = int(getChan(cd.intGuild, "NewModPreview"))
+                cd.image = None
+                if len(ctx.attachments) != 0:
+                    attach = ctx.attachments[0]
+                    if attach.content_type.startswith("image"):
+                        cd.imageURL = attach.url
                 okSend = await self.modRelease(ctx=ctx, cd=cd)
+                if not okSend:
+                    return
                 delTrig = False
                 if "ModPreview_DeleteTrigger" in geConfig.eventConfigID[cd.intGuild]:
                     delTrig = True

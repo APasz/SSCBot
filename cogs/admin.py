@@ -1,13 +1,20 @@
 import asyncio
 import logging
-import os
 
 from cogs.auditLog import auditLogger
 from config import generalEventConfig as geConfig
 from config import genericConfig as gxConfig
 from config import localeConfig as lcConfig
-from util.fileUtil import readJSON, writeJSON
-from util.genUtil import blacklistCheck, getChan, getChannelID, getCol, sortReactions
+from util.fileUtil import readJSON, writeJSON, paths
+from util.genUtil import (
+    blacklistCheck,
+    getChan,
+    getCol,
+    sortReactions,
+    commonData,
+    getServConf,
+    setServConf,
+)
 import util.views as views
 
 _ = lcConfig.getLC
@@ -54,14 +61,15 @@ class admin(commands.Cog, name="Admin"):
         """Purges a number of messages from the channel the command was invoked from"""
         if not await blacklistCheck(ctx=ctx):
             return False
+        cd = commonData(ctx)
         if hasattr(ctx, "author"):
             usr = ctx.author
             limit2 = limit + 1
         else:
             usr = ctx.user
             limit2 = limit
-        log.info(f"{limit}: {usr.id},{usr.display_name}")
-        max = readJSON(filename="config")["General"]["purgeLimit"]
+        log.info(f"{limit}: {cd.userID_Name}")
+        max = readJSON(file=paths.work.joinpath("config"))["purgeLimit"]
         if limit <= max:
             await asyncio.sleep(0.5)
             from config import dataObject
@@ -72,7 +80,7 @@ class admin(commands.Cog, name="Admin"):
             dataObject.auditChan = getChan(
                 self=self, guild=ctx.guild.id, chan="Audit", admin=True
             )
-            dataObject.channelID = int(getChannelID(ctx))
+            dataObject.channelID = cd.intChan
             await auditLogger.logEmbed(self, dataObject)
             await ctx.channel.purge(limit=limit2)
             del dataObject
@@ -86,7 +94,7 @@ class admin(commands.Cog, name="Admin"):
         """Purges a number of messages (has max to advoid user client desync). Manage Messages Only."""
         if not await self.purge(ctx=ctx, limit=limit):
             await ctx.message.delete()
-            delTime = readJSON(filename="config")["General"]["delTime"]
+            delTime = readJSON(file=paths.work.joinpath("config"))["delTime"]
             try:
                 await ctx.send(
                     f"{limit} is more than {max}.\n{delTime}sec *self-destruct*",
@@ -106,7 +114,7 @@ class admin(commands.Cog, name="Admin"):
             name="limit",
             description="How many messages to delete",
             required=True,
-            max_value=readJSON(filename="config")["General"]["purgeLimit"],
+            max_value=readJSON(file=paths.work.joinpath("config"))["purgeLimit"],
         ),
     ):
         """Purges a number of messages. Manage Messages Only."""
@@ -128,7 +136,7 @@ class admin(commands.Cog, name="Admin"):
         """"Blacklist users from certain parts of the bot."""
         if not await blacklistCheck(ctx=ctx):
             return
-        delTime = readJSON(filename="config")["General"]["delTime"]
+        delTime = readJSON(file=paths.work.joinpath("config"))["delTime"]
         if str(ctx.author.id) in usr:
             try:
                 await ctx.send("You can't blacklist yourself.", delete_after=delTime)
@@ -143,7 +151,7 @@ class admin(commands.Cog, name="Admin"):
         log.info(
             f"{blklstType} command: usr {usr}: reason {reason}\nAuthor: {ctx.author.id},{ctx.author.display_name}"
         )
-        data = readJSON(filename=blklstType, directory=["secrets"])
+        data = readJSON(file=paths.secret.joinpath(blklstType))
         if "readall" in usr:
             keyList = list()
             joined = None
@@ -184,7 +192,7 @@ class admin(commands.Cog, name="Admin"):
         else:
             id = int(usr)
             data[f"{id}"] = reason
-            check = writeJSON(data, filename=blklstType, directory=["secrets"])
+            check = writeJSON(data=data, file=paths.secret.joinpath(blklstType))
             if check:
                 from config import dataObject
 
@@ -225,10 +233,10 @@ class admin(commands.Cog, name="Admin"):
         log.info(
             f"{blklstType} command: usr {usr}. Author: {ctx.author.id},{ctx.author.display_name}"
         )
-        data = readJSON(filename=blklstType, directory=["secrets"])
+        data = readJSON(file=paths.secret.joinpath(blklstType))
         if usr in data:
             del data[f"{usr}"]
-            check = writeJSON(data, filename=blklstType, directory=["secrets"])
+            check = writeJSON(data=data, file=paths.secret.joinpath(blklstType))
             if check:
                 id = int(usr)
                 from config import dataObject
@@ -247,7 +255,7 @@ class admin(commands.Cog, name="Admin"):
                     log.exception(f"Blackedlisted Removed")
                 del dataObject
             else:
-                delTime = readJSON(filename="config")["General"]["delTime"]
+                delTime = readJSON(file=paths.work.joinpath("config"))["delTime"]
                 try:
                     await ctx.send("Error occured during write", delete_after=delTime)
                 except Exception:
@@ -257,93 +265,6 @@ class admin(commands.Cog, name="Admin"):
                 await ctx.send("User not in blacklist.")
             except Exception:
                 log.exception(f"Blacklist Not")
-
-    @commands.command(
-        name="listFile", aliases=["auditList", "fileList", "listFolder", "folderList"]
-    )
-    @commands.cooldown(1, 10, commands.BucketType.default)
-    async def auditList(self, ctx: commands.Context, foldername=None):
-        """For auditing: Lists files and folders in root directory of bot."""
-        if not await blacklistCheck(ctx=ctx):
-            return
-        log.info(f"auditList: {foldername}")
-        fileList = set()
-        foldList = set()
-        if foldername is None:
-            folder = "./"
-        else:
-            folder = f"./{foldername}"
-        exts = (".py", ".json", ".txt")
-        try:
-            for filename in os.listdir(f"{folder}"):
-                if filename.endswith(exts):
-                    fileList.add(f"{filename}")
-                elif os.path.isdir(filename) and not (
-                    filename.startswith("__") or filename.startswith(".")
-                ):
-                    foldList.add(f"{filename}")
-                else:
-                    continue
-        except Exception:
-            log.exception(f"compile filenames {filename=}")
-        fileList = "\n".join(fileList)
-        foldList = "\n".join(foldList)
-        print(len(foldList))
-        e = nextcord.Embed(
-            title=f"All py/json/txt files in **{folder}**", colour=getCol("neutral_Mid")
-        )
-        if len(fileList) > 0:
-            e.add_field(name="Files", value=f"{fileList}", inline=True)
-        if len(foldList) > 0:
-            e.add_field(name="Folders", value=f"{foldList}", inline=True)
-        try:
-            await ctx.send(embed=e)
-        except Exception:
-            log.exception(f"AuditList")
-
-    @commands.command(name="getFile", aliases=["auditGet", "fileGet"])
-    @commands.cooldown(1, 30, commands.BucketType.default)
-    async def auditGet(self, ctx: commands.Context, filename: str):
-        """For auditing: Gets a file and uploads it."""
-        if not await blacklistCheck(ctx=ctx):
-            return
-        log.info(f"auditGet: {filename}")
-        fName = f"./{filename}"
-        if os.path.exists(fName) and not os.path.isdir(fName):
-            ignoreFiles = any(ign in filename for ign in ["secret", "log", "dump"])
-            if (not ignoreFiles) or (ctx.author.id == gxConfig.ownerID):
-                from config import dataObject
-
-                dataObject.TYPE = "CommandAuditGet"
-                dataObject.userObject = ctx.author
-                dataObject.filename = filename
-                dataObject.auditID = int(
-                    getChan(guild=ctx.guild.id, chan="Audit", admin=True)
-                )
-                log.debug("send auditlog")
-                await auditLogger.logEmbed(self, dataObject)
-                log.debug("make file")
-                file = nextcord.File(fName)
-                log.debug(f"send file {fName=}")
-                try:
-                    await ctx.send(file=file)
-                except Exception:
-                    log.exception(f"AuditGet {fName=}")
-                del dataObject
-            else:
-                try:
-                    await ctx.send("File contains sensitive infomation.")
-                except Exception:
-                    log.exception(f"AuditGet Sensitive")
-
-        else:
-            try:
-                await ctx.send(
-                    """File not found. Please include the extension.
-If in a folder please include the foldername followed by a slash. eg [ foldername/filename ]"""
-                )
-            except Exception:
-                log.exception(f"AuditGet No File")
 
     @commands.command()
     @commands.has_permissions(manage_messages=True)
@@ -360,8 +281,12 @@ If in a folder please include the foldername followed by a slash. eg [ foldernam
             "nixroles": views.nixroles(),
             "nixcols": views.nixrolesCOL(),
         }
+        d1 = [
+            "Pick which roles you'd like.",
+            "Modder intern gives access to special channels full of useful info.",
+        ]
         descDict = {
-            "tpfroles": "Pick which roles you'd like.\nModder intern gives access to special channels full of useful info.",
+            "tpfroles": "\n".join(d1),
             "sscroles": "Opt in/out of the SSC notifications",
             "nixroles": "Pick which roles you'd like.",
         }
@@ -424,7 +349,7 @@ If in a folder please include the foldername followed by a slash. eg [ foldernam
         ),
     ):
         """Guild admins can change bot configuration for their guild."""
-        guildID = int(interaction.guild_id)
+        cd = commonData(interaction)
         if value.lower() in ("false", "none"):
             value = None
         elif value.isdigit():
@@ -434,19 +359,13 @@ If in a folder please include the foldername followed by a slash. eg [ foldernam
         #        await interaction.send(f"ValueError")
         #    except Exception:
         #        log.exception(f"config /command ValueError")
-        configuration = readJSON(filename="config")
-        try:
-            oldValue = str(configuration[str(guildID)][group][option])
-        except KeyError as xcp:
-            if group in str(xcp):
-                err = group
-            elif option in str(xcp):
-                err = option
-            await interaction.send(f"KeyError: {err}", ephemeral=True)
-        except Exception:
-            log.exception("Config /Command")
-        configuration[str(guildID)][group][option] = value
-        guildName = geConfig.guildListID[guildID]
+        oldValue = getServConf(guildID=cd.intGuild, group=group, option=option)
+        if oldValue is None:
+            await interaction.send(
+                _("ERROR_KEY", cd.locale).format(key=""), ephemeral=True
+            )
+
+        guildName = geConfig.guildListID[cd.intGuild]
         log.info(
             f"ConfigUpdated: {guildName}, {interaction.user.id}, {group}-{option}:{oldValue} | {value}"
         )
@@ -454,7 +373,7 @@ If in a folder please include the foldername followed by a slash. eg [ foldernam
 
         dataObject.TYPE = "CommandGuildConfiguration"
         dataObject.auditChan = getChan(
-            guild=guildID, chan="Audit", admin=True, self=self
+            guild=cd.intGuild, chan="Audit", admin=True, self=self
         )
         dataObject.categoryGroup = group
         dataObject.category = option
@@ -462,17 +381,15 @@ If in a folder please include the foldername followed by a slash. eg [ foldernam
         dataObject.commandArg2 = oldValue
         dataObject.userObject = interaction.user
         await auditLogger.logEmbed(self, auditInfo=dataObject)
-        if writeJSON(filename="config", data=configuration):
+        if setServConf(guildID=cd.intGuild, group=group, option=option, value=value):
             try:
                 geConfig.update()
-                await interaction.send(
-                    f"Config updated: {group}-{option}\n{oldValue} -> {value}"
-                )
+                await interaction.send(f"{group}-{option}\n{oldValue} -> {value}")
             except Exception:
                 log.exception(f"Config Update")
         else:
             try:
-                await interaction.send("Config not updated!", ephemeral=True)
+                await interaction.send(_("ERROR_UNKNOWN", cd.locale), ephemeral=True)
             except Exception:
                 log.exception(f"No Config Change")
         del dataObject
@@ -480,8 +397,7 @@ If in a folder please include the foldername followed by a slash. eg [ foldernam
     @configurationCOMM.on_autocomplete("group")
     async def configurationGroup(self, interaction: Interaction, group):
         """Autocomplete function for use with the configuration command 'group' arg"""
-        guildID = int(interaction.guild_id)
-        groups = readJSON(filename="config")[str(guildID)]
+        groups = readJSON(file=paths.conf.joinpath(str(interaction.guild_id)))
         configList = []
         groupWhiteList = gxConfig.configCommGroupWhitelist
         for itemKey, itemVal in groups.items():
@@ -495,10 +411,10 @@ If in a folder please include the foldername followed by a slash. eg [ foldernam
         """Autocomplete function for use with the configuration command 'option' and 'group' args"""
         if group is None:
             return
+        cd = commonData(interaction)
         optionsList = ["undefined"]
-        guildID = int(interaction.guild_id)
-        configuration = readJSON(filename="config")[str(guildID)][group]
-        optionsList = list(configuration.keys())
+        options = readJSON(file=paths.conf.joinpath(cd.strGuild))[group]
+        optionsList = list(options.keys())
         finalOptionsList = []
         if not option:
             finalOptionsList = optionsList
@@ -510,7 +426,7 @@ If in a folder please include the foldername followed by a slash. eg [ foldernam
                     finalOptionsList.append(item)
         if len(finalOptionsList) >= 25:
             finalOptionsList = finalOptionsList[0:25]
-            finalOptionsList[0] = "**Options Truncated**"
+            finalOptionsList[0] = _("COMM_OPTIONS_TRUNCATED", cd.locale)
         await interaction.response.send_autocomplete(finalOptionsList)
 
     @configurationCOMM.on_autocomplete("value")
@@ -518,21 +434,21 @@ If in a folder please include the foldername followed by a slash. eg [ foldernam
         """Autocomplete function for use with the configuration command 'value', 'group', and 'option' args"""
         if group is None or option is None:
             return
+        cd = commonData(interaction)
         print(group, option)
-        guildID = int(interaction.guild_id)
-        configuration = readJSON(filename="config")[str(guildID)]
+        val = readJSON(file=paths.conf.joinpath(cd.strGuild))[group][option]
         configItem = []
         try:
-            item = str(configuration[group][option])
-            if item is None:
-                item = "***Undefined Value***"
-            configItem.append(item)
+            if val is None:
+                val = _("ERROR_VALUE", cd.locale).format(val=value)
+            val = str(val)
+            configItem.append(val)
         except KeyError:
-            configItem.append("***Undefined Key***")
+            configItem.append(_("ERROR_KEY", cd.locale).format(key=option))
         except Exception:
             log.exception("Config Command Autocomplete")
         if len(configItem) == 0:
-            configItem.append("***Undefined Error***")
+            configItem.append(_("ERROR_UNKNOWN", cd.locale))
         if len(value) >= 1:
             configItem.append(value)
         await interaction.response.send_autocomplete(configItem)
@@ -586,8 +502,8 @@ If in a folder please include the foldername followed by a slash. eg [ foldernam
             description_localizations=_("COMM_CONFIG_AUTOREACT_DELETE_DESC"),
         ),
     ):
-        guildID = int(interaction.guild_id)
-        log.debug(f"Subcommand {reactor=} {guildID=}")
+        cd = commonData(interaction)
+        log.debug(f"Subcommand {reactor=} {cd.intGuild=}")
         setReactor = bool(messageID)
         if setReactor:
             if (messageID.startswith("https")) and ("discord" in messageID):
@@ -600,11 +516,11 @@ If in a folder please include the foldername followed by a slash. eg [ foldernam
         deleteAR = bool(deleteAR)
 
         logSys.debug(
-            f"{guildID=} | {setReactor=} | {messageID=} | {strictMatch=} | {extraChannel=} | {deleteAR=}"
+            f"{cd.intGuild=} | {setReactor=} | {messageID=} | {strictMatch=} | {extraChannel=} | {deleteAR=}"
         )
         from config import dataObject as data
 
-        data.auditChan = getChan(self=self, guild=guildID, chan="Audit", admin=True)
+        data.auditChan = getChan(self=self, guild=cd.intGuild, chan="Audit", admin=True)
         data.userObject = interaction.user
 
         def reduceList(obj: list | tuple, nameOnly: bool = False):
@@ -624,10 +540,10 @@ If in a folder please include the foldername followed by a slash. eg [ foldernam
                         objList.append(item)
             return objList
 
-        if guildID in list(geConfig.autoReacts):
-            if reactor in list(geConfig.autoReacts[guildID]):
+        if cd.intGuild in list(geConfig.autoReacts):
+            if reactor in list(geConfig.autoReacts[cd.intGuild]):
                 try:
-                    oldReactorDict = geConfig.autoReacts[guildID][reactor]
+                    oldReactorDict = geConfig.autoReacts[cd.intGuild][reactor]
                 except Exception:
                     log.exception(f"Get Current AutoReact")
                     oldReactorDict = False
@@ -644,19 +560,21 @@ If in a folder please include the foldername followed by a slash. eg [ foldernam
                             await auditLogger.logEmbed(self, auditInfo=data)
                         except Exception:
                             log.exception(f"Send Audit")
-                        configuration = readJSON("config")
-                        del configuration[str(guildID)]["AutoReact"][reactor]
-                        if writeJSON(configuration, "config"):
-                            txt = "AutoReact reactor deleted!"
+                        servConf = readJSON(file=paths.conf.joinpath(cd.strGuild))
+                        del servConf["AutoReact"][reactor]
+                        if writeJSON(
+                            data=servConf, file=paths.conf.joinpath(cd.strGuild)
+                        ):
+                            txt = _("COMM_CONFIG_AUTOREACT_DELETE_SUCCESS", cd.locale)
                             geConfig.update()
                         else:
-                            txt = "Failed to delete AutoReact reactor"
+                            txt = _("COMM_CONFIG_AUTOREACT_DELETE_FAIL", cd.locale)
                         try:
                             await interaction.send(txt)
                         except Exception:
                             log.exception(f"Del AutoReact Message")
                         try:
-                            del configuration
+                            del servConf
                         except Exception:
                             log.exception(f"Del AutoReact Config")
                         return
@@ -673,29 +591,43 @@ If in a folder please include the foldername followed by a slash. eg [ foldernam
                 mess = await chan.fetch_message(int(messageID))
             except nextcord.NotFound:
                 logSys.exception(f"Message Not Found")
-                await interaction.send("Message Not Found", ephemeral=True)
+                await interaction.send(
+                    _("COMM_CONFIG_AUTOREACT_MESSAGE_NOTFOUND", cd.locale),
+                    ephemeral=True,
+                )
                 return
             except nextcord.Forbidden:
                 logSys.exception("Message Forbidden")
-                await interaction.send("Message Not Accessible", ephemeral=True)
+                await interaction.send(
+                    _("COMM_CONFIG_AUTOREACT_MESSAGE_FORBIDDEN", cd.locale),
+                    ephemeral=True,
+                )
                 return
-            except Exception:
+            except Exception as xcp:
                 logSys.exception(f"Fetch Message Channel")
-                await interaction.send("Unknown Exception", ephemeral=True)
+                await interaction.send(
+                    _("ERROR_EXCEPTION", cd.locale).format(xcp=xcp),
+                    ephemeral=True,
+                )
                 return
             messContent = (mess.content).split(" ")
             messReac = mess.reactions
             if len(messReac) == 0:
                 await interaction.send(
-                    "This message does have any reactions", ephemeral=True
+                    _("COMM_CONFIG_AUTOREACT_MESSAGE_REACTION_NONE", cd.locale),
+                    ephemeral=True,
                 )
                 return
             reactsAll = sortReactions(messReac)
             if len(reactsAll.Bad) > 0:
-                await interaction.send(f"These emoji can't be used.\n{reactsAll.Bad}")
+                txt = _("COMM_CONFIG_AUTOREACT_MESSAGE_REACTION_UNUSABLE", cd.locale)
+                await interaction.send(txt.format(bad=reactsAll.Bad))
                 return
             if len(reactsAll.Unk) > 0:
-                await interaction.send(f"Unknown issue;\n{reactsAll.Unk}")
+                txt = _(
+                    "COMM_CONFIG_AUTOREACT_MESSAGE_REACTION_UNKNOWNISSUE", cd.locale
+                )
+                await interaction.send(txt.format(unk=reactsAll.Unk))
                 return
             chanID = [(chan.name, chan.id)]
             if extraChannel:
@@ -711,11 +643,11 @@ If in a folder please include the foldername followed by a slash. eg [ foldernam
             data.emojiList = ", ".join(reduceList((reactsAll.Str + reactsAll.Obj)))
             data.flagA = bool(strictMatch)
 
-            configuration = readJSON("config")
-            configuration[str(guildID)]["AutoReact"][reactor] = {}
-            configuration[str(guildID)]["AutoReact"][reactor] = reactorDict
+            servConf = readJSON(file=paths.conf.joinpath(cd.strGuild))
+            servConf["AutoReact"][reactor] = {}
+            servConf["AutoReact"][reactor] = reactorDict
 
-            if writeJSON(data=configuration, filename="config"):
+            if writeJSON(data=servConf, file=paths.conf.joinpath(cd.strGuild)):
                 await interaction.send("Reactor updating! Check auditlog for details")
         else:
             if oldReactorDict:
@@ -739,14 +671,17 @@ If in a folder please include the foldername followed by a slash. eg [ foldernam
 
     @configurationAutoReact.on_autocomplete("reactor")
     async def configurationARGetReactor(self, interaction: Interaction, reactor):
-        guildID = int(interaction.guild_id)
-        reactors = geConfig.autoReacts[guildID]
+        cd = commonData(interaction)
         reactorList = []
-        for itemKey, itemVal in reactors.items():
-            if isinstance(itemVal, dict):
-                reactorList.append(itemKey)
+        if cd.intGuild in geConfig.autoReacts:
+            reactors = geConfig.autoReacts[cd.intGuild]
+            for itemKey, itemVal in reactors.items():
+                if isinstance(itemVal, dict):
+                    reactorList.append(itemKey)
         if len(reactor) >= 1:
             reactorList.append(reactor)
+        elif len(reactorList) == 0:
+            reactorList.append(_("COMM_CONFIG_AUTOREACT_NONE", cd.locale))
         await interaction.response.send_autocomplete(reactorList)
 
     @commands.command(name="react", aliases=["emoji"])

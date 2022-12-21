@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-11-10 11:00+1100\n"
-"PO-Revision-Date: 2022-12-14 03:21+1100\n"
+"PO-Revision-Date: 2022-12-21 13:52+1100\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: fr\n"
@@ -592,6 +592,10 @@ msgstr "Mappe"
 
 #. 32 char.
 msgid "MODDING_PREVIEW_DESC_TITLE"
+msgstr ""
+
+#. 32 char.
+msgid "MODDING_PREVIEW_AUTHORNOTE_TITLE"
 msgstr ""
 
 #. 32 char.

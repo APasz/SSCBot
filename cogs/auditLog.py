@@ -6,6 +6,7 @@ import time
 from config import dataObject
 from config import genericConfig as gxConfig
 from util.genUtil import getCol, formatTime
+from util.fileUtil import paths
 
 print("CogAuditLog")
 

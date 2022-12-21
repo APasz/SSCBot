@@ -1,9 +1,72 @@
 {
+    "AutoReact": {},
+    "Channels": {
+        "NewModPreview": 957848953523691620,
+        "NewModRelease": 812084783815458837,
+        "ReadyMessage": 811325689198411826,
+        "Rules": null,
+        "Welcome": null
+    },
+    "Channels_Admin": {
+        "Admin": 811250906494271572,
+        "Audit": 940321966911541299,
+        "Moderator": null,
+        "Notify": null
+    },
+    "Config_Name": "NIXGuild",
+    "Description": "A Transport Fever server to bring 3 small TpF communities together, the Australian, Linux, and MacOS people, though everyone is welcome.",
+    "Events": {
+        "AutoReact": true,
+        "MemberAccept": true,
+        "MemberBan": true,
+        "MemberJoin": true,
+        "MemberJoin_RecentCreation": false,
+        "MemberKick": true,
+        "MemberLeave": true,
+        "MemberNameChange": true,
+        "MemberUnban": true,
+        "MemberVerifiedRole": false,
+        "MemberWelcome": false,
+        "MessageDelete": true,
+        "ModPreview": true,
+        "ModPreviewGlobal": true,
+        "ModPreview_DeleteTrigger": true,
+        "ModPreview_Global": false,
+        "ReadyMessage": true
+    },
     "MISC": {
+        "Language": "en-GB",
+        "MemberJoin_RecentCreationHours": 48,
         "Prefix": null,
-        "Description": "A Transport Fever server to bring 3 small TpF communities together, the Australian, Linux, and MacOS people, though everyone is welcome.",
-        "Welcome": "{user}, Welcome to {guild}",
         "Rules": "Please keep {rules} in mind",
-        "Language": "en"
-    }
+        "Welcome": "{user}, Welcome to {guild}"
+    },
+    "PrefixCommands": true,
+    "Roles": {
+        "AUS": 811317704962080778,
+        "Admin": 811256406162145310,
+        "COL_black": 811319107860693002,
+        "COL_blue": 812078416446619658,
+        "COL_blueDark": 945628729495932928,
+        "COL_brown": 812078442370957322,
+        "COL_green": 812078439209238578,
+        "COL_greenDark": 945628947977220096,
+        "COL_lilac": 812078448360161330,
+        "COL_orange": 814004395313987605,
+        "COL_pink": 945629248444596285,
+        "COL_redDark": 945629089375604746,
+        "COL_white": 814003429080825858,
+        "COL_yellow": 812078445654835220,
+        "Linux": 811260032519110696,
+        "MacOS": 811260213155069972,
+        "Modder": 811260604890611713,
+        "Moderator": null,
+        "NZ": 883631833072414740,
+        "Queen": 826219579221999617,
+        "SSC_Manager": null,
+        "SSC_Notify_General": null,
+        "SSC_Notify_Prize": null,
+        "Windows": 812091462052347924
+    },
+    "SlashCommands": true
 }

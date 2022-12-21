@@ -13,7 +13,7 @@ try:
     from config import generalEventConfig as geConfig
     from config import screenShotCompConfig as sscConfig
     from util.apiUtil import GSheetGet
-    from util.fileUtil import readJSON, writeJSON
+    from util.fileUtil import readJSON, writeJSON, paths
     from util.genUtil import (
         blacklistCheck,
         getChan,
@@ -49,8 +49,8 @@ async def timestampset() -> bool:
     stamp36 = int(currStamp) + 475200
     stamp24 = int(currStamp) + 518400
     remindStamp = int(random.randint(stamp36, stamp24))
-    configuration = readJSON(filename="config")
-    configSSC = configuration["General"]["SSC_Data"]
+    configuration = readJSON(file=paths.work.joinpath("config"))
+    configSSC = configuration["SSC_Data"]
     currData = int(configSSC["currStamp"])
     nextData = int(configSSC["nextStamp"])
     rminData = int(configSSC["remindStamp"])
@@ -71,7 +71,7 @@ async def timestampset() -> bool:
     else:
         configSSC["remindStamp"] = remindStamp
         log.debug("Rwrite")
-    if writeJSON(data=configuration, filename="config"):
+    if writeJSON(data=configuration, file=paths.work.joinpath("config")):
         sscConfig.update()
         return True
     else:
@@ -94,14 +94,16 @@ class ssc(commands.Cog, name="SSC"):
         )
 
     @tasks.loop(
-        minutes=readJSON(filename="config")["General"]["TaskLengths"]["SSC_Remind"]
+        minutes=readJSON(file=paths.work.joinpath("config"))["TaskLengths"][
+            "SSC_Remind"
+        ]
     )
     async def remindTask(self):
         """Get reminder timestamp from file
         check if current time is in within range of remindStamp and nextStamp(-2h)
         if so invoke SSC minder command"""
-        configuration = readJSON(filename="config")
-        configSSC = configuration["General"]["SSC_Data"]
+        configuration = readJSON(file=paths.work.joinpath("config"))
+        configSSC = configuration["SSC_Data"]
         log.debug(f"remindTask_run:rmSent {configSSC['remindSent']}")
         if configSSC["remindSent"]:
             log.debug(f"remindYes {configSSC['remindSent']}")
@@ -113,13 +115,16 @@ class ssc(commands.Cog, name="SSC"):
         if rem <= t <= n:
             alert = configSSC["alertType"]
             configSSC["remindSent"] = True
-            writeJSON(data=configuration, filename="config")
+            writeJSON(data=configuration, file=paths.work.joinpath("config"))
             log.debug(f"PT: {alert=}")
             chan = getChan(self=self, guild=sscConfig.tpfID, chan="SSC_Comp")
             try:
-                await chan.send(
-                    f"""Reminder that the competiton ends soon;\n**<t:{nex}:R>**\nGet your images and votes in. 🇻 🇴 🇹 🇪 @{alert}"""
-                )
+                txt = [
+                    "Reminder that the competiton ends soon;",
+                    f"**<t:{nex}:R>**",
+                    f"Get your images and votes in. 🇻 🇴 🇹 🇪 @{alert}",
+                ]
+                await chan.send("\n".join(txt))
             except Exception:
                 log.exception(f"SSC Reminder")
             await asyncio.sleep(0.1)
@@ -146,7 +151,7 @@ class ssc(commands.Cog, name="SSC"):
             return
         log.debug(f"{action=}")
         if action == "get":
-            configSSC = readJSON(filename="config")["General"]["SSC_Data"]
+            configSSC = readJSON(file=paths.work.joinpath("config"))["SSC_Data"]
             curr = configSSC["currStamp"]
             next = configSSC["nextStamp"]
             rmin = configSSC["remindStamp"]
@@ -259,8 +264,8 @@ class ssc(commands.Cog, name="SSC"):
             f"{interaction.user.id=}, {banner.filename=}, {note=}, {prize=}, {prizeUser=}"
         )
         await interaction.response.defer()
-        configuration = readJSON(filename="config")
-        configSSC = configuration["General"]["SSC_Data"]
+        configuration = readJSON(file=paths.work.joinpath("config"))
+        configSSC = configuration["SSC_Data"]
         sscConfig.ignoreWinner = ignoreWinner
         configSSC["remindSent"] = False
         if not await timestampset():
@@ -270,9 +275,9 @@ class ssc(commands.Cog, name="SSC"):
                 log.exception(f"/Timestamp Set")
             return
         theme = banner.filename.split(".")[0].replace("-", " ")
-        configuration["General"]["SSC_Data"]["theme"] = theme
+        configuration["SSC_Data"]["theme"] = theme
         nextstamp = int(configSSC["nextStamp"])
-        strSSC = readJSON(filename="strings")["en"]["SSC"]
+        strSSC = readJSON(file=paths.work.joinpath("strings"))["en"]["SSC"]
         txt_CompStart = strSSC["Start"]
         txt_CompEnd = strSSC["End"]
         txt_CompGift = strSSC["Gift"]
@@ -281,7 +286,7 @@ class ssc(commands.Cog, name="SSC"):
 
         ebed = nextcord.Embed(title=txt_CompStart, colour=getCol("ssc"))
         if prize:
-            configuration["General"]["SSC_Data"]["isPrize"] = True
+            configuration["SSC_Data"]["isPrize"] = True
             sscConfig.isPrize = True
             if prizeUser:
                 giver = f" provided by {prizeUser.mention}"
@@ -289,26 +294,19 @@ class ssc(commands.Cog, name="SSC"):
                 giver = ""
             ebed.add_field(name=txt_CompGift, value=f"{prize}{giver}", inline=False)
         else:
-            configuration["General"]["SSC_Data"]["isPrize"] = False
+            configuration["SSC_Data"]["isPrize"] = False
             sscConfig.isPrize = False
         ebed.add_field(name=txt_CompTheme, value=f"{theme}", inline=True)
         ebed.add_field(name=txt_CompEnd, value=f"<t:{nextstamp}:f>", inline=True)
-        try:
-            configSSC["allThemes"][theme]
-        except Exception:
-            log.exception(f"Theme not found")
-        else:
-            if note is not None:
-                ebed.add_field(
-                    name="**Note**", value=f"\n```\n{note}\n```", inline=False
-                )
-            elif configSSC["allThemes"][theme] is not None:
-                ebed.add_field(
-                    name="**Note**",
-                    value=f"\n```\n{configSSC['allThemes'][theme]}\n```",
-                    inline=False,
-                )
-        if not writeJSON(data=configuration, filename="config"):
+        if theme not in configSSC["allThemes"]:
+            ebed.add_field(name="**Note**", value=f"\n```\n{note}\n```", inline=False)
+        elif configSSC["allThemes"][theme] is not None:
+            ebed.add_field(
+                name="**Note**",
+                value=f"\n```\n{configSSC['allThemes'][theme]}\n```",
+                inline=False,
+            )
+        if not writeJSON(data=configuration, file=paths.work.joinpath("config")):
             try:
                 await interaction.send("Failed to write to config", ephemeral=True)
             except Exception:
@@ -351,14 +349,14 @@ class ssc(commands.Cog, name="SSC"):
 
         alert = await self.bot.wait_for("message", check=check, timeout=30.0)
         if alert:
-            configuration = readJSON(filename="config")
-            configSSC = configuration["General"]["SSC_Data"]
+            configuration = readJSON(file=paths.work.joinpath("config"))
+            configSSC = configuration["SSC_Data"]
             cont = alert.content.split(" ")
             for item in cont:
                 if "@" in item:
                     configSSC["alertType"] = item.removeprefix("@")
                     break
-            if not writeJSON(data=configuration, filename="config"):
+            if not writeJSON(data=configuration, file=paths.work.joinpath("config")):
                 await interaction.send("Failed to write to config", ephemeral=True)
                 return
             emoListB = [gxConfig.emoNotifi]
@@ -382,7 +380,7 @@ class ssc(commands.Cog, name="SSC"):
             if item is not None:
                 await sendSS(ogChan, item)
         log.debug("Competition banner images posted")
-        k = writeJSON(data=configuration, filename="config")
+        k = writeJSON(data=configuration, file=paths.work.joinpath("config"))
         log.debug(f"{k=}")
         sscConfig.update()
 
@@ -425,7 +423,7 @@ class ssc(commands.Cog, name="SSC"):
         if reason is None and customReason is None:
             interaction.send("A reason must be given.", ephemeral=True)
 
-        SSC_Data = readJSON(filename="config")["General"]["SSC_Data"]
+        SSC_Data = readJSON(file=paths.work.joinpath("config"))["SSC_Data"]
         theme = SSC_Data["theme"]
         try:
             themeNote = SSC_Data["allThemes"][theme]
@@ -480,10 +478,10 @@ class ssc(commands.Cog, name="SSC"):
                 newThemesDic[element[0]] = None
             else:
                 newThemesDic[element[0]] = element[1]
-        configuration = readJSON(filename="config")
-        if configuration["General"]["SSC_Data"]["allThemes"] != newThemesDic:
-            configuration["General"]["SSC_Data"]["allThemes"] = newThemesDic
-            writeJSON(data=configuration, filename="config")
+        configuration = readJSON(file=paths.work.joinpath("config"))
+        if configuration["SSC_Data"]["allThemes"] != newThemesDic:
+            configuration["SSC_Data"]["allThemes"] = newThemesDic
+            writeJSON(data=configuration, file=paths.work.joinpath("config"))
             sscConfig.update()
             return True
         return True
@@ -516,7 +514,7 @@ class ssc(commands.Cog, name="SSC"):
         if not await blacklistCheck(ctx=interaction):
             return
         log.debug(f"{interaction.user.id=} | {update=}")
-        # configuration = readJSON(filename="config")
+        # configuration = readJSON(file = paths.conf)
         log.debug(
             f"exp: {interaction.is_expired()} | {interaction.expires_at.timestamp}"
         )
@@ -596,7 +594,7 @@ class ssc(commands.Cog, name="SSC"):
             return
         cd = commonData(ctx)
         logSys.debug(f"{cd.intUser=} | {cd.guildID_Name}")
-        configuration = readJSON("config")[str(sscConfig.tpfID)]["Roles"]
+        configuration = readJSON(file=paths.work.joinpath("config"))["SSC_Data"]
 
         addRoles = []
 
@@ -632,6 +630,10 @@ class ssc(commands.Cog, name="SSC"):
     async def on_message(self, ctx: nextcord.ext.commands.Context):
         """Check if message has attachment or link, if 1 add reaction
         if not 1 delete and inform user, set/check prize round state, ignore SSCmanager"""
+        if not gxConfig.Prod:
+            return
+        if ctx.guild is None:
+            return
         if ctx.guild.id != sscConfig.tpfID:
             return
         if "SSC_NotifyRole_Assignment" in geConfig.eventConfigID[sscConfig.tpfID]:

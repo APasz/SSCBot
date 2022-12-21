@@ -3,20 +3,19 @@
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 # APasz apasz96@gmail.com, 2022.
+# msgmerge -U -N ./locale/en/LC_MESSAGES/base.po ./base.pot
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-11-10 11:00+1100\n"
-"PO-Revision-Date: 2022-12-10 13:13+1100\n"
-"Last-Translator: \n"
-"Language-Team: \n"
-"Language: fr\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n > 1);\n"
-"X-Generator: Poedit 3.2.2\n"
 
 #. 200 char.
 #. Bot version and version name are prepended on previous line
@@ -24,8 +23,6 @@ msgstr ""
 #. {ncVer} is the version of Nextcord the bot is using.
 msgid "BOT_ONREADY"
 msgstr ""
-"Démarré dans {boot} | Nextcord {ncVer} **Prêt**\n"
-"Utiliser le /changelog pour voir les changements"
 
 #. 32 char.
 #. {botName} is the name of the bot
@@ -39,43 +36,104 @@ msgstr ""
 msgid "BOT_INFO_DESC"
 msgstr ""
 
+#. 32 char.
+msgid "BOT_INFO_HOST_TITLE"
+msgstr ""
+
+#. 75 char.
+#. {hostname} is the hostname/computer-name of the host system
+#. {os} is the operating system of the host system
+#. {hoster} is who is providing the server the bot is running on
+msgid "BOT_INFO_HOST_BODY"
+msgstr ""
+
+#. 32 char.
+msgid "BOT_INFO_RAM_TITLE"
+msgstr ""
+
+#. 75 char.
+#. {total} is the total RAM of the host system
+#. {used} is the amount of RAM used system-wide
+#. {bot} is the amount of RAM used only by the bot
+msgid "BOT_INFO_RAM_BODY"
+msgstr ""
+
+#. 32 char.
+msgid "BOT_INFO_CPU_TITLE"
+msgstr ""
+
+#. 75 char.
+#. {cores} is the number of cores the host system has
+#. {freq} is the number of the frequency (in Mhz) of the CPU
+#. {usage} is the appoximate utilisation % number of the CPU
+msgid "BOT_INFO_CPU_BODY"
+msgstr ""
+
+#. 32 char.
+msgid "BOT_INFO_UPTIME_TITLE"
+msgstr ""
+
+#. 75 char.
+#. {time} is weeks, days, hours, minutes, and seconds in English
+#. So until full suport is added, please keep this in mind
+msgid "BOT_INFO_UPTIME_BODY"
+msgstr ""
+
+#. 32 char.
+msgid "BOT_INFO_LATENCY_TITLE"
+msgstr ""
+
+#. 75 char.
+#. {gateway} is the number of ms it takes to ping the Discord servers directly
+#. {api} is the number of ms it takes to ping the Discord API gateway
+msgid "BOT_INFO_LATENCY_BODY"
+msgstr ""
+
+#. 32 char.
+msgid "BOT_INFO_LINES_TITLE"
+msgstr ""
+
+#. 75 char.
+#. {py} is the number of Python lines of code the bot has
+#. {json} is the number of JSON lines of config the bot has
+msgid "BOT_INFO_LINES_BODY"
+msgstr ""
+
 #. 32 char. Lowercase
 msgid "COMM_CONFIG_BASE_NAME"
-msgstr "configuration"
+msgstr ""
 
 #. 32 char. Lowercase
 msgid "COMM_CONFIG_GUILD_NAME"
-msgstr "guilde"
+msgstr ""
 
 #. 100 char.
 msgid "COMM_CONFIG_GUILD_DESC"
-msgstr "Configurateur de guilde pour les administrateurs de guilde"
+msgstr ""
 
 #. 32 char. Lowercase
 msgid "COMM_CONFIG_GUILD_GROUP_NAME"
-msgstr "groupe"
+msgstr ""
 
 #. 100 char.
 msgid "COMM_CONFIG_GUILD_GROUP_DESC"
-msgstr "Quel groupe de configuration voulez-vous modifier?"
+msgstr ""
 
 #. 32 char. Lowercase
 msgid "COMM_CONFIG_GUILD_OPTION_NAME"
-msgstr "option"
+msgstr ""
 
 #. 100 char.
 msgid "COMM_CONFIG_GUILD_OPTION_DESC"
-msgstr "Quelle option souhaitez-vous modifier?"
+msgstr ""
 
 #. 32 char. Lowercase
 msgid "COMM_CONFIG_GUILD_VALUE_NAME"
-msgstr "évaluer"
+msgstr ""
 
 #. 100 char.
 msgid "COMM_CONFIG_GUILD_VALUE_DESC"
 msgstr ""
-"^^^ = Aktuell. Was ist die neue ID/der neue Wert, den Sie eingeben möchten? "
-"int | false"
 
 #. 32 char. Lowercase
 msgid "COMM_CONFIG_AUTOREACT_NAME"
@@ -146,7 +204,13 @@ msgid "COMM_CONFIG_AUTOREACT_MESSAGE_REACTION_NONE"
 msgstr ""
 
 #. 100 char.
+#. {bad} is the list of unusage emoji
 msgid "COMM_CONFIG_AUTOREACT_MESSAGE_REACTION_UNUSABLE"
+msgstr ""
+
+#. 100 char.
+#. {unk} is the list of unusage emoji
+msgid "COMM_CONFIG_AUTOREACT_MESSAGE_REACTION_UNKNOWNISSUE"
 msgstr ""
 
 #. 100 char.
@@ -166,6 +230,75 @@ msgstr ""
 msgid "COMM_CONFIG_AUTOREACT_RETRIEVE_FAIL"
 msgstr ""
 
+#. 100 char.
+msgid "COMM_CONFIG_AUTOREACT_NONE"
+msgstr ""
+
+# Pending rewrite of convert command
+# #. 32 char.
+# msgid "COMM_CONVERT_NAME"
+# msgstr ""
+
+# #. 100 char.
+# msgid "COMM_CONVERT_DESC"
+# msgstr ""
+
+# #. 32 char.
+# msgid "COMM_CONVERT_VALUE_NAME"
+# msgstr ""
+
+# #. 100 char.
+# msgid "COMM_CONVERT_VALUE_DESC"
+# msgstr ""
+
+# #. 32 char.
+# msgid "COMM_CONVERT_FROM_METRIC_NAME"
+# msgstr ""
+
+# #. 100 char.
+# msgid "COMM_CONVERT_FROM_METRIC_DESC"
+# msgstr ""
+
+# #. 32 char.
+# msgid "COMM_CONVERT_FROM_IMPER_NAME"
+# msgstr ""
+
+# #. 100 char.
+# msgid "COMM_CONVERT_FROM_IMPER_DESC"
+# msgstr ""
+
+# #. 32 char.
+# msgid "COMM_CONVERT_FROM_TIME_NAME"
+# msgstr ""
+
+# #. 100 char.
+# msgid "COMM_CONVERT_FROM_TIME_DESC"
+# msgstr ""
+
+# #. 32 char.
+# msgid "COMM_CONVERT_TO_METRIC_NAME"
+# msgstr ""
+
+# #. 100 char.
+# msgid "COMM_CONVERT_TO_METRIC_DESC"
+# msgstr ""
+
+# #. 32 char.
+# msgid "COMM_CONVERT_TO_IMPER_NAME"
+# msgstr ""
+
+# #. 100 char.
+# msgid "COMM_CONVERT_TO_IMPER_DESC"
+# msgstr ""
+
+# #. 32 char.
+# msgid "COMM_CONVERT_TO_TIME_NAME"
+# msgstr ""
+
+# #. 100 char.
+# msgid "COMM_CONVERT_TO_TIME_DESC"
+# msgstr ""
+
 #. 32 char. Lowercase
 msgid "COMM_CHANGELOG_NAME"
 msgstr ""
@@ -181,6 +314,10 @@ msgstr ""
 #. 100 char.
 #. Please note that the the input must be either "list" or "x.x.x" where x is a number, eg 2.7.0
 msgid "COMM_CHANGELOG_VERSION_DESC"
+msgstr ""
+
+#. 32 char.
+msgid "COMM_CHANGELOG_VERSION_NOTFOUND"
 msgstr ""
 
 #. 32 char. Lowercase
@@ -333,69 +470,6 @@ msgstr ""
 msgid "COMM_INFO_BOT_SYSTEM_TITLE"
 msgstr ""
 
-#. 32 char.
-msgid "BOT_INFO_HOST_TITLE"
-msgstr ""
-
-#. 75 char.
-#. {hostname} is the hostname/computer-name of the host system
-#. {os} is the operating system of the host system
-#. {hoster} is who is providing the server the bot is running on
-msgid "BOT_INFO_HOST_BODY"
-msgstr ""
-
-#. 32 char.
-msgid "BOT_INFO_RAM_TITLE"
-msgstr ""
-
-#. 75 char.
-#. {total} is the total RAM of the host system
-#. {used} is the amount of RAM used system-wide
-#. {bot} is the amount of RAM used only by the bot
-msgid "BOT_INFO_RAM_BODY"
-msgstr ""
-
-#. 32 char.
-msgid "BOT_INFO_CPU_TITLE"
-msgstr ""
-
-#. 75 char.
-#. {cores} is the number of cores the host system has
-#. {freq} is the number of the frequency (in Mhz) of the CPU
-#. {usage} is the appoximate utilisation % number of the CPU
-msgid "BOT_INFO_CPU_BODY"
-msgstr ""
-
-#. 32 char.
-msgid "BOT_INFO_UPTIME_TITLE"
-msgstr ""
-
-#. 75 char.
-#. {time} is weeks, days, hours, minutes, and seconds in English
-#. So until full suport is added, please keep this in mind
-msgid "BOT_INFO_UPTIME_BODY"
-msgstr ""
-
-#. 32 char.
-msgid "BOT_INFO_LATENCY_TITLE"
-msgstr ""
-
-#. 75 char.
-#. {gateway} is the number of ms it takes to ping the Discord servers directly
-#. {api} is the number of ms it takes to ping the Discord API gateway
-msgid "BOT_INFO_LATENCY_BODY"
-msgstr ""
-
-#. 32 char.
-msgid "BOT_INFO_LINES_TITLE"
-msgstr ""
-
-#. 75 char.
-#. {py} is the number of Python lines of code the bot has
-#. {json} is the number of JSON lines of config the bot has
-msgid "BOT_INFO_LINES_BODY"
-msgstr ""
-
 #. 32 char. Lowercase
 msgid "COMM_INFO_GUILD_NAME"
 msgstr ""
@@ -435,6 +509,7 @@ msgstr ""
 #. 32 char. Lowercase
 msgid "COMM_INFO_GUILD_STATS_MESSAGES"
 msgstr ""
+
 
 #. 32 char. Lowercase
 msgid "COMM_PING_NAME"
@@ -499,27 +574,27 @@ msgstr ""
 msgid "COMM_PROFILE_EMBED_BASIC"
 msgstr ""
 
-#.
+#. 
 msgid "COMM_PROFILE_EMBED_REGISTERED"
 msgstr ""
 
-#.
+#. 
 msgid "COMM_PROFILE_EMBED_LASTJOIN"
 msgstr ""
 
-#.
+#. 
 msgid "COMM_PROFILE_EMBED_BOOSTER"
 msgstr ""
 
-#.
+#. 
 msgid "COMM_PROFILE_EMBED_ROLES"
 msgstr ""
 
-#.
+#. 
 msgid "COMM_PROFILE_EMBED_ATTRIBUTES"
 msgstr ""
 
-#.
+#. 
 msgid "COMM_PROFILE_EMBED_ISBOT"
 msgstr ""
 
@@ -568,6 +643,52 @@ msgid "COMM_PURGE_FAIL"
 msgstr ""
 
 #. 32 char.
+msgid "COMM_TOGGLEEVENT_NAME"
+msgstr ""
+
+# 100 char.
+msgid "COMM_TOGGLEEVENT_DESC"
+msgstr ""
+
+# 32 char.
+msgid "COMM_TOGGLEEVENT_EVENT_NAME"
+msgstr ""
+
+# 100 char.
+msgid "COMM_TOGGLEEVENT_EVENT_DESC"
+msgstr ""
+
+# 32 char.
+msgid "COMM_TOGGLEEVENT_STATE_NAME"
+msgstr ""
+
+# 100 char.
+msgid "COMM_TOGGLEEVENT_STATE_DESC"
+msgstr ""
+
+# 200 char.
+#. {event} is the Event being toggled
+#. {oldState} is the previous state
+#. {newState} is the new state
+msgid "COMM_TOGGLEEVENT_UPDATE_SUCCESS"
+msgstr ""
+
+# 200 char.
+#. {event} is the Event being toggled
+#. {oldState} is the previous state
+msgid "COMM_TOGGLEEVENT_UPDATE_FAIL"
+msgstr ""
+
+# 200 char.
+#. {event} is the Event being toggled
+msgid "COMM_TOGGLEEVENT_UNAVALIBLE"
+msgstr ""
+
+# 100 char.
+msgid "COMM_OPTIONS_TRUNCATED"
+msgstr ""
+
+#. 32 char.
 #. {type} is the type of item it is
 msgid "MODDING_PREVIEW_STEAM_TITLE"
 msgstr ""
@@ -595,6 +716,10 @@ msgid "MODDING_PREVIEW_DESC_TITLE"
 msgstr ""
 
 #. 32 char.
+msgid "MODDING_PREVIEW_AUTHORNOTE_TITLE"
+msgstr ""
+
+#. 32 char.
 msgid "MODDING_PREVIEW_PUBLISHED_TITLE"
 msgstr ""
 
@@ -608,6 +733,11 @@ msgstr ""
 
 #. 32 char.
 msgid "MODDING_PREVIEW_NSFW_TITLE"
+msgstr ""
+
+#. 32 char.
+#. {size} is the number with nomenclature. Ie 40Mib
+msgid "MODDING_PREVIEW_FILESIZE_TITLE"
 msgstr ""
 
 #. 75 char.

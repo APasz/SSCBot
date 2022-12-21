@@ -7,7 +7,7 @@ from config import bytesToHuman
 from config import generalEventConfig as geConfig
 from config import genericConfig as gxConfig
 from config import localeConfig as lcConfig
-from util.fileUtil import readJSON
+from util.fileUtil import readJSON, paths
 from util.genUtil import (
     _ping,
     blacklistCheck,
@@ -67,7 +67,7 @@ class general(commands.Cog, name="General"):
         """Retrieves a fact from the facts JSON file."""
         log.debug(f"run| {index=}| {metadata=}")
         data = f"'An error occurred' Alert <@{gxConfig.ownerID}>"
-        if facts := readJSON(filename=gxConfig.factsJSON):
+        if facts := readJSON(file=paths.work.joinpath(gxConfig.factsJSON)):
             keys = list(facts.keys())
         else:
             return data
@@ -107,14 +107,20 @@ class general(commands.Cog, name="General"):
             source = f"Source;\n{source}\n{sourceLink}"
         elif sourceLink and not source:
             source = "Source;\n" + sourceLink
+        elif not sourceLink and source:
+            source = "Source;\n" + source
         data.set_footer(text=source)
         if len(extraLinks) > 0:
             extraLinks = "\n".join(extraLinks)
             data.add_field(name="Extra Links", value=extraLinks, inline=False)
         if metadata:
+            txt = [
+                f"Provider Name|ID: {providerName} | {providerID}",
+                f"Date Added|Updated: {initialAdd} | {lastUpdate}",
+            ]
             data.add_field(
                 name="Metadata",
-                value=f"Provider Name|ID: {providerName} | {providerID}\nDate Added|Updated: {initialAdd} | {lastUpdate}",
+                value="\n".join(txt),
             )
         return data
 
@@ -427,9 +433,7 @@ class general(commands.Cog, name="General"):
                 title=_("COMM_INFO_GUILD_DESC_TITLE", cd.locale),
                 colour=getCol("botInfo"),
             )
-            servDesc = getServConf(
-                guildID=cd.strGuild, group="MISC", option="Description"
-            )
+            servDesc = getServConf(guildID=cd.strGuild, option="Description")
             if servDesc is None:
                 servDesc = f"There is no description for this server.\nTo add one please contact {gxConfig.ownerName}"
             emb.description = servDesc
@@ -657,7 +661,7 @@ class general(commands.Cog, name="General"):
                     version = _ver
         logSys.debug(f"{version=}")
 
-        chLog = readJSON(filename=gxConfig.changelog)
+        chLog = readJSON(file=paths.work.joinpath(gxConfig.changelog))
 
         version.title = chLog[str(version.minor)]["Title"]
         version.date = chLog[str(version.minor)][str(version.micro)][0]

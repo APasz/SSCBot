@@ -1,9 +1,53 @@
 {
+    "AutoReact": {},
+    "Channels": {
+        "NewModPreview": 987097949035196457,
+        "NewModRelease": 987097949035196457,
+        "ReadyMessage": null,
+        "Rules": null,
+        "Welcome": null
+    },
+    "Channels_Admin": {
+        "Admin": null,
+        "Audit": null,
+        "Notify": null
+    },
+    "Config_Name": "VKGuild",
+    "Description": "A Transport Fever Modding server meant to bring together all modders of North America.",
+    "Events": {
+        "AutoReact": true,
+        "MemberAccept": false,
+        "MemberBan": false,
+        "MemberJoin": false,
+        "MemberJoin_RecentCreation": false,
+        "MemberKick": false,
+        "MemberLeave": false,
+        "MemberNameChange": false,
+        "MemberUnban": false,
+        "MemberVerifiedRole": false,
+        "MemberWelcome": false,
+        "MessageDelete": false,
+        "ModPreview": true,
+        "ModPreviewGlobal": true,
+        "ModPreview_DeleteTrigger": true,
+        "ModPreview_Global": false,
+        "ReadyMessage": true
+    },
     "MISC": {
+        "Language": "en-GB",
+        "MemberJoin_RecentCreationHours": 48,
         "Prefix": null,
-        "Description": "A Transport Fever Modding server meant to bring together all modders of North America.",
-        "Welcome": "{user}, Welcome to {guild}",
         "Rules": "Please keep {rules} in mind",
-        "Language": "en"
-    }
+        "Welcome": "{user}, Welcome to {guild}"
+    },
+    "PrefixCommands": true,
+    "Roles": {
+        "Admin": null,
+        "Modder": null,
+        "Moderator": null,
+        "SSC_Manager": null,
+        "SSC_Notify_General": null,
+        "SSC_Notify_Prize": null
+    },
+    "SlashCommands": true
 }

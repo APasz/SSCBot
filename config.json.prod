@@ -1,212 +1,220 @@
 {
-    "General": {
-        "delTime": 20,
-        "logLevel": "INFO",
-        "readyMessage": true,
-        "readyMessageTimer": 120,
-        "verMajor": "2",
-        "VerMinor": "0",
-        "verPoint": "0",
-        "verName": "Dawnbreak",
-        "purgeLimit":100,
-        "TaskLengths": {
-            "SSC_Remind": 30
-        },
-        "EmbedColours": {
-            "positive": [
-                25,
-                120,
-                215
-            ],
-            "positive2": [
-                5,
-                165,
-                30
-            ],
-            "negative": [
-                200,
-                10,
-                10
-            ],
-            "negative2": [
-                180,
-                30,
-                30
-            ],
-            "error": [
-                210,
-                75,
-                10
-            ],
-            "warning": [
-                230,
-                190,
-                10
-            ],
-            "neutral_Bright": [
-                255,
-                255,
-                255
-            ],
-            "neutral_Light": [
-                220,
-                220,
-                220
-            ],
-            "neutral_Mid": [
-                125,
-                125,
-                125
-            ],
-            "neutral_Dim": [
-                75,
-                75,
-                75
-            ],
-            "neutral_Dark": [
-                30,
-                30,
-                30
-            ],
-            "neutral_Black": [
-                0,
-                0,
-                0
-            ],
-            "fact": [
-                85,
-                20,
-                155
-            ],
-            "steam": [
-                102,
-                192,
-                244
-            ],
-            "nexusmods": [
-                218,
-                142,
-                53
-            ],
-            "tpfnet": [
-                180,
-                29,
-                117
-            ],
-            "ssc": [
-                255,
-                0,
-                0
-            ]
-        },
-        "SSC_Data": {
-            "theme": "Placeholder",
-            "isPrize": false,
-            "remindSent": false,
-            "alertType": "here",
-            "ignoreWinner": false,
-            "currStamp": 0,
-            "nextStamp": 0,
-            "remindStamp": 0,
-            "allThemes": {}
-        }
+    "delTime": 20,
+    "logLevel": "DEBUG",
+    "ReadyMessageTimer": 120,
+    "purgeLimit": 100,
+    "TaskLengths": {
+        "SSC_Remind": 15
     },
-    "TPFGuild": {
-        "ID": 246190532949180417,
-        "readyMessage": true,
-        "Channels": {
-            "Artwork": 705946607543255091,
-            "Botstuff": 335767575973593099,
-            "General": 272094615434166272,
-            "GeneralGames": 484036747840192523,
-            "GeneralTPF1": 246190532949180417,
-            "GeneralTPF2": 570616070403260427,
-            "GeneralTTD": 671906078392451075,
-            "NewModPreview": 642719565951795240,
-            "NewModRelease": 330528874612129793,
-            "Rules": 634007370770415616,
-            "SSC_Remind": 699849958102138970,
-            "SSC_Comp": 699849958102138970,
-            "ScreenshotsGames": 777062195073777666,
-            "ScreenshotsTPF": 763468981452800002,
-            "Welcome": 634725723751448576
-        },
-        "Channels_Admin": {
-            "Admin": 395524726719643648,
-            "Audit": 382371100690219028,
-            "Moderator": 768978553202802718
-        },
-        "Roles": {
-            "Admin": 246195489681178624,
-            "ContentCreator": 457244548171694080,
-            "CommunityLeader": 768984090166034453,
-            "Booster":647939388784902154,
-            "Mapper": 761555813004214272,
-            "Moderator": 910170191252574250,
-            "Modder": 246196856596463617,
-            "ModderNew": 426550263130882048,
-            "Muted": 509204260756652046,
-            "Owner": 827568297129279500,
-            "OwnerRetired": 762697714181079090,
-            "Player_TPF": 426450029054525451,
-            "Player_CSL": 426450131865305128,
-            "Player_TTD": 463857804344819712,
-            "Player_FCT": 426450295170793483,
-            "SSC_Manager": 723602126294614157,
-            "SSC_Runnerup": 884228483000205392,
-            "SSC_Winner": 830938606896939049,
-            "SSC_WinnerPrize": 830938902432710737,
-            "Unverified": 634730253855752203,
-            "UrbanGames": 420648720825319424,
-            "Verified": 634733792518733825,
-            "Veteran": 389966360282660884
-        }
+    "EmbedColours": {
+        "positive": [
+            25,
+            120,
+            215
+        ],
+        "positive2": [
+            5,
+            165,
+            30
+        ],
+        "negative": [
+            200,
+            10,
+            10
+        ],
+        "negative_Low": [
+            180,
+            30,
+            30
+        ],
+        "error": [
+            210,
+            75,
+            10
+        ],
+        "warning": [
+            230,
+            190,
+            10
+        ],
+        "warning_Low": [
+            240,
+            160,
+            10
+        ],
+        "neutral_Bright": [
+            255,
+            255,
+            255
+        ],
+        "neutral_Light": [
+            220,
+            220,
+            220
+        ],
+        "neutral_Mid": [
+            125,
+            125,
+            125
+        ],
+        "neutral_Dim": [
+            75,
+            75,
+            75
+        ],
+        "neutral_Dark": [
+            30,
+            30,
+            30
+        ],
+        "neutral_Black": [
+            0,
+            0,
+            0
+        ],
+        "fact": [
+            85,
+            20,
+            155
+        ],
+        "steam": [
+            102,
+            192,
+            244
+        ],
+        "nexusmods": [
+            218,
+            142,
+            53
+        ],
+        "tpfnet": [
+            180,
+            29,
+            117
+        ],
+        "ssc": [
+            190,
+            0,
+            70
+        ],
+        "botInfo": [
+            250,
+            0,
+            0
+        ]
     },
-    "NIXGuild": {
-        "ID": 811250905335857172,
-        "readyMessage": true,
-        "Channels": {
-            "Botstuff": 811325689198411826,
-            "General": 811250906494271571,
-            "GeneralGames": 811259287678484561,
-            "GeneralTPF1": false,
-            "GeneralTPF2": 811259193309921280,
-            "NewModPreview": 957848953523691620,
-            "NewModRelease": 812084783815458837,
-            "Welcome": false
-        },
-        "Channels_Admin": {
-            "Admin": 811250906494271572,
-            "Audit": 940321966911541299
-        },
-        "Roles": {
-            "Linux": 811260032519110696,
-            "MacOS": 811260213155069972,
-            "Windows": 812091462052347924,
-            "AUS": 811317704962080778,
-            "NZ": 883631833072414740,
-            "UrbanGames":811261312709296138,
-            "CommunityLeader":811332180339982396,
-            "Modder":811260604890611713,
-            "COL_black": 811319107860693002,
-            "COL_blue": 812078416446619658,
-            "COL_blueDark": 945628729495932928,
-            "COL_brown": 812078442370957322,
-            "COL_green": 812078439209238578,
-            "COL_greenDark": 945628947977220096,
-            "COL_lilac": 812078448360161330,
-            "COL_orange": 814004395313987605,
-            "COL_pink": 945629248444596285,
-            "COL_redDark": 945629089375604746,
-            "COL_white": 814003429080825858,
-            "COL_yellow": 812078445654835220
-        }
+    "Events": {
+        "ReadyMessage": true,
+        "MemberJoin": true,
+        "MemberAccept": true,
+        "MemberNameChange": true,
+        "MemberVerifiedRole": true,
+        "MemberKick": true,
+        "MemberBan": true,
+        "MemberUnban": true,
+        "MemberLeave": true,
+        "MemberWelcome": true,
+        "MessageDelete": true,
+        "ModPreview": true,
+        "ModPreviewGlobal": true,
+        "MemberJoinRecentCreation": true,
+        "ModPreview_DeleteTrigger": true,
+        "AutoReact": true,
+        "Artwork": true,
+        "Battles": true,
+        "MemberJoin_RecentCreation": true,
+        "SSC_NotifyRole_Assignment": true
     },
-    "VKGuild": {
-        "ID": 676425250640101395,
-        "readyMessage": false,
-        "Channels": {
-            "infoBattles": 676425251122577414
+    "SSC_Data": {
+        "theme": "Steam Snow",
+        "isPrize": true,
+        "alertType": "<@&1052624600749584384>",
+        "ignoreWinner": true,
+        "remindSent": false,
+        "currStamp": 1671408000,
+        "nextStamp": 1672617600,
+        "remindStamp": 1672540200,
+        "SSC_Notify_General": 1052624160418971658,
+        "SSC_Notify_Prize": 1052624600749584384,
+        "allThemes": {
+            "Abandoned": null,
+            "Airplane": null,
+            "Airport": null,
+            "Alpine": null,
+            "Americas": "North and South.",
+            "Asia": "Excludes Russia/Siberia.",
+            "Boat": "A ship carries a boat but a boat does not carry a ship.",
+            "Bridge": null,
+            "Bus": "Includes Trolleybuses.",
+            "Canyon": null,
+            "CargoTram": "Industrial Railway.",
+            "City": null,
+            "Cityscape": null,
+            "Cliffside": null,
+            "Construction": null,
+            "Cursed": "Strictly non-prototypical.",
+            "Depot": "Can be of any type.",
+            "Desert": null,
+            "Diesel": "Not restricted to trains or by cargo type.",
+            "Double Deck Bridge": null,
+            "Easten Europe": "Acording to UN geoscheme.",
+            "Electric": null,
+            "Elevated": null,
+            "Elevated Station": null,
+            "Era A": "Up to 1920.",
+            "Era B": "1920 - 1990.",
+            "Era C": "1990 onwards.",
+            "Europe": "Excludes Easten Europe acording to UN geoscheme.",
+            "Farm": null,
+            "Forest": null,
+            "Freestyle": "Any game with transport.",
+            "Grade Separation": "Before and After of a separation of grades.",
+            "Highway": null,
+            "Freight": null,
+            "High-Speed": "200km/h+",
+            "Industry": null,
+            "Industry Base Product": "Coal/Crude/Grain/Iron/Log/Livestock/Stone",
+            "Industry Mid Product": "Oil/Planks/Plastic/Steel",
+            "Industry End Product": "ConMat/Food/Fuel/Goods/Machines/Tools",
+            "Interchange": "Multiple modes is preferred, otherwise local and High-Speed is the minimum.",
+            "Junction": "At least 2 track diverging/merging.",
+            "Long Train": "At least 40 cars/carriages/wagons/etc. Some cars can be obstructed but it must be reasonable to assume there are at least 40.",
+            "Mesa": null,
+            "Middle East & Africa": null,
+            "Mixed Freight": "A.k.a manifest trains. Bulk/Unit and Intermodal do not count.",
+            "Mixed Gauge": "At least two different gauges must be distinguishable.",
+            "Mountain": "If top of mountain is not visible, it must at least look like the side of a mountain.",
+            "Mountain Pass": null,
+            "Multiple Unit": null,
+            "Oceania": null,
+            "Passenger": "Pax/Cims have to be visible.",
+            "Port": null,
+            "Rail Corridor": "Must have at least 4 parallel tracks",
+            "Rail Crossing": null,
+            "Rail Yard": null,
+            "Railroad": null,
+            "Recreation": "Recreation of an IRL location. OR Recreation as in fun. If recreating, please submit the inspiration as well. Both images will count as one submission.",
+            "River/Lake": null,
+            "River Delta": null,
+            "Road": null,
+            "Ship": null,
+            "Signal Box": null,
+            "Snow": null,
+            "Station": null,
+            "Steam": null,
+            "Suburban": null,
+            "Tropical": null,
+            "Tram": null,
+            "Truck": null,
+            "Third Rail": null,
+            "Tunnel": "Rock sheds count.",
+            "Valley": null,
+            "Vanilla": null,
+            "Viaduct": "Must have at least 10 arches. Includes stacked arches.",
+            "Video": "~120 seconds or less. If your video is larger than 8mb, send it to me and I'll submit it for you. ; You can link a video but it must be on a public site like Youtube, so no GDrive, Dropbox, etc.",
+            "Waiting": "Vehicle or person waiting on red signal.",
+            "*WildCard* Theme": "2 Themes are [within reason] combined at random. Must contain elements of both picked themes.",
+            "*WildCard* Rulez": "Editing Allowed. Private mods Allowed. Already posted Allowed with exception for #screenshot-comp-archive or #tpf-artwork."
         }
     }
 }

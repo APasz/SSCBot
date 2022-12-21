@@ -7,7 +7,7 @@ from config import genericConfig as gxConfig
 from config import screenShotCompConfig as sscConfig
 from config import localeConfig as lcConfig
 from config import syncCommands
-from util.fileUtil import cacheWrite, parentDir, writeJSON
+from util.fileUtil import cacheWrite, writeJSON, paths
 from util.genUtil import blacklistCheck
 
 print("CogBotManage")
@@ -91,11 +91,11 @@ class botManage(commands.Cog, name="BotManagement"):
     async def reloadAll(self, ctx: commands.Context):
         """Reloads all cogs"""
         logSys.debug(ctx.author.id)
-        cogsDir = os.path.join(parentDir(), "cogs")
+        cogsDir = gxConfig.botDir.joinpath("cogs")
         try:
-            for filename in os.listdir(cogsDir):
-                if filename.endswith(".py") and filename != "__init__.py":
-                    self.bot.reload_extension(f"cogs.{filename[:-3]}")
+            for file in cogsDir.iterdir():
+                if file.name.endswith(".py") and not file.name.startswith("__"):
+                    self.bot.reload_extension(f"cogs.{file.stem}")
             logSys.info("All cogs reloaded")
         except Exception:
             try:
@@ -147,49 +147,54 @@ class botManage(commands.Cog, name="BotManagement"):
                 logSys.exception(f"_config dump cacheJSON")
 
         elif "-d" in arg:
-            dumpPath = os.path.join(parentDir(), "dump")
+
             try:
-                os.remove(dumpPath)
+                paths.dump.rmdir()
             except Exception:
                 logSys.exception(f"Delete Dump Folder")
             try:
-                os.mkdir(dumpPath)
+                paths.dump.mkdir()
             except Exception:
                 logSys.exception(f"Make Dump Folder")
+
             logSys.info("Dumping genericConfig")
             try:
                 dataGX = str(gxConfig.__dict__)
-                writeJSON(data=dataGX, filename="GX", directory=["dump"])
+                writeJSON(data=dataGX, file=paths.dump.joinpath("GX"), sort=True)
             except Exception:
                 logSys.exception(f"Dumping genericConfig")
                 err = True
+
             logSys.info("Dumping screenShotCompConfig")
             try:
                 dataSSC = str(sscConfig.__dict__)
-                writeJSON(data=dataSSC, filename="SSC", directory=["dump"])
+                writeJSON(data=dataSSC, file=paths.dump.joinpath("SSC"), sort=True)
             except Exception:
                 logSys.exception(f"Dumping screenShotCompConfig")
                 err = True
+
             logSys.info("Dumping generalEventConfig")
             try:
                 dataGE = str(geConfig.__dict__)
-                writeJSON(data=dataGE, filename="GE", directory=["dump"])
+                writeJSON(data=dataGE, file=paths.dump.joinpath("GE"), sort=True)
             except Exception:
                 logSys.exception(f"Dumping generalEventConfig")
                 err = True
+
             logSys.info("Dumping botInformation")
             try:
                 dataBI = str(botInfo.__dict__)
-                writeJSON(data=dataBI, filename="BI", directory=["dump"])
+                writeJSON(data=dataBI, file=paths.dump.joinpath("BI"), sort=True)
             except Exception:
                 logSys.exception(f"Dumping botInformation")
                 err = True
+
             logSys.info("Dumping AutoReact")
             try:
                 dataAR = (
                     str(geConfig.autoReacts) + "\n\n\n" + str(geConfig.autoReactsChans)
                 )
-                writeJSON(data=dataAR, filename="AR", directory=["dump"])
+                writeJSON(data=dataAR, file=paths.dump.joinpath("AR"), sort=True)
             except Exception:
                 logSys.exception(f"Dumping AutoReact")
                 err = True

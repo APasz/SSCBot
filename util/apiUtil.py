@@ -3,7 +3,7 @@ import os
 
 import requests
 from config import NEXUSAPI, STEAMAPI
-from util.fileUtil import writeJSON
+from util.fileUtil import writeJSON, paths
 
 print("UtilAPI")
 
@@ -77,35 +77,41 @@ def tpfnetModGet(data) -> int | dict:
     return
 
 
-def parseURL(url) -> tuple | None:
+def parseURL(url) -> dict | None:
     log.debug(f"parseURL: {url=}")
-    game = None
+
+    data = {"url": url, "game": None}
     cont = url.split("https://")[-1]
+
     if "steamcommunity" in cont:
-        plat = "steam"
+        data["platform"] = "steam"
         cont = cont.split("id=")[-1]
         if "&" in cont:
             cont = cont.split("&")[0]
+        data["ID"] = cont
+
     elif "nexusmods" in cont:
-        plat = "nexus"
+        data["platform"] = "nexus"
         cont = cont.split("com/")[-1]
-        game = cont.split("/mods")[0]
+        data["game"] = cont.split("/mods")[0]
         cont = cont.split("mods/")[-1]
         if "?" in cont:
             cont = cont.split("?")[0]
-        cont = cont.removesuffix("/")
+        data["ID"] = cont.removesuffix("/")
+
     elif "transportfever" in cont:
         if "attachment" in cont:
             pass
-        plat = "tpfnet"
+        data["platform"] = "tpfnet"
         cont = cont.split("entry/")[-1]
         if "-" in cont:
             stuff = cont.split("-", 1)
-            cont = stuff[0]
-            game = stuff[1]
+            data["ID"] = stuff[0]
+            data["game"] = stuff[1]
+
     else:
         return None
-    data = (cont, game, plat)
+
     log.debug(f"{data=}")
     return data
 

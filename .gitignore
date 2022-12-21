@@ -61,7 +61,6 @@ coverage.xml
 
 # Translations
 *.mo
-*.pot
 
 # Django stuff:
 *.log
@@ -137,4 +136,4 @@ dmypy.json
 .pyre/
 test.json
 test.py
-config.json
+cogs/tes.py

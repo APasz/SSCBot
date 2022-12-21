@@ -1,9 +1,91 @@
 {
+    "AutoReact": {
+        "image": {
+            "Channel": [
+                1023645371223789609
+            ],
+            "Contains": [
+                "https://discordapp",
+                "image"
+            ],
+            "Emoji": [
+                "\ud83c\udfc6"
+            ],
+            "isExactMatch": false
+        },
+        "test": {
+            "Channel": [
+                712298854132744254
+            ],
+            "Contains": [
+                "hello"
+            ],
+            "Emoji": [
+                "\ud83d\udc4b"
+            ],
+            "isExactMatch": false
+        },
+        "\ud83c\udfc6": {
+            "Channel": [
+                1023645371223789609
+            ],
+            "Contains": [
+                "\ud83c\udfc6"
+            ],
+            "Emoji": [
+                "\ud83c\udfc6"
+            ],
+            "isExactMatch": false
+        }
+    },
+    "Channels": {
+        "NewModPreview": 711540443346763827,
+        "NewModRelease": 711540443346763827,
+        "ReadyMessage": 899032263109513257,
+        "Rules": null,
+        "Welcome": null
+    },
+    "Channels_Admin": {
+        "Admin": null,
+        "Audit": null,
+        "Notify": null
+    },
+    "Config_Name": "FRGuild",
+    "Description": null,
+    "Events": {
+        "AutoReact": true,
+        "MemberAccept": false,
+        "MemberBan": false,
+        "MemberJoin": false,
+        "MemberJoin_RecentCreation": false,
+        "MemberKick": false,
+        "MemberLeave": false,
+        "MemberNameChange": false,
+        "MemberUnban": false,
+        "MemberVerifiedRole": false,
+        "MemberWelcome": false,
+        "MessageDelete": false,
+        "ModPreview": false,
+        "ModPreviewGlobal": true,
+        "ModPreview_DeleteTrigger": false,
+        "ModPreview_Global": false,
+        "ReadyMessage": true
+    },
     "MISC": {
+        "Language": "fr",
+        "MemberJoin_RecentCreationHours": 48,
         "Prefix": null,
-        "Description": null,
-        "Welcome": "{user}, Welcome to {guild}",
         "Rules": "Please keep {rules} in mind",
-        "Language": "fr"
-    }
+        "Welcome": "{user}, Welcome to {guild}"
+    },
+    "PrefixCommands": true,
+    "Roles": {
+        "Admin": null,
+        "Modder": null,
+        "Moderator": null,
+        "SSC_Manager": null,
+        "SSC_Notify_General": null,
+        "SSC_Notify_Prize": null
+    },
+    "SlashCommands": true
 }

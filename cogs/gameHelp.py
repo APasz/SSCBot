@@ -1,7 +1,7 @@
 import logging
 
 from config import genericConfig as gxConfig
-from util.fileUtil import readJSON
+from util.fileUtil import readJSON, paths
 from util.genUtil import blacklistCheck
 
 print("CogGameHelp")
@@ -70,7 +70,8 @@ class gameHelp(commands.Cog, name="GameHelp"):
         if "2" in game and "gameFiles" in entry:
             try:
                 txt = gxConfig.Wiki2gameFiles
-                udb = readJSON(filename="strings")["en"]["GameHelp"]["UserDataButton"]
+                strData = readJSON(file=paths.work.joinpath("strings"))
+                udb = strData["en"]["GameHelp"]["UserDataButton"]
                 if "stdout" in ctx.message.content:
                     await ctx.send(txt + "#game_log_files" + "\n" + udb)
                 else:

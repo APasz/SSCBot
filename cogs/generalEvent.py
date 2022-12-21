@@ -5,12 +5,13 @@ import time
 from config import generalEventConfig as geConfig
 from config import genericConfig as gxConfig
 from config import localeConfig as lcConfig
-from util.fileUtil import readJSON, writeJSON
+from config import botInformation as botInfo
+from util.fileUtil import readJSON, writeJSON, paths
 from util.genUtil import (
     getChan,
-    getGuildID,
     getRole,
     getServConf,
+    setServConf,
     commonData,
 )
 
@@ -49,8 +50,8 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
     @commands.is_owner()
     async def updateEventList(self, ctx):
         """Updates the config for discord events"""
-        guildID = int(getGuildID(obj=ctx))
-        log.debug(f"{guildID=}")
+        cd = commonData(ctx)
+        log.debug(f"{cd.intGuild=}")
         try:
             geConfig.update()
         except Exception:
@@ -91,16 +92,16 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
         cd = commonData(interaction)
         log.debug(f"{cd.intGuild=}")
         event = (event.removeprefix("O | ")).removeprefix("X | ")
-        configuraton = readJSON("config")
-        try:
-            oldState = configuraton[cd.strGuild]["Events"][event]
-        except KeyError:
+        configuraton = readJSON(file=paths.work.joinpath("config"))
+        oldState = getServConf(guildID=cd.intGuild, group="Events", option=event)
+        if oldState == newState:
+            return
+        if oldState is None:
             txt = _("COMM_TOGGLEEVENT_UNAVALIBLE", cd.locale)
             await interaction.send(txt.format(event=f"**{event}**"), ephemeral=True)
             return
-        except Exception:
-            log.exception("Toggle Event")
-        configuraton[cd.strGuild]["Events"][event] = newState
+        setServConf(guildID=cd.intGuild, group="Events", option=event, value=newState)
+
         from config import dataObject
 
         dataObject.TYPE = "CommandToggleEvent"
@@ -114,7 +115,7 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
         print(dataObject)
         await auditLogger.logEmbed(self, dataObject)
         log.warning(f"{event}, {cd.intGuild}, {oldState}|{newState}")
-        writeJSON(data=configuraton, filename="config")
+        writeJSON(data=configuraton, file=paths.work.joinpath("config"))
         k = await generalEvent.updateEventList(self, interaction)
         logSys.debug(f"updateEventList {k}")
         await asyncio.sleep(0.05)
@@ -174,7 +175,7 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
         log.debug(f"{finalEventList=}")
         if len(finalEventList) >= 25:
             finalEventList = finalEventList[0:25]
-            finalEventList[0] = _("COMM_TOGGLEEVENT_TRUNCATED", cd.locale)
+            finalEventList[0] = _("COMM_OPTIONS_TRUNCATED", cd.locale)
         try:
             await interaction.response.send_autocomplete(finalEventList)
         except Exception:
@@ -208,14 +209,16 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
             await auditLogger.logEmbed(self, dataObject)
             if "MemberJoin_RecentCreation" in geConfig.eventConfigID[guildID]:
                 usrCrtd = int(round(member.created_at.timestamp()))
-                configuration = readJSON(filename="config")[str(guildID)]["MISC"]
+                configuration = readJSON(file=paths.work.joinpath("config"))[
+                    str(guildID)
+                ]["MISC"]
                 try:
                     crtTime = (
                         configuration["MemberJoin_RecentCreationHours"] * 60
                     ) * 60
                 except KeyError:
                     configuration["MemberJoin_RecentCreationHours"] = 48
-                    writeJSON(data=configuration, filename="config")
+                    writeJSON(data=configuration, file=paths.work.joinpath("config"))
                     crtTime = (48 * 60) * 60
                 except Exception:
                     log.exception("RecentMemberJoin")
@@ -489,10 +492,12 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
     async def on_message(self, ctx: nextcord.Message):
         """Check for AutoReacts"""
         await self.bot.wait_until_ready()
+        if not gxConfig.Prod:
+            return
+        if ctx.guild is None:
+            return
         cd = commonData(ctx)
         if cd.intUser == gxConfig.botID:
-            return
-        if cd.intGuild == gxConfig.ownerGuild:
             return
         cfName = "**"
         if cd.intGuild in list(geConfig.guildListID):

@@ -1,9 +1,77 @@
 {
+    "AutoReact": {
+        "BattlesCheck": {
+            "Channel": [
+                676425251122577414
+            ],
+            "Contains": [
+                "\u2611\ufe0f"
+            ],
+            "Emoji": [
+                "\u2611\ufe0f"
+            ],
+            "isExactMatch": false
+        },
+        "BattlesThumb": {
+            "Channel": [
+                676425251122577414
+            ],
+            "Contains": [
+                "\ud83d\udc4d"
+            ],
+            "Emoji": [
+                "\ud83d\udc4d"
+            ],
+            "isExactMatch": false
+        }
+    },
+    "Channels": {
+        "NewModPreview": null,
+        "NewModRelease": null,
+        "ReadyMessage": null,
+        "Rules": null,
+        "Welcome": null
+    },
+    "Channels_Admin": {
+        "Admin": null,
+        "Audit": null,
+        "Notify": null
+    },
+    "Config_Name": "VKGuild",
+    "Description": null,
+    "Events": {
+        "AutoReact": true,
+        "MemberAccept": false,
+        "MemberBan": false,
+        "MemberJoin": false,
+        "MemberJoin_RecentCreation": false,
+        "MemberKick": false,
+        "MemberLeave": false,
+        "MemberNameChange": false,
+        "MemberUnban": false,
+        "MemberVerifiedRole": false,
+        "MemberWelcome": false,
+        "MessageDelete": false,
+        "ModPreview": false,
+        "ModPreview_DeleteTrigger": false,
+        "ModPreview_Global": false,
+        "ReadyMessage": true
+    },
     "MISC": {
+        "Language": "ru",
+        "MemberJoin_RecentCreationHours": 48,
         "Prefix": null,
-        "Description": null,
-        "Welcome": "{user}, Welcome to {guild}",
         "Rules": "Please keep {rules} in mind",
-        "Language": "en"
-    }
+        "Welcome": "{user}, Welcome to {guild}"
+    },
+    "PrefixCommands": true,
+    "Roles": {
+        "Admin": null,
+        "Modder": null,
+        "Moderator": null,
+        "SSC_Manager": null,
+        "SSC_Notify_General": null,
+        "SSC_Notify_Prize": null
+    },
+    "SlashCommands": true
 }

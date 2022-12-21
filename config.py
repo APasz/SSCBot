@@ -7,7 +7,7 @@ import platform
 from dataclasses import dataclass
 from pathlib import Path as Pathy
 
-from util.fileUtil import readJSON, writeJSON
+from util.fileUtil import readJSON, writeJSON, paths
 
 print("Config")
 
@@ -22,13 +22,34 @@ try:
 except Exception:
     logSys.exception("CONFIG IMPORT MODULES")
 
+defaultEvents = [
+    "ReadyMessage",
+    "MemberJoin",
+    "MemberJoin_RecentCreation",
+    "MemberAccept",
+    "MemberNameChange",
+    "MemberVerifiedRole",
+    "MemberKick",
+    "MemberBan",
+    "MemberUnban",
+    "MemberLeave",
+    "MemberWelcome",
+    "MessageDelete",
+    "ModPreview",
+    "ModPreview_Global",
+    "ModPreview_DeleteTrigger",
+    "AutoReact",
+    "SSC_NotifyRole_Assignment",
+]
+"For GeneralEvent"
+
 
 def verifyConfigJSON() -> bool:
     """Checks that certain elements are present and if not, gives a default value.
     Also to be used to update the config when the bot gets an update."""
 
-    configuration = readJSON(filename="config.json")
-    genCF = configuration["General"]
+    configuration = readJSON(file=paths.work.joinpath("config"))
+    genCF = configuration
     if not isinstance(genCF["delTime"], int | float) or (genCF["delTime"] > 120):
         genCF["delTime"] = 20
 
@@ -37,57 +58,91 @@ def verifyConfigJSON() -> bool:
 
     if not isinstance(genCF["purgeLimit"], int | float) or (genCF["purgeLimit"] > 100):
         genCF["purgeLimit"] = 100
-    configuration["General"] = genCF
+    configuration = genCF
 
-    for item in generalEventConfig.defaultEvents:
-        if item not in configuration["General"]["Events"]:
-            configuration["General"]["Events"][item] = True
+    for item in defaultEvents:
+        if item not in configuration["Events"]:
+            configuration["Events"][item] = True
 
-    for item in configuration:
+    for file in paths.conf.iterdir():
         logSys.debug(item)
-        if "General" not in item:
-
-            try:
-                configuration[item]["MISC"]
-            except KeyError:
-                configuration[item]["MISC"] = {}
-
-            try:
-                configuration[item]["MISC"]["Language"]
-            except KeyError:
-                configuration[item]["MISC"]["Language"] = "en-GB"
-
-            try:
-                configuration[item]["SlashCommands"]
-            except KeyError:
-                configuration[item]["SlashCommands"] = True
-
-            try:
-                configuration[item]["Events"]["AutoReact"]
-            except KeyError:
-                configuration[item]["Events"]["AutoReact"] = True
-
-            try:
-                configuration[item]["AutoReact"]
-            except KeyError:
-                configuration[item]["AutoReact"] = {}
-
-            k = readJSON(filename=item, directory=["configs"])
+        if file.stem.isdigit():
             data = {
-                "MISC": {
-                    "Prefix": None,
-                    "Description": None,
-                    "Welcome": "{user}, Welcome to {guild}",
-                    "Rules": "Please keep {rules} in mind",
-                }
+                "SlashCommands": True,
+                "PrefixCommands": True,
+                "Config_Name": None,
+                "Description": None,
+                "MISC": {},
+                "Channels": {},
+                "Channels_Admin": {},
+                "Events": {},
+                "Roles": {},
+                "AutoReact": {},
             }
-            writeJSON(data=data | k, filename=item, directory=["configs"])
+            k = readJSON(file=file)
+            kata = data | k
 
-    if writeJSON(data=configuration, filename="config.json"):
+            dataMISC = {
+                "Prefix": None,
+                "Welcome": "{user}, Welcome to {guild}",
+                "Rules": "Please keep {rules} in mind",
+                "MemberJoin_RecentCreationHours": 48,
+                "Language": "en-GB",
+            }
+            kata["MISC"] = dataMISC | kata["MISC"]
+
+            dataChannels = {
+                "Rules": None,
+                "Welcome": None,
+                "ReadyMessage": None,
+                "NewModPreview": None,
+                "NewModRelease": None,
+            }
+            kata["Channels"] = dataChannels | kata["Channels"]
+
+            dataChannels_Admin = {"Admin": None, "Audit": None, "Notify": None}
+            kata["Channels_Admin"] = dataChannels_Admin | kata["Channels_Admin"]
+
+            dataEvents = {
+                "ReadyMessage": True,
+                "MemberJoin": False,
+                "MemberJoin_RecentCreation": False,
+                "MemberAccept": False,
+                "MemberNameChange": False,
+                "MemberVerifiedRole": False,
+                "MemberKick": False,
+                "MemberBan": False,
+                "MemberUnban": False,
+                "MemberLeave": False,
+                "MemberWelcome": False,
+                "MessageDelete": False,
+                "AutoReact": True,
+                "ModPreview": False,
+                "ModPreview_Global": False,
+                "ModPreview_DeleteTrigger": False,
+            }
+            kata["Events"] = dataEvents | kata["Events"]
+
+            dataRoles = {
+                "Admin": None,
+                "Moderator": None,
+                "Modder": None,
+                "SSC_Notify_General": None,
+                "SSC_Notify_Prize": None,
+                "SSC_Manager": None,
+            }
+            kata["Roles"] = dataRoles | kata["Roles"]
+
+            writeJSON(data=kata, file=file, sort=True)
+
+    if writeJSON(data=configuration, file=paths.work.joinpath("config")):
         logSys.debug("Updated Config")
         return True
     else:
         return False
+
+
+verifyConfigJSON()
 
 
 async def syncCommands(bot):
@@ -119,30 +174,28 @@ class genericConfig(metaclass=_singleton_):
     @classmethod
     def slashList(cls) -> set[int]:
         """Gets guild IDs of all servers it's allowed for + owner guild"""
-        configuration = readJSON(filename="config")
         slashes = set()
-        for item in configuration:
-            try:
-                state = configuration[item]["SlashCommands"]
-            except Exception:
+        for file in paths.conf.iterdir():
+            if not file.stem.isdigit():
                 continue
-            if state is True:
-                slashes.add(int(item))
+            slashCF = readJSON(file=file)["SlashCommands"]
+            if slashCF:
+                slashes.add(int(file.stem))
         slashes.add(cls.ownerGuild)
         return list(slashes)
 
     @classmethod
     def getGuildLangs(cls) -> dict[str, str]:
         """Gets the configured lang for each guild and adds to dict"""
-        configuration = readJSON(filename="config")
         langs = {}
-        for item in configuration:
-            if not item.isdigit():
+        for file in paths.conf.iterdir():
+            if not file.stem.isdigit():
                 continue
-            try:
-                langs[item] = configuration[item]["MISC"]["Language"]
-            except Exception:
-                langs[item] = cls.defaultLang
+            lang = readJSON(file=file)["MISC"]["Language"]
+            if lang:
+                langs[file.stem] = lang
+            else:
+                langs[file.stem] = cls.defaultLang
         return langs
 
     @classmethod
@@ -150,18 +203,16 @@ class genericConfig(metaclass=_singleton_):
         "Reassign default class attributes from their source"
         cls.slashServers = cls.slashList()
         "Servers which the bot has a config for and thus can use slash commands"
-        if 246190532949180417 in cls.slashServers:
+        if 811250905335857172 in cls.slashServers:
             cls.emoNotifi = "<:notified:427470234463502336>"
+            cls.botID = 762054632510849064
+            cls.Prod = True
         else:
             cls.emoNotifi = "🙃"
-        if 246190532949180417 in cls.slashServers:
-            "If bot knows guild with above ID, assume bot is prod"
-            cls.botID = 762054632510849064
-            "ID of the bot"
-        else:
             cls.botID = 764270771350142976
-            "ID of the bot"
-        cls.langs = cls.getGuildLangs
+            cls.Prod = False
+
+        cls.langs = cls.getGuildLangs()
 
         configsDir = Pathy().parent.absolute().joinpath("configs")
         cls.GUILD_BOT_PREFIX = {}
@@ -170,7 +221,7 @@ class genericConfig(metaclass=_singleton_):
             if not (item.stem).isdigit():
                 continue
             logSys.debug(f"prefix get {item.stem=} {item=}")
-            guildConf = readJSON(str(item), ["configs"])
+            guildConf = readJSON(file=paths.conf.joinpath(item))
             try:
                 prefix = guildConf["MISC"]["Prefix"]
                 logSys.debug(f"{prefix=}")
@@ -213,15 +264,15 @@ class genericConfig(metaclass=_singleton_):
     """Lang to use when only one must be used. /command name for example.
     Must be Nextcord locale"""
 
-    configCommGroupWhitelist = ["Channels", "Channels_Admin", "Roles", "MISC"]
+    configCommGroupWhitelist = ("Channels", "Channels_Admin", "Roles", "MISC")
     "Groups of the config JSON that are accessible by the configuration command"
-    importantFiles = ["facts.json", "missing.png"]
+    importantFiles = ("facts.json", "missing.png")
     "List of files that are important to the function of the bot but aren't covered by initial startup"
     factsJSON = "facts.json"
     "Name of the file which contains all the facts"
     pingingChan = 1018012984053870622
     "Channel ID to use for API pinging"
-    botDir = os.path.dirname(os.path.realpath(__file__))
+    botDir = Pathy().absolute()
     "Real path directory of the bot"
     changelog = "changelog2"
     "Filename of the changelog"
@@ -303,9 +354,9 @@ def bytesMagnitude(byteNum: int, magnitude: str, bi: bool, bit: bool) -> float:
         bi = 1000
     if bit:
         byteNum = byteNum * 8
-    ratios = {"K": 1, "M": 2, "G": 3, "T": 4, "P": 5, "E": 6, "Z": 7, "Y": 8}
+    ratios = "KMGTPEZY"
     try:
-        return round(byteNum / math.pow(bi, ratios[magnitude.upper()]), 3)
+        return round(byteNum / math.pow(bi, ratios.index(magnitude.upper()) + 1), 3)
     except Exception:
         log.exception("BytesMag")
         return False
@@ -315,54 +366,43 @@ def bytesToHuman(
     byteNum: int, magnitude: str, bi: bool = True, bit: bool = False
 ) -> str:
     """Turns an int into a friendly notation
-    magnitude=['AUTO', 'K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y']"""
+    magnitude=['K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y']"""
     if not isinstance(byteNum, int):
         log.error("BytesHuman, Not INT")
         return False
-    nota = ["K", "M", "G", "T", "P", "E", "Z", "Y"]
+    nota = "KMGTPEZY"
     magnitude = magnitude.upper()
     if magnitude not in nota:
         log.error("BytesHuman, Not MAG")
         return False
     size = bytesMagnitude(byteNum=byteNum, magnitude=magnitude, bi=bi, bit=bit)
-    if bi:
-        power = "i"
-    else:
-        power = ""
-    if bit:
-        length = "b"
-    else:
-        length = "B"
+    power = "i" if bi else ""
+    length = "B" if bi else "b"
     return f"{size}{magnitude}{power}{length}"
 
 
-def getGuilds(
-    includeGeneral: bool = False, by: str = "id"
-) -> dict[int, str] | dict[str, int]:
+def getGuilds(by: str = "id") -> dict[int, str] | dict[str, int]:
     """Returns dict(ID|ConfigName) of all guilds and their ids"""
-    logSys.debug(f"{includeGeneral=} | {by=}")
-    configuration = readJSON(filename="config")
+    logSys.debug(f"{by=}")
     IDs = {}
-    for item in configuration:
-        item = str(item)
-        if item == "General":
+    for file in paths.conf.iterdir():
+        if not file.stem.isdigit():
             continue
+        cfName = readJSON(file=file)["Config_Name"]
         if by == "id":
             try:
-                IDs[int(item)] = configuration[item]["Config_Name"]
+                IDs[int(file.stem)] = cfName
             except KeyError:
                 pass
             except Exception:
                 logSys.exception("Name to ID")
         if by == "name":
             try:
-                IDs[configuration[item]["Config_Name"]] = int(item)
+                IDs[cfName] = int(file.stem)
             except KeyError:
                 pass
             except Exception:
                 logSys.exception("ID to Name")
-    if includeGeneral:
-        IDs["Global"] = "General"
     logSys.debug(f"{IDs=}")
     return IDs
 
@@ -371,12 +411,10 @@ def getGlobalEventConfig(listAll: bool = False) -> set:
     """Gets list of either all or only globally disabled events"""
     logSys.debug(f"{listAll=}")
     globalEvents = set()
-    configuration = readJSON(filename="config")
-    for itemKey, itemVal in configuration["General"]["Events"].items():
+    configuration = readJSON(file=paths.work.joinpath("config"))
+    for itemKey, itemVal in configuration["Events"].items():
         # logSys.debug(f"{itemVal}| {itemKey=}")
-        if listAll:
-            globalEvents.add(str(itemKey))
-        elif not itemVal:
+        if listAll or not itemVal:
             globalEvents.add(str(itemKey))
     logSys.debug(f"{globalEvents=}")
     return globalEvents
@@ -385,79 +423,29 @@ def getGlobalEventConfig(listAll: bool = False) -> set:
 def getEventConfig(by: str = "id") -> dict[int, str] | dict[str, str]:
     """Returns list of events allowed per server by either ID or config name."""
     logSys.debug(f"getEventConfigRead {by=}")
-    configuration = readJSON(filename="config")
     globalEvents = getGlobalEventConfig()
     events = {}
-    for item in configuration:
-        item = str(item)
-        if item != "General":
-            if by == "name":
-                try:
-                    nameID = str(configuration[item]["Config_Name"])
-                except Exception:
-                    logSys.exception("ConfigName to nameID")
-            elif by == "id":
-                try:
-                    configuration[item]["Config_Name"]
-                    nameID = int(item)
-                except Exception:
-                    logSys.exception("ConfigID to nameID")
-            eventList = []
+    for file in paths.conf.iterdir():
+        if not file.stem.isdigit():
+            continue
+        servConf = readJSON(file=file)
+        cfName = servConf["Config_Name"]
+        if by == "name":
             try:
-                for elementKey, elementVal in configuration[item]["Events"].items():
-                    if (elementKey not in globalEvents) and (elementVal):
-                        eventList.append(elementKey)
-                    events[nameID] = eventList
+                nameID = cfName
             except Exception:
-                logSys.exception("nameID and Events")
+                logSys.exception("ConfigName to nameID")
+        elif by == "id":
+            try:
+                nameID = int(file.stem)
+            except Exception:
+                logSys.exception("ConfigID to nameID")
+        eventList = []
+        for elementKey, elementVal in servConf["Events"].items():
+            if (elementKey not in globalEvents) and elementVal:
+                eventList.append(elementKey)
+            events[nameID] = eventList
     return events
-
-
-@dataclass(slots=True)
-class screenShotCompConfig(metaclass=_singleton_):
-    """Common data for the SSC"""
-
-    @classmethod
-    def update(cls):
-        "Reassign default class attributes from their source"
-        cls.tpfID = int(getGuilds(by="name")["TPFGuild"])
-        "ID of the TPF|Gloabal server"
-        _configuration = readJSON(filename="config")
-        _sscConifg = _configuration["General"]["SSC_Data"]
-        _tpfConfig = _configuration[str(cls.tpfID)]
-        cls.curTheme = _sscConifg["theme"]
-        "The current theme of the competition"
-        cls.sscmanager = int(_tpfConfig["Roles"]["SSC_Manager"])
-        "ID of the SSCManager role"
-        cls.winner = int(_tpfConfig["Roles"]["SSC_Winner"])
-        "ID of the SSC Winner role"
-        cls.winnerPrize = int(_tpfConfig["Roles"]["SSC_WinnerPrize"])
-        "ID of the SSC Prize Winner role"
-        cls.runnerUp = int(_tpfConfig["Roles"]["SSC_Runnerup"])
-        "ID of the SSC Runnerup role"
-        cls.remindChan = int(_tpfConfig["Channels"]["SSC_Remind"])
-        "Channel competition reminder should be sent"
-        cls.sscChan = int(_tpfConfig["Channels"]["SSC_Comp"])
-        "Channel the competition takes place"
-        cls.TPFssChan = int(_tpfConfig["Channels"]["ScreenshotsTPF"])
-        "Channel where TpF screenshots should go "
-        cls.OGssChan = int(_tpfConfig["Channels"]["ScreenshotsGames"])
-        "Channel where non-TpF screenshots should go"
-        cls.themesDict = _sscConifg["allThemes"]
-        "Dict of all themes and their notes"
-        cls.ignoreWinner = _sscConifg["ignoreWinner"]
-        "Flag if to ignore the fact a user has one of the winner roles"
-        cls.isPrize = _sscConifg["isPrize"]
-        "Flag to indicate if the current round has a prize"
-
-        _genCF = readJSON(filename="config")["General"]
-        "General block of config"
-        cls.delTime = float(_genCF["delTime"])
-        "Time to delay deleting a message"
-        return True
-
-
-screenShotCompConfig.update()
 
 
 @dataclass(slots=True)
@@ -478,23 +466,22 @@ class generalEventConfig(metaclass=_singleton_):
                 return e
         return False
 
-    def getAutoReacts() -> dict[dict]:
+    def getAutoReacts() -> dict[int, dict]:
         """Gathers all autoReact dicts from config"""
-        configuration = readJSON(filename="config")
         autoReactsConfig = {}
-        for item in configuration:
-            if "General" in item:
+        for file in paths.conf.iterdir():
+            if not file.stem.isdigit():
                 continue
-            item = int(item)
-            logSys.debug(f"{item=}")
+            logSys.debug(f"{file.stem=}")
+            servConf = readJSON(file=file)
             try:
-                reactors = configuration[str(item)]["AutoReact"]
+                reactors = servConf["AutoReact"]
                 logSys.debug(f"{reactors=}")
             except Exception:
                 logSys.exception(f"AutoReactCheck")
                 continue
             if len(reactors) > 0:
-                autoReactsConfig[item] = reactors
+                autoReactsConfig[int(file.stem)] = reactors
         return autoReactsConfig
 
     def getAutoReactChannels(autoReacts: dict) -> dict[int]:
@@ -551,10 +538,6 @@ class generalEventConfig(metaclass=_singleton_):
         "getGuilds by ID"
         cls.guildListName = getGuilds(by="name")
         "getGuilds by Name"
-        cls.guildListIDGen = getGuilds(by="id", includeGeneral=True)
-        "getGuilds by ID includes General"
-        cls.guildListNameGen = getGuilds(by="name", includeGeneral=True)
-        "getGuilds by Name includes General"
         cls.eventConfigID = getEventConfig(by="id")
         "getEventConfig by ID"
         cls.eventConfigName = getEventConfig(by="name")
@@ -563,27 +546,7 @@ class generalEventConfig(metaclass=_singleton_):
         "getGlobalEvent | only disabled"
         cls.globalEventAll = getGlobalEventConfig(listAll=True)
         "getGlobalEvent | listAll"
-        cls.defaultEvents = [
-            "Artwork",
-            "Battles",
-            "ReadyMessage",
-            "MemberJoin",
-            "MemberJoin_RecentCreation",
-            "MemberAccept",
-            "MemberNameChange",
-            "MemberVerifiedRole",
-            "MemberKick",
-            "MemberBan",
-            "MemberUnban",
-            "MemberLeave",
-            "MemberWelcome",
-            "MessageDelete",
-            "ModPreview",
-            "ModPreviewGlobal",
-            "ModPreview_DeleteTrigger",
-            "AutoReact",
-            "SSC_NotifyRole_Assignment",
-        ]
+        cls.defaultEvents = defaultEvents
         "All recognised events"
         cls.autoReacts = cls.getAutoReacts()
         # logSys.debug(f"{cls.autoReacts=}")
@@ -614,7 +577,7 @@ class botInformation(metaclass=_singleton_):
     @classmethod
     def _parseVer(cls) -> packVersion:
         "Gets latest version as verison object and attaches extra bits of info"
-        _cgLog = readJSON(filename=genericConfig.changelog)
+        _cgLog = readJSON(file=paths.work.joinpath(genericConfig.changelog))
         _BotVer = "2"
         _allMajor = list(_cgLog.keys())
         _min = str(_allMajor[0])
@@ -677,9 +640,9 @@ class botInformation(metaclass=_singleton_):
     "Provider of the hardware"
     hostLocation = "Sydney"
     "Where is the hardware"
-    linePyCount = 6238
+    linePyCount = 6000
     "Appox count of Python lines"
-    lineJSONCount = 1730
+    lineJSONCount = 1757
     "Appox count of JSON lines"
     repoLink = "https://github.com/APasz/SSCBot"
     repoNice = f"[Github]({repoLink})"
@@ -699,6 +662,57 @@ botInformation.update()
 
 
 @dataclass(slots=True)
+class screenShotCompConfig(metaclass=_singleton_):
+    """Common data for the SSC"""
+
+    @classmethod
+    def update(cls):
+        "Reassign default class attributes from their source"
+        cls.tpfID = int(getGuilds(by="name")["TPFGuild"])
+        "ID of the TPF|Gloabal server"
+        _configuration = readJSON(file=paths.work.joinpath("config"))
+        _sscConifg = _configuration["SSC_Data"]
+        if "test" in botInformation.botName.lower():
+            ID = str(genericConfig.ownerGuild)
+        else:  # TODO ssc rewrite
+            ID = "246190532949180417"
+        _tpfConfig = readJSON(file=paths.conf.joinpath(ID))
+        cls.curTheme = _sscConifg["theme"]
+        "The current theme of the competition"
+        cls.sscmanager = int(_tpfConfig["Roles"]["SSC_Manager"])
+        "ID of the SSCManager role"
+        cls.winner = int(_tpfConfig["Roles"]["SSC_Winner"])
+        "ID of the SSC Winner role"
+        cls.winnerPrize = int(_tpfConfig["Roles"]["SSC_WinnerPrize"])
+        "ID of the SSC Prize Winner role"
+        cls.runnerUp = int(_tpfConfig["Roles"]["SSC_Runnerup"])
+        "ID of the SSC Runnerup role"
+        cls.remindChan = int(_tpfConfig["Channels"]["SSC_Remind"])
+        "Channel competition reminder should be sent"
+        cls.sscChan = int(_tpfConfig["Channels"]["SSC_Comp"])
+        "Channel the competition takes place"
+        cls.TPFssChan = int(_tpfConfig["Channels"]["ScreenshotsTPF"])
+        "Channel where TpF screenshots should go "
+        cls.OGssChan = int(_tpfConfig["Channels"]["ScreenshotsGames"])
+        "Channel where non-TpF screenshots should go"
+        cls.themesDict = _sscConifg["allThemes"]
+        "Dict of all themes and their notes"
+        cls.ignoreWinner = _sscConifg["ignoreWinner"]
+        "Flag if to ignore the fact a user has one of the winner roles"
+        cls.isPrize = _sscConifg["isPrize"]
+        "Flag to indicate if the current round has a prize"
+
+        _genCF = readJSON(file=paths.work.joinpath("config"))
+        "General block of config"
+        cls.delTime = float(_genCF["delTime"])
+        "Time to delay deleting a message"
+        return True
+
+
+screenShotCompConfig.update()
+
+
+@dataclass(slots=True)
 class localeConfig(metaclass=_singleton_):
     """Class for locale stuffs"""
 
@@ -708,7 +722,6 @@ class localeConfig(metaclass=_singleton_):
     The first in the list will be the one used if a specific locale is required"""
 
     localeDict = {}
-    ""
 
     _localePath = Pathy().parent.absolute().joinpath("locale")
     _enLoc = _localePath.joinpath("en", "LC_MESSAGES", "base.po")
@@ -716,6 +729,7 @@ class localeConfig(metaclass=_singleton_):
     @classmethod
     def _findPOfiles(cls):
         "Look for po files and add their locale code to a dict with gettext.translation"
+
         cls._localGettext = {}
         for file in cls._localePath.iterdir():
             itemPO = file.joinpath("LC_MESSAGES", "base.po")
@@ -749,7 +763,7 @@ class localeConfig(metaclass=_singleton_):
                 if stringKey.startswith("msgid") and len(stringKey) > 8:
                     stringKey = stringKey.removeprefix('msgid "').removesuffix('"')
                     cls.localeDict[stringKey] = {}
-        logSys.debug(f"{cls.localeDict=}")
+        # logSys.debug(f"{cls.localeDict=}")
 
     @classmethod
     def _buildLocaleDict(cls):
@@ -762,17 +776,18 @@ class localeConfig(metaclass=_singleton_):
                 if lang not in langList:
                     langList.append(lang)
 
+                # if the translation doesn't exist, fetch default lang translation
                 if lang in cls._localGettext:
                     stringValue = cls._localGettext[lang].gettext(stringKey)
                 else:
                     stringValue = cls._localGettext[defLang].gettext(stringKey)
                 stringValue: str
 
-                # if the translation doesn't exist, fetch default lang translation
+                # gettext returns stringKey if there is no value, fetch default lang translation                #
                 if stringKey == stringValue and lang != defLang:
                     stringValue = cls._localGettext[defLang].gettext(stringKey)
 
-                # Ensure name and title translations fit Discords 32 char limit
+                # Ensure name and title translations fit Discord's 32 char limit
                 if stringKey.endswith(("NAME")):
                     stringValue = stringValue.casefold()[:32]
                     stringValue = stringValue.replace(" ", "_")
@@ -780,14 +795,19 @@ class localeConfig(metaclass=_singleton_):
                     stringValue = stringValue[:32]
 
                 cls.localeDict[stringKey][lang] = stringValue
+
         logSys.debug(f"locs: {langList}")
+        writeJSON(
+            data={"dict": cls.localeDict, "lang": langList},
+            file=paths.work.joinpath("localeDict"),
+        )
         # logSys.debug(f"locDict: {cls.localeDict=}")
 
     @classmethod
     def getLC(cls, key: str, lang: str = False) -> str:
         "Returns dict of all locale codes with translated text for specified key"
-        func = inspect.stack()[1][3]
-        logSys.debug(f"{func=} | {key=} | {lang=}")
+        # func = inspect.stack()[1][3]
+        # logSys.debug(f"{func=} | {key=} | {lang=}")
         if key is None:
             return "***undefined***"
         if key.upper() in cls.localeDict:
@@ -803,24 +823,29 @@ class localeConfig(metaclass=_singleton_):
         # logSys.debug(f"{k=}")
         return k
 
-    def getGuildLC(guildID: int) -> str:
+    def getGuildLC(guildID: int | str) -> str:
         "With an id, retrieves the configured lang for the guild"
         func = inspect.stack()[1][3]
         logSys.debug(f"{func=} | {guildID=}")
         guildID = str(guildID)
-        configuration = readJSON("config")
-        try:
-            return configuration[guildID]["MISC"]["Language"]
-        except KeyError:
-            log.exception("Guild doesn't have lang set")
-            return genericConfig.defaultLang
-        except Exception:
-            log.exception("UNK ERR guild lang")
+        lang = None
+        if int(guildID) in genericConfig.slashServers:
+            lang = readJSON(file=paths.conf.joinpath(guildID))["MISC"]["Language"]
+        if lang:
+            return lang
+        else:
             return genericConfig.defaultLang
 
     @classmethod
     def update(cls):
         "Reassign default class attributes from their source"
+        if paths.work.joinpath("localeDict").exists():
+            cached = readJSON(file=paths.work.joinpath("localeDict"), cache=False)
+            if len(cached) > 0:
+                cls.localeDict = cached["dict"]
+                cls.langList = cached["lang"]
+                logSys.info("Using Cached localeDict")
+                return
         cls._findPOfiles()
         cls._findEnMSGID()
         cls._buildLocaleDict()
@@ -951,7 +976,7 @@ botInformation.update()
 
 
 # secrets
-secret = readJSON(directory=["secrets"], filename="nolooky", cache=False)
+secret = readJSON(file=paths.secret.joinpath("nolooky"), cache=False)
 DISTOKEN = secret["DISCORD_TOKEN"]
 STEAMAPI = secret["STEAM_WEB_API"]
 NEXUSAPI = secret["NEXUSMODS_API"]

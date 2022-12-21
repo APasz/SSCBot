@@ -9,7 +9,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-11-10 11:00+1100\n"
-"PO-Revision-Date: 2022-12-15 01:58+1100\n"
+"PO-Revision-Date: 2022-12-21 13:52+1100\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: en\n"
@@ -161,7 +161,7 @@ msgstr "Name of the Reactor you with to create/override"
 
 #. 32 char. Lowercase
 msgid "COMM_CONFIG_AUTOREACT_MESSAGEID_NAME"
-msgstr "template-message-id"
+msgstr "template message id"
 
 #. 100 char.
 msgid "COMM_CONFIG_AUTOREACT_MESSAGEID_DESC"
@@ -214,8 +214,16 @@ msgid "COMM_CONFIG_AUTOREACT_MESSAGE_REACTION_NONE"
 msgstr "No reactions found"
 
 #. 100 char.
+#. {bad} is the list of unusage emoji
 msgid "COMM_CONFIG_AUTOREACT_MESSAGE_REACTION_UNUSABLE"
 msgstr "Reaction unusable"
+
+#. 100 char.
+#. {unk} is the list of unusage emoji
+msgid "COMM_CONFIG_AUTOREACT_MESSAGE_REACTION_UNKNOWNISSUE"
+msgstr ""
+"Unknown Issue occured with emoji\n"
+"{unk}"
 
 #. 100 char.
 #. {reactor} is the name of autoReact reactor that is being updated
@@ -233,6 +241,10 @@ msgstr "Channels being watched"
 #. 100 char.
 msgid "COMM_CONFIG_AUTOREACT_RETRIEVE_FAIL"
 msgstr "Failed to retrieve reactor"
+
+#. 100 char.
+msgid "COMM_CONFIG_AUTOREACT_NONE"
+msgstr "There are no Reactors for this guild"
 
 #. 32 char. Lowercase
 msgid "COMM_CHANGELOG_NAME"
@@ -627,7 +639,7 @@ msgstr ""
 "Please enable it through the enableEvents command or contact APasz"
 
 # 100 char.
-msgid "COMM_TOGGLEEVENT_TRUNCATED"
+msgid "COMM_OPTIONS_TRUNCATED"
 msgstr "Options Truncated"
 
 #. 32 char.
@@ -656,6 +668,10 @@ msgstr "Map"
 #. 32 char.
 msgid "MODDING_PREVIEW_DESC_TITLE"
 msgstr "Description"
+
+#. 32 char.
+msgid "MODDING_PREVIEW_AUTHORNOTE_TITLE"
+msgstr "Author Note"
 
 #. 32 char.
 msgid "MODDING_PREVIEW_PUBLISHED_TITLE"
@@ -721,6 +737,10 @@ msgstr "TRUE"
 #. Eg. No, False, Negative
 msgid "FALSE"
 msgstr "FALSE"
+
+# 100 char.
+#~ msgid "COMM_CONFIG_GUILD_TRUNCATED"
+#~ msgstr "Options Truncated"
 
 #~ msgid "COMM_INFO_BOT_CATEGORY_CHOICE_GUILD"
 #~ msgstr "Description and basic info about current server"

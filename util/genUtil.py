@@ -8,7 +8,7 @@ from config import genericConfig as gxConfig
 from config import botInformation as botInfo
 from config import localeConfig as lcConfig
 
-from util.fileUtil import readJSON, writeJSON
+from util.fileUtil import readJSON, writeJSON, paths
 
 print("UtilGen")
 
@@ -24,8 +24,8 @@ try:
 except Exception:
     logSys.exception("UTIL_GEN IMPORT MODUELS")
 
-configuration = readJSON(filename="config")
-configGen = configuration["General"]
+configuration = readJSON(file=paths.work.joinpath("config"))
+configGen = configuration
 
 
 def getCol(col: str) -> nextcord.Color:
@@ -50,43 +50,6 @@ def hasRole(role: Role, userRoles) -> bool:
     return role in userRoles
 
 
-def getUserID(obj) -> int:
-    """Gets the user id from either ctx or interaction types"""
-    func = inspect.stack()[1][3]
-    logSys.debug(f"{func=} | type={type(obj)}")
-
-    if hasattr(obj, "author_id"):
-        return int(obj.author_id)
-    if hasattr(obj, "user_id"):
-        return int(obj.user_id)
-    if hasattr(obj, "author"):
-        return int(obj.author.id)
-    if hasattr(obj, "user"):
-        return int(obj.user.id)
-
-
-def getChannelID(obj) -> int:
-    """Gets the channel id from either ctx or interaction types"""
-    func = inspect.stack()[1][3]
-    logSys.debug(f"{func=} | type={type(obj)}")
-
-    if hasattr(obj, "channel_id"):
-        return int(obj.channel_id)
-    if hasattr(obj, "channel"):
-        return int(obj.channel.id)
-
-
-def getGuildID(obj) -> int:
-    """Gets guild id from a guild object"""
-    func = inspect.stack()[1][3]
-    logSys.debug(f"{func=} | type={type(obj)}")
-
-    if hasattr(obj, "guild_id"):
-        return int(obj.guild_id)
-    if hasattr(obj, "guild"):
-        return int(obj.guild.id)
-
-
 def getChan(guild: int, chan: str, admin: bool = False, self=None):
     """Gets from config a channel id or object using the guild id."""
     func = inspect.stack()[1][3]
@@ -96,13 +59,10 @@ def getChan(guild: int, chan: str, admin: bool = False, self=None):
         admin = "Channels_Admin"
     else:
         admin = "Channels"
-    try:
-        chanID = int(readJSON(filename="config")[str(guild)][admin][str(chan)])
-    except KeyError:
-        return None
-    except Exception:
-        logSys.exception("Get Chan")
-    if self is not None:
+
+    chanID = getServConf(guildID=guild, group=admin, option=chan)
+
+    if self:
         return self.bot.get_channel(chanID)
     else:
         return chanID
@@ -121,7 +81,8 @@ def getRole(guild: int | ncGuild, role: str):
         g = str(g)
         r = str(r)
         try:
-            return readJSON(filename="config")[g]["Roles"][r]
+            conf = readJSON(file=paths.work.joinpath("config"))
+            return conf[g]["Roles"][r]
         except KeyError:
             logSys.exception("getRole KeyErr")
         except Exception:
@@ -203,22 +164,22 @@ async def blacklistCheck(ctx, blklstType: str = "gen") -> bool:
     """Checks if user in the blacklist"""
     func = inspect.stack()[1][3]
     logSys.debug(f"{func=} | {blklstType=}")
+    cd = commonData(ctx)
 
     def check():
         if blklstType == "gen":
             filename = "GeneralBlacklist"
         elif blklstType == "ssc":
             filename = "SSCBlacklist"
-        return readJSON(filename=filename, directory=["secrets"])
+        return readJSON(file=paths.secret.joinpath(filename))
 
-    userID = int(getUserID(obj=ctx))
-    log.debug(f"{userID=}")
-    if userID == int(gxConfig.ownerID):
+    log.debug(f"{cd.intUser=}")
+    if cd.intUser == int(gxConfig.ownerID):
         return True
-    if userID == int(ctx.guild.owner.id):
+    if cd.intUser == int(ctx.guild.owner.id):
         return True
     BL = check()
-    if not bool(BL.get(userID)):
+    if not bool(BL.get(cd.intUser)):
         return True
     txt = f"""You're blacklisted from using **{botInfo.botName}**.
 If you believe this to be error, please contact a server Admin/Moderator."""
@@ -231,7 +192,7 @@ If you believe this to be error, please contact a server Admin/Moderator."""
             await ctx.send(txt)
     except Exception:
         log.exception(f"/Blacklist Check")
-    log.info(f"BLCheck: {userID=} | {blklstType=}")
+    log.info(f"BLCheck: {cd.intUser=} | {blklstType=}")
     return False
 
 
@@ -340,24 +301,17 @@ def getNameID(k: list | tuple | set, name: bool = True) -> str | int:
     return False
 
 
-def getUserConf(userID: int | str, option: str, group: str = None):
+def getUserConf(userID: int | str, option: str):
     """Retrieves the value of a userConf option
     returns None if user doesn't have a value set"""
     func = inspect.stack()[1][3]
-    logSys.debug(f"{func=} | {userID=} | {group=} | {option=}")
+    logSys.debug(f"{func=} | {userID=} | {option=}")
     userID = str(userID)
-    userConf = readJSON("user", ["configs"])
-    if group is None:
-        try:
-            return userConf[userID][option]
-        except Exception:
-            return None
-    else:
-        group = str(group)
-        try:
-            return userConf[userID][group][option]
-        except Exception:
-            return None
+    userConf = readJSON(file=paths.conf.joinpath("user"))
+    try:
+        return userConf[userID][option]
+    except Exception:
+        return None
 
 
 def setUserConf(userID: int | str, option: str, value):
@@ -365,7 +319,7 @@ def setUserConf(userID: int | str, option: str, value):
     func = inspect.stack()[1][3]
     logSys.debug(f"{func=} | {userID=} | {option=} | {value=}")
     userID = str(userID)
-    userConf = readJSON("user", ["configs"])
+    userConf = readJSON(file=paths.conf.joinpath("user"))
     oldValue = None
     if userID not in userConf:
         userConf[userID] = {}
@@ -373,7 +327,7 @@ def setUserConf(userID: int | str, option: str, value):
         oldValue = userConf[userID][option]
     userConf[userID][option] = value
     logSys.debug(f"userConf updated! {userID=} | {option=} | {oldValue} -> {value}")
-    return writeJSON(userConf, "user", ["configs"])
+    return writeJSON(userConf, file=paths.conf.joinpath("user"))
 
 
 def getServConf(guildID: int | str, option: str, group: str = None):
@@ -383,7 +337,7 @@ def getServConf(guildID: int | str, option: str, group: str = None):
     logSys.debug(f"{func=} | {guildID=} | {group=} |  {option=}")
     guildID = str(guildID)
     option = str(option)
-    servConf = readJSON(guildID, ["configs"])
+    servConf = readJSON(paths.conf.joinpath(guildID))
     if group is None:
         try:
             return servConf[option]
@@ -397,6 +351,24 @@ def getServConf(guildID: int | str, option: str, group: str = None):
             return None
 
 
+def setServConf(guildID: int | str, option: str, value, group: str = None):
+    """Sets the value of an option of a user"""
+    func = inspect.stack()[1][3]
+    logSys.debug(f"{func=} | {guildID=} | {option=} | {value=}")
+    servConf = readJSON(file=paths.conf.joinpath(str(guildID)))
+    oldValue = None
+    if group:
+        if group not in servConf:
+            servConf[group] = {}
+        oldValue = servConf[group][option]
+        servConf[group][option] = value
+    else:
+        oldValue = servConf[option]
+        servConf[option] = value
+    logSys.debug(f"userConf updated! {guildID=} | {option=} | {oldValue} -> {value}")
+    return writeJSON(servConf, file=paths.conf.joinpath(str(guildID)))
+
+
 def commonData(obj: Context | Interaction):
     """Takes either a command Context or application Interaction
     returns object with"""
@@ -404,6 +376,7 @@ def commonData(obj: Context | Interaction):
     logSys.debug(f"{func=} | {type(obj)}")
 
     class data:
+        print(obj.guild)
         intGuild = int(obj.guild.id)
         "int of the guild id"
         strGuild = str(obj.guild.id)
