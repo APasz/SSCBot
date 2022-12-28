@@ -1,14 +1,9 @@
 import asyncio
+import inspect
 import logging
 import time
 from dataclasses import dataclass
-import inspect
-
-from config import genericConfig as gxConfig
-from config import botInformation as botInfo
-from config import localeConfig as lcConfig
-
-from util.fileUtil import readJSON, writeJSON, paths
+from pathlib import Path as Pathy
 
 print("UtilGen")
 
@@ -17,10 +12,15 @@ logSys = logging.getLogger("discordSystem")
 try:
     logSys.debug("TRY UTIL_GEN IMPORT MODUELS")
     import nextcord
+    from nextcord import Emoji
     from nextcord import Guild as ncGuild
-    from nextcord import Role, Emoji, PartialEmoji
-    from nextcord import Interaction, Message
+    from nextcord import Interaction, Message, PartialEmoji, Role
     from nextcord.ext.commands import Context
+
+    from config import botInformation as botInfo
+    from config import genericConfig as gxConfig
+    from config import localeConfig as lcConfig
+    from util.fileUtil import paths, readJSON, writeJSON
 except Exception:
     logSys.exception("UTIL_GEN IMPORT MODUELS")
 
@@ -69,7 +69,8 @@ def getChan(guild: int, chan: str, admin: bool = False, self=None):
 
 
 def getRole(guild: int | ncGuild, role: str):
-    """Gets from config a channel id or object using the guild id."""
+    """Gets from config a channel id using the guild id.
+    If guild object is pass, role object is returned"""
     func = inspect.stack()[1][3]
     logSys.debug(f"{func=} | {type(guild)=} | {guild=} | {role=}")
 
@@ -80,25 +81,19 @@ def getRole(guild: int | ncGuild, role: str):
     def fromConfig(g: str, r: str):
         g = str(g)
         r = str(r)
-        try:
-            conf = readJSON(file=paths.work.joinpath("config"))
-            return conf[g]["Roles"][r]
-        except KeyError:
-            logSys.exception("getRole KeyErr")
-        except Exception:
-            logSys.exception("Get Role id")
+        return getServConf(guildID=g, group="Roles", option=r)
 
     if isinstance(guild, int):
-        roleRtn = fromConfig(g=guild, r=role)
+        roleReturn = fromConfig(g=guild, r=role)
     else:
         roleID = fromConfig(g=guild.id, r=role)
         try:
-            roleRtn = guild.get_role(int(roleID))
+            roleReturn = guild.get_role(int(roleID))
         except Exception:
             logSys.exception(f"getRole obj")
-            roleRtn = None
-    logSys.debug(f"{type(roleRtn)=} | {roleRtn=}")
-    return roleRtn
+            roleReturn = None
+    logSys.debug(f"{type(roleReturn)=} | {roleReturn=}")
+    return roleReturn
 
 
 class formatTime:
@@ -419,6 +414,18 @@ def commonData(obj: Context | Interaction):
         data.prefix = gxConfig.BOT_PREFIX
 
     return data
+
+
+def onMessageCheck(ctx):
+    func = inspect.stack()[1][3]
+    log.debug(f"{func=}")
+    if ctx.guild is None:
+        return False
+    if ctx.author.id == gxConfig.botID:
+        return False
+    if (ctx.guild.id == gxConfig.ownerGuild) and gxConfig.Prod:
+        return False
+    return True
 
 
 # MIT APasz

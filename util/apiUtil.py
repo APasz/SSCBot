@@ -2,8 +2,8 @@ import logging
 import os
 
 import requests
+
 from config import NEXUSAPI, STEAMAPI
-from util.fileUtil import writeJSON, paths
 
 print("UtilAPI")
 
@@ -78,6 +78,7 @@ def tpfnetModGet(data) -> int | dict:
 
 
 def parseURL(url) -> dict | None:
+    """Separates out the platform, ID, and game (if present)"""
     log.debug(f"parseURL: {url=}")
 
     data = {"url": url, "game": None}

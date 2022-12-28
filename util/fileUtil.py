@@ -1,6 +1,7 @@
-import json
-import logging
 import inspect
+import logging
+from json import dump as jdump
+from json import load as jload
 from pathlib import Path as Pathy
 
 print("UtilFile")
@@ -42,7 +43,7 @@ def writeJSON(data: dict, file: Pathy, sort=False) -> bool:
         logSys.warning(f"Exists: {file=}")
     try:
         with open(file, "w") as f:
-            json.dump(obj=data, fp=f, indent=4, separators=(", ", ": "), sort_keys=sort)
+            jdump(obj=data, fp=f, indent=4, separators=(", ", ": "), sort_keys=sort)
             return True
     except Exception:
         logSys.exception("WriteJSON")
@@ -79,7 +80,7 @@ def readJSON(file: Pathy, cache: bool = True) -> dict | bool:
         data = {}
         try:
             with open(file, "r") as f:
-                data = json.load(f)
+                data = jload(f)
         except FileNotFoundError:
             logSys.error(f"File not Found {file=}")
             if writeJSON(data=data, file=file) is False:

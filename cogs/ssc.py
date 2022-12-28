@@ -9,24 +9,6 @@ log = logging.getLogger("discordGeneral")
 logSys = logging.getLogger("discordSystem")
 
 try:
-    from config import genericConfig as gxConfig
-    from config import generalEventConfig as geConfig
-    from config import screenShotCompConfig as sscConfig
-    from util.apiUtil import GSheetGet
-    from util.fileUtil import readJSON, writeJSON, paths
-    from util.genUtil import (
-        blacklistCheck,
-        getChan,
-        getCol,
-        hasRole,
-        getUserConf,
-        setUserConf,
-        commonData,
-    )
-except Exception:
-    logSys.exception(f"SSC LOCAL MODULES")
-
-try:
     logSys.debug("TRY SSC IMPORT MODULES")
     import datetime
 
@@ -34,7 +16,23 @@ try:
     import nextcord.ext.commands  # import Context
     from discord import Permissions
     from nextcord import Interaction, SlashOption, slash_command
-    from nextcord.ext import application_checks, commands, tasks
+    from nextcord.ext import commands, tasks
+
+    from config import generalEventConfig as geConfig
+    from config import genericConfig as gxConfig
+    from config import screenShotCompConfig as sscConfig
+    from util.apiUtil import GSheetGet
+    from util.fileUtil import paths, readJSON, writeJSON
+    from util.genUtil import (
+        blacklistCheck,
+        commonData,
+        getChan,
+        getCol,
+        getUserConf,
+        hasRole,
+        setUserConf,
+        onMessageCheck,
+    )
 except Exception:
     logSys.exception("SSC IMPORT MODULES")
 
@@ -630,9 +628,7 @@ class ssc(commands.Cog, name="SSC"):
     async def on_message(self, ctx: nextcord.ext.commands.Context):
         """Check if message has attachment or link, if 1 add reaction
         if not 1 delete and inform user, set/check prize round state, ignore SSCmanager"""
-        if not gxConfig.Prod:
-            return
-        if ctx.guild is None:
+        if not onMessageCheck(ctx):
             return
         if ctx.guild.id != sscConfig.tpfID:
             return
@@ -644,12 +640,6 @@ class ssc(commands.Cog, name="SSC"):
         if int(ctx.channel.id) != int(sscConfig.sscChan):
             return
         log.debug(f"SSC listener {int(ctx.channel.id)} | {int(sscConfig.sscChan)}")
-        if ctx.author.bot:
-            if int(ctx.author.id) == int(gxConfig.botID):
-                return
-            else:
-                log.info("A bot did something")
-                return
         if not await blacklistCheck(ctx=ctx, blklstType="ssc"):
             return
         if ctx.author.get_role(int(sscConfig.sscmanager)):

@@ -1,6 +1,13 @@
 {
     "7": {
         "Title": "Localisation",
+        "3": [
+            20221228,
+            "-Change; bot: Moved a few functions over to a new startup util file.",
+            "-Fixed; botManage _config dump now properly formatted.",
+            "-Fixed; modding: If something is before the first url, it is no longer added to the embed of additional urls. Instead whatever comes before each link but after the previous is passed to appropriate embed.",
+            "More clean up"
+        ],
         "2": [
             20221221,
             "-Added; modding: Any text that preceeds the first URL is now added to the embed as an Author's Note below the mod description.",

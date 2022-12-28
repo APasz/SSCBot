@@ -640,9 +640,9 @@ class botInformation(metaclass=_singleton_):
     "Provider of the hardware"
     hostLocation = "Sydney"
     "Where is the hardware"
-    linePyCount = 6000
+    linePyCount = 6030
     "Appox count of Python lines"
-    lineJSONCount = 1757
+    lineJSONCount = 1764
     "Appox count of JSON lines"
     repoLink = "https://github.com/APasz/SSCBot"
     repoNice = f"[Github]({repoLink})"

@@ -2,38 +2,37 @@ import logging
 import random
 import time
 
-from config import botInformation as botInfo
-from config import bytesToHuman
-from config import generalEventConfig as geConfig
-from config import genericConfig as gxConfig
-from config import localeConfig as lcConfig
-from util.fileUtil import readJSON, paths
-from util.genUtil import (
-    _ping,
-    blacklistCheck,
-    formatTime,
-    getCol,
-    commonData,
-    getServConf,
-)
-from util.views import factSubmit
-
 print("CogGeneral")
-
-_ = lcConfig.getLC
 
 log = logging.getLogger("discordGeneral")
 logSys = logging.getLogger("discordSystem")
+
+
 try:
     logSys.debug("TRY GENERAL IMPORT MODUELS")
     import nextcord
     import pint
     import psutil
-    from discord import Permissions
     from nextcord import Embed, Interaction, SlashOption, slash_command
     from nextcord.ext import commands
+
+    from config import botInformation as botInfo
+    from config import genericConfig as gxConfig
+    from config import localeConfig as lcConfig
+    from util.fileUtil import paths, readJSON
+    from util.genUtil import (
+        _ping,
+        blacklistCheck,
+        commonData,
+        formatTime,
+        getCol,
+        getServConf,
+    )
+    from util.views import factSubmit
 except Exception:
     logSys.exception("GENERAL IMPORT MODUELS")
+
+_ = lcConfig.getLC
 
 
 class general(commands.Cog, name="General"):

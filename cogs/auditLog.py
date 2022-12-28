@@ -3,11 +3,6 @@ import logging
 import textwrap
 import time
 
-from config import dataObject
-from config import genericConfig as gxConfig
-from util.genUtil import getCol, formatTime
-from util.fileUtil import paths
-
 print("CogAuditLog")
 
 log = logging.getLogger("discordGeneral")
@@ -19,6 +14,10 @@ try:
     import nextcord
     from dateutil import relativedelta
     from nextcord.ext import commands
+
+    from config import dataObject
+    from config import genericConfig as gxConfig
+    from util.genUtil import formatTime, getCol
 except Exception:
     logSys.exception("AUDIT_LOG IMPORT MODULES")
 

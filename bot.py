@@ -3,12 +3,14 @@ import asyncio
 import logging
 import os
 import sys
-import time
 import traceback
 from logging import handlers
-from pathlib import Path as Pathy
+from time import perf_counter
 
-botStart = time.perf_counter()
+perfTime = {}
+perfTime["start"] = perf_counter()
+
+
 try:
     from util.fileUtil import paths
 except Exception:
@@ -27,10 +29,11 @@ log.setLevel("DEBUG")
 logSys.setLevel("DEBUG")
 logMess.setLevel("DEBUG")
 
+# log for stdout
 handleConsole = logging.StreamHandler(sys.stdout)
 handleConsole.setFormatter(
     logging.Formatter(
-        "%(asctime)s |:| %(module)s: %(funcName)s | %(message)s", "%H:%M:%S"
+        "%(asctime)s |:| %(module)s.%(funcName)s | %(message)s", "%H:%M:%S"
     )
 )
 log.addHandler(handleConsole)
@@ -40,6 +43,11 @@ if not paths.log.exists():
     log.debug("mk log")
     paths.log.mkdir()
 
+logTxt = logging.Formatter(
+    "%(asctime)s|%(created).3f || %(levelname).4s |:| %(module)s.%(funcName)s | %(message)s",
+    "%Y-%m-%d:%H:%M:%S",
+)
+
 # log for general
 handleFile = handlers.TimedRotatingFileHandler(
     filename=paths.log.joinpath("discordGeneral.log"),
@@ -47,12 +55,7 @@ handleFile = handlers.TimedRotatingFileHandler(
     utc=True,
     encoding="utf-8",
 )
-handleFile.setFormatter(
-    logging.Formatter(
-        "%(asctime)s|%(created).3f || %(levelname).4s |:| %(module)s: %(funcName)s | %(message)s",
-        "%Y-%m-%d:%H:%M:%S",
-    )
-)
+handleFile.setFormatter(logTxt)
 log.addHandler(handleFile)
 
 # log for sys
@@ -62,12 +65,7 @@ handleDisFile = handlers.TimedRotatingFileHandler(
     utc=True,
     encoding="utf-8",
 )
-handleDisFile.setFormatter(
-    logging.Formatter(
-        "%(asctime)s|%(created).3f || %(levelname).4s |:| %(module)s: %(funcName)s | %(message)s",
-        "%Y-%m-%d:%H:%M:%S",
-    )
-)
+handleDisFile.setFormatter(logTxt)
 logSys.addHandler(handleDisFile)
 
 
@@ -76,13 +74,15 @@ messHandler = logging.FileHandler(
     filename=paths.log.joinpath("discordMessages.log"), encoding="utf-8", mode="a"
 )
 messHandler.setFormatter(
-    logging.Formatter("%(asctime).19s_%(created).2f |:| %(message)s")
+    logging.Formatter("%(asctime).19s|%(created).2f |:| %(message)s")
 )
 logMess.addHandler(messHandler)
 
 log.critical(f"\n***Starting*** {PID=}")
 logSys.critical(f"\n***Starting*** {PID=}")
 logMess.critical(f"\n***Starting*** {PID=}")
+
+perfTime["log"] = perf_counter()
 
 critFiles = ["config.json", "config.py"]
 configErr = False
@@ -116,10 +116,11 @@ try:
     from config import localeConfig as lcConfig
     from config import syncCommands
     from util.fileUtil import readJSON
-    from util.genUtil import blacklistCheck, commonData, getServConf
+    from util.genUtil import blacklistCheck, getServConf
+    from util.startup import botSevers, getPrefix, sendReady, autoLoadCogs
 except Exception:
     logSys.exception(f"MAIN IMPORT CONFIG")
-    sys.exit()
+    sys.exit(78)
 
 _ = lcConfig.getLC
 
@@ -128,10 +129,9 @@ try:
     import nextcord
     from nextcord import ext
     from nextcord.ext import commands
-    from nextcord.ext.commands import CommandNotFound
 except Exception:
     logSys.exception("MAIN IMPORT MODULES")
-    sys.exit()
+    sys.exit(77)
 
 
 configuration = readJSON(file=paths.work.joinpath("config"))
@@ -140,81 +140,9 @@ log.debug(f"{LOGLEVEL=}")
 log.setLevel(LOGLEVEL)
 logMess.setLevel(LOGLEVEL)
 
+perfTime["import"] = perf_counter()
 
 log.info(f"{gxConfig.slashServers=}")
-
-
-async def getPrefix(bot, message):
-    if message.guild is None:
-        logSys.debug("Guild is None")
-        return gxConfig.BOT_PREFIX
-    guildID = int(message.guild.id)
-    prefixes = gxConfig.GUILD_BOT_PREFIX
-    logSys.debug(f"prefix {guildID=} | {prefixes=}")
-    return prefixes.get(guildID, gxConfig.BOT_PREFIX)
-
-
-def _findReady() -> dict[str, str]:
-    """Finds the guilds that have been the readyMessage toggle enabled
-    returns dict of str channel IDs and the configured lang"""
-
-    sendReady = {}
-    for guildID in geConfig.guildListID:
-        guild = readJSON(file=paths.conf.joinpath(str(guildID)))
-        try:
-            event = bool(guild["Events"]["ReadyMessage"])
-            lang = str(guild["MISC"]["Language"])
-        except KeyError:
-            logSys.warning(f"Ready KeyErr {guildID=}")
-            continue
-        except Exception:
-            logSys.exception(f"ReadyMess: {guildID=}")
-        logSys.debug(f"lang | {lang=}")
-        if lang in lcConfig.sameyLangs:
-            lang = lcConfig.sameyLangs[lang][0].value
-            logSys.debug(f"sammyLangs | {lang=}")
-        if event:
-            sendReady[(guild["Channels"]["ReadyMessage"])] = lang
-    logSys.debug(f"{len(sendReady)}:{sendReady=}")
-    return sendReady
-
-
-async def sendReady(bot):
-    """Formats and sends the bot ready message to guilds"""
-
-    sendReady = _findReady()
-    for chanID, lang in sendReady.items():
-        try:
-            chan = bot.get_channel(int(chanID))
-        except Exception:
-            logSys.exception(f"ReadyGet {chanID=}")
-            continue
-        txtBase = f"**v{botInfo.version.base_version} | {botInfo.version.title}**\n"
-        txtTrans = _("BOT_ONREADY", lang)
-        txt = txtBase + txtTrans.format(
-            boot=f"{botInfo.bootTime}s",
-            ncVer=f"v{botInfo.nextcordVer}",
-        )
-        try:
-            await chan.send(txt)
-            logSys.info(f"Ready Sent: {chanID=}")
-        except Exception:
-            logSys.exception(f"ReadySend {chanID=}")
-
-
-def botSevers(bot: commands.Bot):
-    """Get info about the servers the bot is in"""
-    botGuilds = bot.guilds
-    botInfo.guildCount = len(botGuilds)
-    botInfo.botPerms = []
-    gxConfig.permissions = {}
-    for item in botGuilds:
-        gxConfig.permissions[item.id] = []
-        permObj = item.me.guild_permissions
-        botInfo.botPerms.append(permObj)
-        logSys.info(f"{item.name}  {item.id} | {permObj=}")
-        for perm in permObj:
-            gxConfig.permissions[item.id].append(perm)
 
 
 def main():
@@ -242,14 +170,16 @@ def main():
         await syncCommands(bot)
         log.critical("\n***Starting*** 'Hello World, or whatever'")
         logSys.critical("\n***Starting*** 'Hello World, or whatever'")
+        perfTime["wait_ready"] = perf_counter()
         botSevers(bot)
         await bot.wait_until_ready()
-        botEnd = time.perf_counter()
+        perfTime["ready"] = perf_counter()
         globalReady = configuration["Events"]["ReadyMessage"]
-        botInfo.bootTime = round((botEnd - botStart), 2)
+        botInfo.bootTime = round((perfTime["ready"] - perfTime["start"]), 2)
+        botInfo.perfTime = perfTime
         log.info(f"Config {globalReady=}")
         if globalReady:
-            await sendReady(bot)
+            await sendReady(bot, list(geConfig.guildListID.keys()))
         log.critical("Bot Ready")
         logSys.critical("Bot Ready")
 
@@ -419,17 +349,17 @@ def main():
         logSys.error(traceback.format_exc())
         raise
 
-    for file in paths.cog.iterdir():
-        if file.name.endswith(".py") and not file.name.startswith("__"):
-            try:
-                bot.load_extension(f"cogs.{file.stem}")
-            except Exception:
-                logSys.exception(f"Autoload Cog {file.stem=}")
+    perfTime["error"] = perf_counter()
+
+    autoLoadCogs(bot)
+
+    perfTime["cogs"] = perf_counter()
 
     @bot.event
     async def on_connect():
         log.critical("Connected")
         logSys.critical("Connected")
+        perfTime["connect"] = perf_counter()
 
     @bot.event
     async def on_resumed():
@@ -446,6 +376,8 @@ def main():
 
     try:
         from config import DISTOKEN
+
+        perfTime["run"] = perf_counter()
 
         bot.run(DISTOKEN)
     except Exception:

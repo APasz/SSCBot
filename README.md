@@ -31,8 +31,8 @@ Once finished, please either send the .po file directly to me or via a pull requ
  
 Please note that a complete translation is not required but any missing strings will be substituted with English.
  
- 
-While I've not intentionally made it Linux only, I don't test on on Windows. So YMMV.
+ # Notes
+I don't test on on Windows, so YMMV.
 
 Currently the working directory must be the bot's folder (where bot.py is).
 

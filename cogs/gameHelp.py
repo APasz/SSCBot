@@ -1,9 +1,5 @@
 import logging
 
-from config import genericConfig as gxConfig
-from util.fileUtil import readJSON, paths
-from util.genUtil import blacklistCheck
-
 print("CogGameHelp")
 
 log = logging.getLogger("discordGeneral")
@@ -11,6 +7,10 @@ logSys = logging.getLogger("discordSystem")
 try:
     logSys.debug("TRY GAME_HELP IMPORT MODULES")
     from nextcord.ext import commands
+
+    from config import genericConfig as gxConfig
+    from util.fileUtil import paths, readJSON
+    from util.genUtil import blacklistCheck
 except Exception:
     logSys.exception("GAME_HELP IMPORT MODULES")
 

@@ -4,13 +4,6 @@ import re
 import textwrap
 from dataclasses import dataclass
 
-from config import generalEventConfig as geConfig
-from config import genericConfig as gxConfig
-from config import localeConfig as lcConfig
-from config import bytesToHuman
-from util.apiUtil import nexusModGet, parseURL, steamUsrGet, steamWSGet, tpfnetModGet
-from util.genUtil import getChan, getCol, commonData
-
 print("CogModding")
 
 log = logging.getLogger("discordGeneral")
@@ -19,6 +12,19 @@ try:
     logSys.debug("TRY MODDING IMPORT MODULES")
     import nextcord
     from nextcord.ext import commands
+
+    from config import bytesToHuman
+    from config import generalEventConfig as geConfig
+    from config import genericConfig as gxConfig
+    from config import localeConfig as lcConfig
+    from util.apiUtil import (
+        nexusModGet,
+        parseURL,
+        steamUsrGet,
+        steamWSGet,
+        tpfnetModGet,
+    )
+    from util.genUtil import commonData, getChan, getCol, onMessageCheck
 except Exception:
     logSys.exception("MODDING IMPORT MODULES")
 
@@ -47,7 +53,7 @@ class modding(commands.Cog, name="Modding"):
     @classmethod
     def _findURL(cls, content: list) -> dict | None:
         """Find any URLs within the message content.\n
-        {content} is message.content split at space"""
+        Returned is a dict of the URL with the mod ID, platform, game"""
         logSys.debug("Finding URLs")
 
         URLs = {}
@@ -59,7 +65,7 @@ class modding(commands.Cog, name="Modding"):
                 if urlDict["platform"] == tpfnet:
                     if not re.search(r"filebase", item):
                         continue
-                URLs[urlDict["ID"]] = urlDict
+                URLs[urlDict["url"]] = urlDict
             except Exception:
                 log.exception(f"urlDict")
                 continue
@@ -80,15 +86,15 @@ class modding(commands.Cog, name="Modding"):
         def checkDets(typ: str, details: dict) -> bool:
             logSys.debug("Checking Details")
             if isinstance(details, int):
-                log.error(f"{typ} | {ID=} | {dets=}")
+                log.error(f"{typ} | {ID=} | {details=}")
                 URLdets[ID] = dets
                 return False
             return True
 
-        for ID in URLs:
-            ID: int
-            game: str = URLs[ID]["game"]
-            platform: str = URLs[ID]["platform"]
+        for URL in URLs:
+            ID: int = URLs[URL]["ID"]
+            game: str = URLs[URL]["game"]
+            platform: str = URLs[URL]["platform"]
             logSys.debug(f"Fetch: {ID=} | {game=} | {platform=}")
             creator = {}
             if platform == steam:
@@ -112,6 +118,8 @@ class modding(commands.Cog, name="Modding"):
                 #    continue
 
             URLdets[ID] = dets | creator | {"platform": platform}
+            if "AuthorNote" in URLs[URL]:
+                URLdets[ID]["AuthorNote"] = URLs[URL]["AuthorNote"]
             if len(URLs) >= 2:  # Just to ensure ratelimits aren't hit
                 await asyncio.sleep(0.25)
         logSys.debug(f"{URLdets=}")
@@ -129,6 +137,8 @@ class modding(commands.Cog, name="Modding"):
         "URL to the author's profile page"
         authorIcon: str = None
         "URL to the author's avatar"
+        authorNote: str = None
+        "Text from the author"
         modName: str = None
         "Name of the mod"
         modID: int = None
@@ -184,6 +194,8 @@ class modding(commands.Cog, name="Modding"):
         dets.authorIcon = detsDict["avatarmedium"]
         dets.authorURL = detsDict["profileurl"]
         dets.authorID = detsDict["creator"]
+        if "AuthorNote" in detsDict:
+            dets.authorNote = detsDict["AuthorNote"]
 
         dets.public = not bool(detsDict["visibility"])
 
@@ -256,6 +268,8 @@ class modding(commands.Cog, name="Modding"):
         dets.authorName = detsDict["author"]
         dets.authorURL = detsDict["uploaded_users_profile_url"]
         dets.authorID = detsDict["user"]["member_id"]
+        if "AuthorNote" in detsDict:
+            dets.authorNote = detsDict["AuthorNote"]
 
         dets.NSFW = bool(detsDict["contains_adult_content"])
 
@@ -285,6 +299,9 @@ class modding(commands.Cog, name="Modding"):
         dets.modURL = (
             f"https://www.transportfever.net/filebase/index.php?entry/{dets.modID}"
         )
+
+        if "AuthorNote" in detsDict:
+            dets.authorNote = detsDict["AuthorNote"]
 
         dets.NSFW = False
 
@@ -339,10 +356,10 @@ class modding(commands.Cog, name="Modding"):
                 inline=False,
             )
 
-        if cd.authorNote:
+        if dets.authorNote:
             emb.add_field(
                 name=_("MODDING_PREVIEW_AUTHORNOTE_TITLE", lang),
-                value=f"\n```\n{cd.authorNote}\n```",
+                value=f"\n```\n{dets.authorNote}\n```",
                 inline=False,
             )
 
@@ -405,17 +422,16 @@ class modding(commands.Cog, name="Modding"):
             return False
         logSys.debug(f"{len(cd.URLs)} URLs Found")
 
-        firstID: str = list(cd.URLs.keys())[0]
-        firstURL = cd.URLs[firstID]["url"]
-        print(firstURL)
-
-        cd.authorNote: str = ""
-        cd.authorNote: str = ctx.content.split(firstURL)[0]
-        logSys.debug(f"authorNote {len(cd.authorNote) > 0}")
-        for element in (firstURL, " ", ":", ";", ".", "|"):
-            cd.authorNote = cd.authorNote.removesuffix(element)
-        if not len(cd.authorNote) > 0:
-            cd.authorNote = None
+        cd.authorNotes = []
+        cont: str = ctx.content
+        for url in cd.URLs:
+            before, after = cont.split(url)
+            for element in (url, " ", ":", ";", ",", "."):
+                before = before.removesuffix(element)
+            if len(before) > 0:
+                cd.URLs[url]["AuthorNote"] = before
+            cont = after
+        logSys.debug("AuthorNote")
 
         detailsDict = {}
         detailsDict[cd.locale] = await self._fetchDets(URLs=cd.URLs, lang=cd.locale)
@@ -477,20 +493,15 @@ class modding(commands.Cog, name="Modding"):
     async def on_message(self, ctx):
         """Check for modRelease"""
         await self.bot.wait_until_ready()
-        if not gxConfig.Prod:
-            return
-        if ctx.guild is None:
+        if not onMessageCheck(ctx):
             return
         cd = commonData(ctx)
-        if cd.intUser == gxConfig.botID:
-            print(f"User Match BotID | User: {cd.intUser} Bot: {gxConfig.botID}")
-            return
         cfName = "**"
         if cd.intGuild in geConfig.guildListID:
             cfName = geConfig.guildListID[cd.intGuild]
 
         log.debug(
-            f"GE_on_message; {cfName}: {cd.intGuild=} | {cd.chanID_Name} | {cd.userID_Name}"
+            f"MOD_on_message; {cfName}: {cd.intGuild=} | {cd.chanID_Name} | {cd.userID_Name}"
         )
         event = False
 
@@ -499,7 +510,7 @@ class modding(commands.Cog, name="Modding"):
             log.debug(f"{nmrChan=} {cd.intChan == nmrChan} | bot {ctx.author.bot}")
             if (cd.intChan == nmrChan) and (ctx.author.bot is False):
                 cd.previewChan = int(getChan(cd.intGuild, "NewModPreview"))
-                cd.image = None
+                cd.imageURL = None
                 if len(ctx.attachments) != 0:
                     attach = ctx.attachments[0]
                     if attach.content_type.startswith("image"):
@@ -519,7 +530,7 @@ class modding(commands.Cog, name="Modding"):
                 event = True
 
         if not event:
-            log.debug(f"GE on_message: No event.")
+            log.debug(f"MOD_on_message: No event.")
 
 
 def setup(bot: commands.Bot):

@@ -2,22 +2,6 @@ import asyncio
 import logging
 import time
 
-from config import generalEventConfig as geConfig
-from config import genericConfig as gxConfig
-from config import localeConfig as lcConfig
-from config import botInformation as botInfo
-from util.fileUtil import readJSON, writeJSON, paths
-from util.genUtil import (
-    getChan,
-    getRole,
-    getServConf,
-    setServConf,
-    commonData,
-)
-
-from cogs.auditLog import auditLogger
-
-
 print("CogGeneralEvent")
 
 log = logging.getLogger("discordGeneral")
@@ -29,6 +13,20 @@ try:
     from discord import Permissions
     from nextcord import Interaction, SlashOption, slash_command
     from nextcord.ext import commands
+
+    from cogs.auditLog import auditLogger
+    from config import generalEventConfig as geConfig
+    from config import genericConfig as gxConfig
+    from config import localeConfig as lcConfig
+    from util.fileUtil import paths, readJSON, writeJSON
+    from util.genUtil import (
+        commonData,
+        getChan,
+        getRole,
+        getServConf,
+        onMessageCheck,
+        setServConf,
+    )
 except Exception:
     logSys.exception("GENERAL_EVENT IMPORT MODULES")
 
@@ -492,13 +490,9 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
     async def on_message(self, ctx: nextcord.Message):
         """Check for AutoReacts"""
         await self.bot.wait_until_ready()
-        if not gxConfig.Prod:
-            return
-        if ctx.guild is None:
+        if not onMessageCheck(ctx):
             return
         cd = commonData(ctx)
-        if cd.intUser == gxConfig.botID:
-            return
         cfName = "**"
         if cd.intGuild in list(geConfig.guildListID):
             cfName = geConfig.guildListID[cd.intGuild]
@@ -553,7 +547,7 @@ class generalEvent(commands.Cog, name="GeneralEvent"):
                     event = True
 
         if not event:
-            log.debug(f"GE on_message: No event.")
+            log.debug(f"GE_on_message: No event.")
 
 
 def setup(bot: commands.Bot):

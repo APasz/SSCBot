@@ -7,9 +7,10 @@ logSys = logging.getLogger("discordSystem")
 try:
     logSys.debug("TRY SUGGESTIONS IMPORT MODUELS")
     import nextcord
-    from config import genericConfig as gxConfig
     from discord import SlashOption
     from nextcord.ext import commands
+
+    from config import genericConfig as gxConfig
 except Exception:
     logSys.exception("SUGGESTIONS IMPORT MODUELS")
 

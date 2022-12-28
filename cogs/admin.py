@@ -1,23 +1,6 @@
 import asyncio
 import logging
 
-from cogs.auditLog import auditLogger
-from config import generalEventConfig as geConfig
-from config import genericConfig as gxConfig
-from config import localeConfig as lcConfig
-from util.fileUtil import readJSON, writeJSON, paths
-from util.genUtil import (
-    blacklistCheck,
-    getChan,
-    getCol,
-    sortReactions,
-    commonData,
-    getServConf,
-    setServConf,
-)
-import util.views as views
-
-_ = lcConfig.getLC
 print("CogAdmin")
 
 log = logging.getLogger("discordGeneral")
@@ -28,8 +11,26 @@ try:
     from discord import Permissions
     from nextcord import Interaction, SlashOption, slash_command
     from nextcord.ext import commands
+
+    import util.views as views
+    from cogs.auditLog import auditLogger
+    from config import generalEventConfig as geConfig
+    from config import genericConfig as gxConfig
+    from config import localeConfig as lcConfig
+    from util.fileUtil import paths, readJSON, writeJSON
+    from util.genUtil import (
+        blacklistCheck,
+        commonData,
+        getChan,
+        getCol,
+        getServConf,
+        setServConf,
+        sortReactions,
+    )
 except Exception:
     logSys.exception("ADMIN IMPORT MODULES")
+
+_ = lcConfig.getLC
 
 
 def auditChanGet(guildID) -> int:

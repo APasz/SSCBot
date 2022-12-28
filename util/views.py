@@ -1,7 +1,6 @@
+import inspect
 import logging
 import time
-import inspect
-
 
 print("UtilViews")
 
@@ -9,14 +8,13 @@ log = logging.getLogger("discordGeneral")
 logSys = logging.getLogger("discordSystem")
 try:
     logSys.debug("TRY VIEWS IMPORT MODULES")
-    from config import generalEventConfig as geConfig
-    from config import genericConfig as gxConfig
-
-    from util.fileUtil import readJSON, writeJSON, paths
-    from util.genUtil import hasRole, setUserConf, getServConf
-    from cogs.auditLog import auditLogger
     import nextcord
     from nextcord import Interaction
+
+    from config import generalEventConfig as geConfig
+    from config import genericConfig as gxConfig
+    from util.fileUtil import paths, readJSON, writeJSON
+    from util.genUtil import getServConf, hasRole, setUserConf
 except Exception:
     logSys.exception("VIEWS IMPORT MODULES")
 
@@ -162,9 +160,7 @@ class sscroles(nextcord.ui.View):
     )
     async def SSCNOTIFY(self, button: nextcord.ui.Button, interaction: Interaction):
         """Add/remove the SSC Notify role"""
-        role = interaction.guild.get_role(
-            _getRole("General", "SSC_Notify_General", "SSC_Data")
-        )
+        role = interaction.guild.get_role(_getRole(tpfID, "SSC_Notify_General"))
         mod = await clicky(role, button, interaction)
         logSys.debug(f"{mod=}")
         if mod == 0:
@@ -185,9 +181,7 @@ class sscroles(nextcord.ui.View):
         self, button: nextcord.ui.Button, interaction: Interaction
     ):
         """Add/remove the SSC Notify Prize role"""
-        role = interaction.guild.get_role(
-            _getRole("General", "SSC_Notify_Prize", "SSC_Data")
-        )
+        role = interaction.guild.get_role(_getRole(tpfID, "SSC_Notify_Prize"))
         mod = await clicky(role, button, interaction)
         logSys.debug(f"{mod=}")
         if mod == 0:

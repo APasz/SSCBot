@@ -1,14 +1,4 @@
 import logging
-import os
-
-from config import botInformation as botInfo
-from config import generalEventConfig as geConfig
-from config import genericConfig as gxConfig
-from config import screenShotCompConfig as sscConfig
-from config import localeConfig as lcConfig
-from config import syncCommands
-from util.fileUtil import cacheWrite, writeJSON, paths
-from util.genUtil import blacklistCheck
 
 print("CogBotManage")
 
@@ -18,8 +8,19 @@ try:
     logSys.debug("TRY BOT_MANAGE IMPORT MODULES")
     import nextcord
     from discord import Permissions
-    from nextcord import Interaction, SlashOption, slash_command
+    from nextcord import Interaction, slash_command
     from nextcord.ext import commands
+    from json import dumps as jdumps
+    from shutil import rmtree
+
+    from config import botInformation as botInfo
+    from config import generalEventConfig as geConfig
+    from config import genericConfig as gxConfig
+    from config import localeConfig as lcConfig
+    from config import screenShotCompConfig as sscConfig
+    from config import syncCommands
+    from util.fileUtil import cacheWrite, paths, writeJSON
+    from util.genUtil import blacklistCheck
 except Exception:
     logSys.exception("BOT_MANAGE IMPORT MODULES")
 
@@ -42,6 +43,7 @@ class botManage(commands.Cog, name="BotManagement"):
         try:
             self.bot.reload_extension(f"cogs.{extension}")
         except Exception:
+            logSys.exception("Cog Reload")
             try:
                 await ctx.send(f"**{extension}** can't be reloaded.")
             except Exception:
@@ -62,6 +64,7 @@ class botManage(commands.Cog, name="BotManagement"):
         try:
             self.bot.load_extension(path)
         except Exception:
+            logSys.exception("Cog Load")
             try:
                 await ctx.send(f"**{extension}** can't be loaded.")
             except Exception:
@@ -78,6 +81,7 @@ class botManage(commands.Cog, name="BotManagement"):
         try:
             self.bot.unload_extension(f"cogs.{extension}")
         except Exception:
+            logSys.exception("Cog Unload")
             try:
                 await ctx.send(f"**{extension}** can't be unloaded.")
             except Exception:
@@ -95,7 +99,10 @@ class botManage(commands.Cog, name="BotManagement"):
         try:
             for file in cogsDir.iterdir():
                 if file.name.endswith(".py") and not file.name.startswith("__"):
-                    self.bot.reload_extension(f"cogs.{file.stem}")
+                    try:
+                        self.bot.reload_extension(f"cogs.{file.stem}")
+                    except Exception:
+                        log.exception(f"Cog Reload All")
             logSys.info("All cogs reloaded")
         except Exception:
             try:
@@ -149,17 +156,21 @@ class botManage(commands.Cog, name="BotManagement"):
         elif "-d" in arg:
 
             try:
-                paths.dump.rmdir()
-            except Exception:
-                logSys.exception(f"Delete Dump Folder")
-            try:
+                rmtree(paths.dump)
                 paths.dump.mkdir()
             except Exception:
-                logSys.exception(f"Make Dump Folder")
+                logSys.exception(f"Dump Folder")
+
+            def dicify(var):
+                newVar = {}
+                for key, val in var.items():
+                    if not key.startswith("__") and "proxy" not in key:
+                        newVar[str(key)] = str(val)
+                return newVar
 
             logSys.info("Dumping genericConfig")
             try:
-                dataGX = str(gxConfig.__dict__)
+                dataGX = dicify(dict(gxConfig.__dict__))
                 writeJSON(data=dataGX, file=paths.dump.joinpath("GX"), sort=True)
             except Exception:
                 logSys.exception(f"Dumping genericConfig")
@@ -167,7 +178,7 @@ class botManage(commands.Cog, name="BotManagement"):
 
             logSys.info("Dumping screenShotCompConfig")
             try:
-                dataSSC = str(sscConfig.__dict__)
+                dataSSC = dicify(sscConfig.__dict__)
                 writeJSON(data=dataSSC, file=paths.dump.joinpath("SSC"), sort=True)
             except Exception:
                 logSys.exception(f"Dumping screenShotCompConfig")
@@ -175,7 +186,7 @@ class botManage(commands.Cog, name="BotManagement"):
 
             logSys.info("Dumping generalEventConfig")
             try:
-                dataGE = str(geConfig.__dict__)
+                dataGE = dicify(geConfig.__dict__)
                 writeJSON(data=dataGE, file=paths.dump.joinpath("GE"), sort=True)
             except Exception:
                 logSys.exception(f"Dumping generalEventConfig")
@@ -183,7 +194,7 @@ class botManage(commands.Cog, name="BotManagement"):
 
             logSys.info("Dumping botInformation")
             try:
-                dataBI = str(botInfo.__dict__)
+                dataBI = dicify(botInfo.__dict__)
                 writeJSON(data=dataBI, file=paths.dump.joinpath("BI"), sort=True)
             except Exception:
                 logSys.exception(f"Dumping botInformation")
@@ -191,10 +202,14 @@ class botManage(commands.Cog, name="BotManagement"):
 
             logSys.info("Dumping AutoReact")
             try:
-                dataAR = (
-                    str(geConfig.autoReacts) + "\n\n\n" + str(geConfig.autoReactsChans)
+                dataAR = "\n\n\n".join(
+                    [jdumps(geConfig.autoReacts), jdumps(geConfig.autoReactsChans)]
                 )
-                writeJSON(data=dataAR, file=paths.dump.joinpath("AR"), sort=True)
+                writeJSON(
+                    data=dicify(dataAR),
+                    file=paths.dump.joinpath("AR"),
+                    sort=True,
+                )
             except Exception:
                 logSys.exception(f"Dumping AutoReact")
                 err = True
