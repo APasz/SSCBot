@@ -1,5 +1,5 @@
-## v3 Rewrite in progress
-# Katoku v2 formally known as SSCBot
+# v3 Rewrite in progress
+## Katoku v2 formally known as SSCBot
 A Discord bot which does things.
 
 Specifically for the TpF community with the global server being the focus.
