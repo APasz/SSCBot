@@ -1,6 +1,5 @@
+## v3 Rewrite in progress
 # Katoku v2 formally known as SSCBot
-My first real proper python coding project that I've actually stuck with.
-
 A Discord bot which does things.
 
 Specifically for the TpF community with the global server being the focus.
